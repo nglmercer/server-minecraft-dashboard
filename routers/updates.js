@@ -3,7 +3,7 @@ import express from "express";
 const router = express.Router();
 function initializeWebServer() {
 // Endpoint GET and POST for checking for updates
-router.get("/", function (req, res) {
+/* router.get("/", function (req, res) {
     let updInfo = UPDATER.getCachedUpdate();
     if (updInfo === false) {
         UPDATER.checkForUpdates(() => {
@@ -13,6 +13,6 @@ router.get("/", function (req, res) {
     } else {
         res.send(updInfo);
     }
-});
+}); */
 }
 export { router, initializeWebServer };

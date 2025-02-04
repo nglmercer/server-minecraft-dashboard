@@ -1,8 +1,8 @@
-import * as HARDWARE_MANAGER from "./../modules/hardwareManager.js"; 
-import { configManager } from "./../modules/configuration.js";    
-import * as COMMONS from "./../modules/commons.js";             
-import * as FTP_DAEMON from "./../modules/ftpDaemon.js";         
-import MULTILANG from "./../modules/multiLanguage.js";      
+import * as HARDWARE_MANAGER from "../modules/hardwareManager.js"; 
+import { configManager } from "../modules/configuration.js";    
+import * as COMMONS from "../modules/commons.js";             
+import * as FTP_DAEMON from "../modules/ftpDaemon.js";         
+import MULTILANG from "../modules/multiLanguage.js";      
 import express from "express";                                   
 import { createRequire } from 'module';                             
 const require = createRequire(import.meta.url);

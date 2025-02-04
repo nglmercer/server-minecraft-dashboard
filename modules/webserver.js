@@ -35,7 +35,7 @@ import * as pluginsRouter from "./../routers/plugins.js";
 import * as javaRouter from "./../routers/java.js";
 import * as authRouter from "./../routers/auth.js";
 import * as accountsRouter from "./../routers/accounts.js";
-import * as kubekRouter from "./../routers/kubek.js";
+import * as kubekRouter from "../routers/initialize.js";
 import * as updatesRouter from "./../routers/updates.js";
 import * as discoveryRouter from "./../routers/discovery.js";
 const SECURITY = new UserAuth(configManager.mainConfig, usersConfig);

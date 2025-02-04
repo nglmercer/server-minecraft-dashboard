@@ -1,4 +1,4 @@
-import PREDEFINED from "./predefined.js"; // Importa constantes predefinidas
+/* import PREDEFINED from "./predefined.js"; // Importa constantes predefinidas
 import * as COMMONS from "./commons.js";      // Importa funciones comunes
 import { createRequire } from 'module';       // Importa createRequire para usar require en ES modules
 const require = createRequire(import.meta.url);
@@ -81,4 +81,4 @@ export const getCachedUpdate = () => {
         return false; // Si no hay datos en caché, devuelve false
     }
     return cachedUpdate; // Devuelve la información almacenada en caché
-};
+}; */
