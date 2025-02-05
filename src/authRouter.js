@@ -2,7 +2,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import StorageManager from '../utils/utils.js'; // Asegúrate de que la ruta sea correcta
+import StorageManager from './utils/utils.js'; // Asegúrate de que la ruta sea correcta
 
 const router = express.Router();
 

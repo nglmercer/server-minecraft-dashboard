@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 import cors from "cors";
-import { StorageManager, LanguageManager, storage } from './utils/utils.js';
+import { StorageManager, LanguageManager, storage } from './src/utils/utils.js';
 import authRouter from './src/authRouter.js';
 
 const __filename = fileURLToPath(import.meta.url);

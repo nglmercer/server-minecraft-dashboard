@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import colors from "colors";
 import PREDEFINED from "./predefined.js";
-import {generateSecureID, detectUserLocale} from "../utils/utils.js";
-import * as SERVERS_CONTROLLER from "./serversController.js";
+import {generateSecureID, detectUserLocale} from "./utils/utils.js";
+import * as SERVERS_CONTROLLER from "./minecraft/serversController.js";
 globalThis.autoStartedServers = [];
 
 class ConfigManager {

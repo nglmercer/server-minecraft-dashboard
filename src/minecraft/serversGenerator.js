@@ -3,7 +3,7 @@ import * as CORES_MANAGER from "./coresManager.js";
 import * as JAVA_MANAGER from "./javaManager.js";
 import * as DOWNLOADS_MANAGER from "../downloadsManager.js";
 import * as SERVERS_MANAGER from "./serversManager.js";
-import {logger, LanguageManager} from "../../utils/utils.js";
+import {logger, LanguageManager} from "../utils/utils.js";
 
 import fs from "fs";
 import path from "path";

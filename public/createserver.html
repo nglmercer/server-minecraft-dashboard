@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<link rel="stylesheet" href="css/newServer.css"/>
+<link rel="stylesheet" href="css/elements/elements.css"/>
+
+<link rel="stylesheet" href="css/preloader.css"/>
+<link rel="stylesheet" href="css/mobile.css"/>
+<link rel="stylesheet" href="css/globals.css"/>
+<link rel="stylesheet" href="css/theme.css"/>
+<link rel="stylesheet" href="assets/fonts/Gilroy/stylesheet.css"/>
+<link rel="stylesheet" href="assets/fonts/RobotoMono/stylesheet.css"/>
+<link rel="stylesheet" href="assets/fonts/MSR/stylesheet.css"/>
+
+ <script src="js/KubekNotifyModal.js"></script>
+<script src="js/KubekRequests.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/webcomponents.js"></script>
+<script src="js/task.js"></script>
+
+<script src="js/moment.min.js"></script>
+<style>
+body {
+    color-scheme: dark light;
+}
+</style>
+<script src="./js/newServer.js"></script>
+<body>
+<!-- Главный контейнер -->
+<dialog-container
+ id="Eula_dialog_container" 
+ required="true"
+>
+    <custom-dialog id="Eula_dialog" 
+    title=""
+    description="{{commons.eula}}"
+    style=" max-width: 500px; color: white;"
+    theme="dark"
+    >
+    </custom-dialog>
+</dialog-container>
+ <sidebar-menu id="main-menu-sidebar">
+ </sidebar-menu>
+<div class="new-server-container animate__animated animate__fadeIn animate__faster">
+    <h2>{{newServerWizard.title}}</h2>
+    <button style="position: absolute; top: 0; right: 0; margin: 12px;" class="dark-btn icon-only" id="close-btn" onclick="document.getElementById('main-menu-sidebar').toggleSidebar()"><span class="material-symbols-rounded">Menu</span></button>
+
+    <div class="stage">
+        <div class="stage-header">
+            <div class="stage-circle">1</div>
+            <h3>{{newServerWizard.enterServerName}}</h3>
+        </div>
+        <label>
+            <custom-input type="text" id="server_name_input" style="background-color: #222c3a;  border-radius: 4px; color: white; font-size: 15pt;"
+            name="server-name-input"placeholder="{{newServerWizard.serverNameInput}}" 
+            required>
+            </custom-input>
+        </label>
+    </div>
+
+    <div class="stage">
+        <div class="stage-header">
+            <div class="stage-circle">2</div>
+            <h3>{{newServerWizard.selectCore}}</h3>
+        </div>
+        <!-- Выбор категории ядра -->
+        <div class="radioButtons" id="core-category">
+            <div class="item active" data-item="list">{{newServerWizard.fromList}}</div>
+            <div class="item" data-item="upload">{{newServerWizard.uploadOwn}}</div>
+        </div>
+        <!-- Список ядер -->
+         <grid-selector id="cores-grids"></grid-selector>
+        <div class="cardsGrid" id="cores-grid"></div>
+        <!-- Список версии ядра -->
+        <div id="cores-versions-parent">
+            <h3>{{newServerWizard.coreVersion}}</h3>
+            <div id="cores-versions"></div>
+            <enhanced-select id="customselect_versions" 
+            style="width: 100%; height: 100%; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr;"
+            grid="true"
+            ></enhance-select>
+        </div>
+        <!-- Загрузка своего ядра -->
+         <file-upload id="core_upload" style="display: none;"></file-upload>
+<!--         <div id="core-upload" onclick="uploadCore()" style="display: none">
+            <span class="material-symbols-rounded">cloud_upload</span>
+            <h2>{{commons.uploadFile}}</h2>
+            <h4>{{commons.supportedFileTypes}} .jar</h4>
+            <h5 id="uploaded-file-name"></h5>
+        </div> -->
+    </div>
+
+    <div class="stage">
+        <div class="stage-header">
+            <div class="stage-circle">3</div>
+            <h3>{{newServerWizard.finalSettings}}</h3>
+        </div>
+        <!-- Список версий Java -->
+        <h3>{{newServerWizard.javaVersion}}</h3>
+        <div id="java-list-placeholder">
+            <div class="lds-spinner"><div></div><div></div><div></div></div>
+        </div>
+        <div class="checksList developed-by-seeeroy" id="javas-list" style="display: none">
+            <enhanced-select id="javas_list" style="width: 100%; height: 100%; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr;"></enhance-select>
+
+
+        </div>
+        <div style="display: flex;">
+            <!-- Выбор количества памяти -->
+            <div style="display: flex; flex-direction: column; width: 100%; margin: 0 6px;">
+                <h3>{{newServerWizard.ramSelect}}</h3>
+                <label style="display: flex; align-items: center;">
+                    <input type="number" min="0.5" step="0.5" id="server-mem" style="width: max-content;">
+                    <h3 style="margin-left: 8px;">GB</h3>
+                </label>
+            </div>
+
+            <!-- Выбор порта -->
+            <div style="display: flex; flex-direction: column; width: 100%; margin: 0 6px;">
+                <h3>{{newServerWizard.serverPort}}</h3>
+                <label>
+                    <input type="number" min="1025" step="1" max="60000" value="25565" id="server-port" style="width: max-content;">
+                </label>
+            </div>
+        </div>
+
+        <!-- Применять ли флаги оптимизации? -->
+        <input type="checkbox" style="display: none;" class="checkbox" id="add-aikar-flags" name="add-aikar-flags">
+        <label for="add-aikar-flags" style=" margin: 12px 0;">{{newServerWizard.useAikarFlags}}</label>
+
+        <button class="primary-btn" id="create-server-btn" onclick="prepareServerCreation()">
+            <span class="material-symbols-rounded">build</span>
+            <span class="material-symbols-rounded spinning" style="display: none">settings</span>
+            <span class="text" id="create_server_dialog">{{newServerWizard.noServerName}}</span>
+        </button>
+
+        <div style="text-align: center; display: flex; align-items: center; justify-content: center; margin: 24px 0;">
+            <h3 id="after-creation-text" style="display: none;"></h3>
+        </div>
+    </div>
+</div>
+<script type="module">
+    document.addEventListener("DOMContentLoaded", () => {
+        const menusidebar = document.querySelector('#main-menu-sidebar');
+        menusidebar.addEventListener('server-change', (event) => {
+            const detail = event.detail;
+            console.log('Changing to page:', detail);
+            window.localStorage.selectedServer = detail.server;
+            if (window.localStorage.selectedServer && detail.server) {
+                window.location.href = `/?act=console`;
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+        menusidebar.addEventListener('new-server', () => {
+            console.log('Creating new server');
+            // Add your new server logic here
+            // href="/?act=newServer"
+            window.location = '/createserver.html';
+        });
+        KubekServers.getServersList((servers) => {
+            if (!servers || servers.lenght < 1) {
+                return;
+            }
+            console.log("servers getServersList", servers); 
+            if (servers.has(window.localStorage.selectedServer)) {
+                selectedServer = window.localStorage.selectedServer;
+            } else {
+                localStorage.setItem("selectedServer", servers[0]);
+                selectedServer = servers[0];
+            }
+        });
+        KubekRequests.get("/kubek/settings", (settings) => {
+            console.log("settings /kubek/settings",settings);
+            if (settings.eulaAccepted === false) {
+                document.querySelector("#Eula_dialog_container").show();
+            }
+        });
+        const Eula_dialog = document.querySelector("#Eula_dialog");
+        Eula_dialog.options = [
+            {
+                label: "{{commons.iAccept}}",
+                class: "save-btn",
+                callback: () => {
+                    console.log("accept");
+                    KubekRequests.get("/kubek/eula/accept", (response) => {
+                        window.location.reload();
+                    });
+                }
+            }
+        ];	
+    });
+</script>
+</body>
+</html>

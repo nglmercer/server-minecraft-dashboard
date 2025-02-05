@@ -1,16 +1,33 @@
-import PREDEFINED from "./predefined.js";
-import * as COMMONS from "./commons.js";
 import * as SERVERS_MANAGER from "./serversManager.js";
-import * as FILE_MANAGER from "./fileManager.js";
+import * as FILE_MANAGER from "../fileManager.js";
 import * as ERRORS_PARSER from "./minecraftErrorsParser.js";
-import MULTILANG from "./multiLanguage.js";
 import fs from "fs";
 import path from "path";
 import treekill from "tree-kill";
 import spParser from "minecraft-server-properties";
 import { spawn } from "node:child_process";
 import mcs from "node-mcstatus";
-
+import { testForRegexArray, isObjectsValid, LanguageManager } from "../utils/utils.js";
+const PREDEFINED = {
+    SERVER_STATUS_CHANGE_MARKERS: {
+        STARTING: [
+            /Loading libraries/gim,
+            /Advanced terminal features are/gim,
+            /Enabled Waterfall version/gim,
+            /Starting server/gim,
+            /Starting minecraft server/gim
+        ],
+        RUNNING: [/Server started/gim, /Listening on/gim, /Done/gim],
+        STOPPING: [/Saving players/gim, /Server stop requested/gim]
+    },
+    SERVER_STATUSES: {
+        STOPPED: "stopped",
+        RUNNING: "running",
+        STARTING: "starting",
+        STOPPING: "stopping"
+    },
+    MAX_SERVER_LOGS_LENGTH_MINUS: -800,
+}
 // Variables globales para gestionar instancias de servidores
 globalThis.serversInstances = {};
 globalThis.instancesLogs = {};
@@ -27,7 +44,7 @@ const getStartFilePath = (serverName) => {
 };
 
 export const writeToStdin = (serverName, data) => {
-    if (COMMONS.isObjectsValid(serversInstances[serverName])) {
+    if (isObjectsValid(serversInstances[serverName])) {
         data = Buffer.from(data, "utf-8").toString();
         writeServerLog(serverName, data + "\n");
         serversInstances[serverName].stdin.write(data + "\n");
@@ -42,11 +59,11 @@ const handleServerStd = (serverName, data) => {
 
     const isAnyErrorsHere = ERRORS_PARSER.checkStringForErrors(data);
     if (isAnyErrorsHere) {
-        writeServerLog(serverName, `§c§l${MULTILANG.translateText(currentLanguage, isAnyErrorsHere)}`);
+        writeServerLog(serverName, `§c§l${LanguageManager.translateText(currentLanguage, isAnyErrorsHere)}`);
     }
 
     Object.keys(PREDEFINED.SERVER_STATUS_CHANGE_MARKERS).forEach((key) => {
-        if (COMMONS.testForRegexArray(data, PREDEFINED.SERVER_STATUS_CHANGE_MARKERS[key])) {
+        if (testForRegexArray(data, PREDEFINED.SERVER_STATUS_CHANGE_MARKERS[key])) {
             SERVERS_MANAGER.setServerStatus(serverName, PREDEFINED.SERVER_STATUSES[key]);
         }
     });
@@ -62,7 +79,7 @@ export const isServerReadyToStart = (serverName) => {
 };
 
 export const getServerLog = (serverName, linesCountMinus = -100) => {
-    if (COMMONS.isObjectsValid(instancesLogs[serverName])) {
+    if (isObjectsValid(instancesLogs[serverName])) {
         return instancesLogs[serverName].split(/\r?\n/)
             .slice(linesCountMinus)
             .join("\r\n")
@@ -135,20 +152,20 @@ export const addInstanceCloseEventHandler = (serverName) => {
         SERVERS_MANAGER.setServerStatus(serverName, PREDEFINED.SERVER_STATUSES.STOPPED);
 
         if (code != null && code > 1 && code !== 127) {
-            writeServerLog(serverName, MULTILANG.translateText(currentLanguage, "{{serverConsole.stopCode}}", code));
+            writeServerLog(serverName, LanguageManager.translateText(currentLanguage, "{{serverConsole.stopCode}}", code));
             if (serversConfig[serverName].restartOnError) {
                 if (restartAttempts[serverName] >= serversConfig[serverName].maxRestartAttempts) {
-                    writeServerLog(serverName, MULTILANG.translateText(currentLanguage, "{{serverConsole.restartFailed}}", restartAttempts[serverName]));
+                    writeServerLog(serverName, LanguageManager.translateText(currentLanguage, "{{serverConsole.restartFailed}}", restartAttempts[serverName]));
                 } else {
                     restartAttempts[serverName] = (restartAttempts[serverName] || 0) + 1;
-                    writeServerLog(serverName, MULTILANG.translateText(currentLanguage, "{{serverConsole.restartAttempt}}", restartAttempts[serverName]));
+                    writeServerLog(serverName, LanguageManager.translateText(currentLanguage, "{{serverConsole.restartAttempt}}", restartAttempts[serverName]));
                     startServer(serverName);
                 }
             }
         } else if (code === 1 || code === 127) {
-            writeServerLog(serverName, MULTILANG.translateText(currentLanguage, "{{serverConsole.killed}}"));
+            writeServerLog(serverName, LanguageManager.translateText(currentLanguage, "{{serverConsole.killed}}"));
         } else {
-            writeServerLog(serverName, MULTILANG.translateText(currentLanguage, "{{serverConsole.gracefulShutdown}}"));
+            writeServerLog(serverName, LanguageManager.translateText(currentLanguage, "{{serverConsole.gracefulShutdown}}"));
             if (serversToManualRestart.includes(serverName)) {
                 startServer(serverName);
                 serversToManualRestart.splice(serversToManualRestart.indexOf(serverName), 1);
@@ -163,7 +180,7 @@ export const addInstanceStdEventHandler = (serverName) => {
 };
 
 export const killServer = (serverName) => {
-    if (serversInstances[serverName] && COMMONS.isObjectsValid(serversInstances[serverName], serversInstances[serverName].pid)) {
+    if (serversInstances[serverName] && isObjectsValid(serversInstances[serverName], serversInstances[serverName].pid)) {
         treekill(serversInstances[serverName].pid, () => {});
         return true;
     }
@@ -216,7 +233,7 @@ export const saveServerProperties = (serverName, data) => {
 
 export const queryServer = (serverName, cb) => {
     const spData = getServerProperties(serverName);
-    if (COMMONS.isObjectsValid(spData['server-port']) && COMMONS.isObjectsValid(serversInstances[serverName])) {
+    if (isObjectsValid(spData['server-port']) && isObjectsValid(serversInstances[serverName])) {
         const chkPort = spData['server-port'];
         const chkOptions = { query: false };
         mcs.statusJava("127.0.0.1", chkPort, chkOptions)

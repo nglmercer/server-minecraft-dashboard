@@ -6,7 +6,7 @@ import colors from "colors";
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const packageJSON = require("../package.json");
+const packageJSON = require("../../package.json");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -330,6 +330,17 @@ const isObjectsValid = (...objects) => {
   });
   return summCount === validCount;
 };
+const testForRegexArray = (text, regexArray) => {
+  let testResult = false;
+  regexArray.forEach((regexpItem) => {
+      if (typeof regexpItem == "object" && text.match(regexpItem) !== null) {
+          testResult = true;
+      } else if (typeof regexpItem == "string" && regexpItem === text) {
+          testResult = true;
+      }
+  });
+  return testResult;
+};
 function generateSecureID(length = 18) {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length }, () =>
@@ -342,5 +353,5 @@ function detectUserLocale() {
   const defaultLocale = "en";
   return storage.get("lang") || defaultLocale;
 }
-export { StorageManager, LanguageManager, storage, getDataByURL, logger, isObjectsValid, generateSecureID, detectUserLocale };
+export { StorageManager, LanguageManager, storage, getDataByURL, logger, isObjectsValid, generateSecureID, detectUserLocale,testForRegexArray };
 export default StorageManager;

@@ -8,7 +8,6 @@ import SECURITY from './security.js';
  */
 
 let fileWrites = {}; // Stores ongoing chunked write operations
-// modules/fileManager.js
 export const scanDirectory = (server, path, callback) => {
     try {
         const fullPath = constructFilePath(server, path);
