@@ -2,11 +2,11 @@
   "name": "kubek-minecraft-dashboard",
   "version": "3.0.7",
   "description": "",
-  "main": "app.js",
+  "main": "index.js",
   "author": "Seeroy",
   "scripts": {
-    "start": "node app.js",
-    "build": "pkg --config pkgconfig.json app.js",
+    "start": "node index.js",
+    "build": "pkg --config pkgconfig.json index.js",
     "dockerBuild": "docker build -t seeroy/kubek-minecraft-dashboard .",
     "dockerPush": "docker push seeroy/kubek-minecraft-dashboard"
   },
