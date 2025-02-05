@@ -10,55 +10,42 @@ const isTermux = () => {
 
 // Convertir versión del juego a versión Java requerida
 export const gameVersionToJava = (version) => {
-    let sec = parseInt(version.split(".")[1]);
-    let ter = parseInt(version.split(".")[2]);
-    if (sec < 8) {
-        return 8;
-    } else if (sec >= 8 && sec <= 11) {
-        return 11;
-    } else if (sec >= 12 && sec <= 15) {
-        return 11;
-    } else if (sec === 16) {
-        if (ter <= 4) {
-            return 11;
-        } else {
-            return 16;
-        }
-    } else if (sec >= 17) {
-        return 18;
-    } else if (sec >= 20) {
-        return 20;
-    }
+    const [, sec, ter] = version.split(".").map(Number);
+    
+    if (sec < 8) return 8;
+    if (sec <= 11) return 11;
+    if (sec <= 15) return 11;
+    if (sec === 16) return ter <= 4 ? 11 : 16;
+    if (sec >= 20) return 20;
+    return 18;
 };
 
-// Instalar Java en Termux
 export const installJavaTermux = async (version) => {
     try {
-        // Determinar arquitectura
-        const arch = process.arch === 'arm' ? 'arm' :
-                     process.arch === 'arm64' ? 'aarch64' :
-                     process.arch === 'x64' ? 'x86_64' : null;
+        const arch = {
+            'arm': 'arm',
+            'arm64': 'aarch64',
+            'x64': 'x86_64'
+        }[process.arch];
+        
         if (!arch) throw new Error('Arquitectura no soportada');
 
-        // Obtener URL del archivo Packages
         const packagesUrl = `https://packages.termux.org/apt/termux-main/dists/stable/main/binary-${arch}/Packages`;
-
-        // Descargar y parsear el archivo Packages
         const packagesData = execSync(`curl -sL ${packagesUrl}`).toString();
         const packageBlock = packagesData.split('\n\n').find(block => 
             block.includes(`Package: openjdk-${version}`)
         );
+        
         if (!packageBlock) throw new Error(`OpenJDK ${version} no está disponible`);
 
-        // Extraer nombre del archivo .deb
-        const filenameLine = packageBlock.split('\n').find(line => line.startsWith('Filename: '));
-        const filename = filenameLine.split(' ')[1];
+        const filename = packageBlock.split('\n')
+            .find(line => line.startsWith('Filename: '))
+            .split(' ')[1];
 
-        // Descargar e instalar el paquete
         const debUrl = `https://packages.termux.org/apt/termux-main/${filename}`;
         execSync(`curl -LO ${debUrl}`, { stdio: 'inherit' });
         execSync(`dpkg -i ${filename.split('/').pop()}`, { stdio: 'inherit' });
-        execSync('apt-get install -f -y', { stdio: 'inherit' }); // Corregir dependencias
+        execSync('apt-get install -f -y', { stdio: 'inherit' });
 
         return await verifyJavaInstallation(version);
     } catch (error) {

@@ -15,7 +15,6 @@ const router = express.Router();
 function isValidServer(server) {
     return isObjectsValid(server) && SERVERS_MANAGER.isServerExists(server);
 }
-
 // Middleware para verificar la autorización del usuario
 export const serversRouterMiddleware = (req, res, next) => {
     if (configManager.mainConfig.authorization === false) {

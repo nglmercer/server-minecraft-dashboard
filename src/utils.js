@@ -378,7 +378,18 @@ function getImageBase64(input) {
   }
   return null;
 }
-
+const getPlatformInfo = () => {
+  const isTermux = process.platform === 'android' || fs.existsSync('/data/data/com.termux');
+  const isWindows = process.platform === "win32";
+  const isLinux = process.platform === "linux";
+  
+  return {
+      isTermux,
+      isWindows, 
+      isLinux,
+      startScript: isWindows ? "start.bat" : "start.sh"
+  };
+};
 export { 
   StorageManager, 
   LanguageManager, 
@@ -390,6 +401,7 @@ export {
   detectUserLocale,
   testForRegexArray, 
   moveUploadedFile,
-  getImageBase64
+  getImageBase64,
+  getPlatformInfo
 };
 export default StorageManager;
