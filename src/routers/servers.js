@@ -153,7 +153,7 @@ router.get("/:server/icon", serversRouterMiddleware, function (req, res) {
 
     let iconPath = `./servers/${q.server}/server-icon.png`;
     let base64Image = getImageBase64(iconPath) || getImageBase64(PREDEFINED.DEFAULT_KUBEK_ICON);
-
+    
     if (base64Image) {
         let imageBuffer = Buffer.from(base64Image, "base64");
         res.writeHead(200, {

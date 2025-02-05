@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 import cors from "cors";
-import { StorageManager, LanguageManager, storage } from './src/utils.js';
+import {  LanguageManager, storage, makeBaseDirs } from './src/utils.js';
+import PREDEFINED from './src/predefined.js';
 import authRouter from './src/authRouter.js';
 import apirouter from './src/routers/hardware.js';
 import corerouter from './src/routers/cores.js';
@@ -17,39 +18,52 @@ import filemanagerrouter from './src/routers/fileManager.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 LanguageManager.loadAvailableLanguages();
-console.log("LanguageManager", LanguageManager.loadAvailableLanguages());
 const app = express();
 const port = 3000;
 app.use((req, res, next) => {
   const fileExtension = path.extname(req.url);
   const supportedExtensions = [".html", ".js", ".css", ".json"];
 
-  if (supportedExtensions.includes(fileExtension)) {
-    // Obtener el idioma a partir de un parámetro de consulta (ej. ?lang=es)
-    let lang = storage.get("lang") || req.query.lang || "es";
-    // Ruta completa del archivo estático en la carpeta 'public'
-    const filePath = path.join(__dirname, "public", req.url);
-
+  // Manejar explícitamente el caso donde req.url es "/"
+  if (req.url === "/") {
+    const filePath = path.join(__dirname, "public", "index.html"); // Ruta al archivo index.html
     if (fs.existsSync(filePath)) {
       try {
-        // Leer el contenido del archivo
-        let fileContent = fs.readFileSync(filePath, "utf-8");
-        // Aplicar la traducción usando LanguageManager
-        let translatedContent = LanguageManager.translateText(lang, fileContent);
-        // Establecer el header correspondiente
-        res.setHeader("Content-Type", mimeTypeForExtension(fileExtension));
-        // Enviar el contenido traducido
-        return res.send(translatedContent);
+        let lang = storage.get("lang") || req.query.lang || "es"; // Obtener el idioma
+        let fileContent = fs.readFileSync(filePath, "utf-8"); // Leer el contenido del archivo
+        let translatedContent = LanguageManager.translateText(lang, fileContent); // Traducir el contenido
+        res.setHeader("Content-Type", "text/html"); // Establecer el tipo de contenido
+        return res.send(translatedContent); // Enviar el contenido traducido
+      } catch (error) {
+        console.error("Error al traducir el archivo:", error);
+        return res.status(500).send("Error interno del servidor");
+      }
+    } else {
+      return res.status(404).send("Archivo no encontrado");
+    }
+  }
+
+  // Lógica para archivos con extensiones soportadas
+  if (supportedExtensions.includes(fileExtension)) {
+    const filePath = path.join(__dirname, "public", req.url);
+    if (fs.existsSync(filePath)) {
+      try {
+        let lang = storage.get("lang") || req.query.lang || "es"; // Obtener el idioma
+        let fileContent = fs.readFileSync(filePath, "utf-8"); // Leer el contenido del archivo
+        let translatedContent = LanguageManager.translateText(lang, fileContent); // Traducir el contenido
+        res.setHeader("Content-Type", mimeTypeForExtension(fileExtension)); // Establecer el tipo de contenido
+        return res.send(translatedContent); // Enviar el contenido traducido
       } catch (error) {
         console.error("Error al traducir el archivo:", error);
         return res.status(500).send("Error interno del servidor");
       }
     }
   }
+
   // Si no es un archivo a traducir o no se encuentra, continúa con el siguiente middleware
   next();
 });
-
+makeBaseDirs(PREDEFINED.BASE_DIRS);
 // Middleware para parsear JSON
 app.use(express.json());
 app.use(cors())

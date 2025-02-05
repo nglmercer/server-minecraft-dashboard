@@ -371,6 +371,26 @@ const downloadFileFromUrl = (server, url, filePath, cb) => {
       cb(false, error.message);
   }
 };
+export const isValidUrl = (url) => {
+  if (!url || typeof url !== "string") {
+      console.warn("isValidUrl: Invalid URL:", url);
+      return false;
+  }
+  try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+      return false;
+  }
+};
+//PREDEFINED.BASE_DIRS
+const makeBaseDirs = (ArrayBasedirs = []) => {
+  ArrayBasedirs.forEach(function (dir) {
+      if (!fs.existsSync("./" + dir)) {
+          fs.mkdirSync("./" + dir);
+      }
+  });
+};
 const testForRegexArray = (text, regexArray) => {
   let testResult = false;
   regexArray.forEach((regexpItem) => {
@@ -410,13 +430,38 @@ const moveUploadedFile = (server, sourceFile, filePath, cb) => {
       cb(400);
   }
 }
+const isBase64Valid = (str) => {
+  try {
+      // Verifica si la cadena es Base64 válida
+      return Buffer.from(str, 'base64').toString('base64') === str;
+  } catch (err) {
+      return false;
+  }
+};
+
 function getImageBase64(input) {
+  // Caso 1: Si es una ruta de archivo válida
   if (typeof input === "string" && fs.existsSync(input)) {
-      const imageBuffer = fs.readFileSync(input);
-      return imageBuffer.toString("base64");
-  } else if (Buffer.isBuffer(input)) {
+      try {
+          const imageBuffer = fs.readFileSync(input);
+          return imageBuffer.toString("base64");
+      } catch (error) {
+          console.error(`Error al leer el archivo: ${input}`, error);
+          return null;
+      }
+  }
+
+  // Caso 2: Si es un buffer
+  if (Buffer.isBuffer(input)) {
       return input.toString("base64");
   }
+
+  // Caso 3: Si es una cadena Base64 válida
+  if (typeof input === "string" && isBase64Valid(input)) {
+      return input; // Ya está en Base64, no es necesario convertirlo
+  }
+
+  // Caso por defecto
   return null;
 }
 const getPlatformInfo = () => {
@@ -456,6 +501,7 @@ export {
   getImageBase64,
   getPlatformInfo,
   downloadFileFromUrl,
-  getSafeFilename
+  getSafeFilename,
+  makeBaseDirs
 };
 export default StorageManager;

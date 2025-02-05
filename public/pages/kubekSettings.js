@@ -14,8 +14,8 @@ function initializeKubekSettings() {
   let allservers = [];
   // Обновляем список серверов
   KubekServers.getServersList((servers) => {
-    if (!servers) return;
     console.log("servers getServersList", servers);
+    if (!servers) return;
       servers.forEach(server => {
           console.log("server getServersList", server);
           const select_servers = document.querySelector('#select_servers');
