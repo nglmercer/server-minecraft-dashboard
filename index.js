@@ -6,7 +6,7 @@ import path from 'path';
 import cors from "cors";
 import {  LanguageManager, storage, makeBaseDirs } from './src/utils.js';
 import PREDEFINED from './src/predefined.js';
-import authRouter from './src/authRouter.js';
+import authRouter from './src/routers/authRouter.js';
 import apirouter from './src/routers/hardware.js';
 import corerouter from './src/routers/cores.js';
 import javarouter from './src/routers/java.js';
