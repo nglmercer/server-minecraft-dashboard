@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import colors from "colors";
-import PREDEFINED from "./predefined.js";
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -69,7 +68,7 @@ class Logger {
     // Mostrar mensaje de bienvenida de Kubek
     kubekWelcomeMessage() {
         console.log("");
-        console.log(colors.cyan(PREDEFINED.KUBEK_LOGO_ASCII));
+        console.log(colors.cyan("your logo ASCII art here"));
         console.log("");
         console.log(colors.inverse(`Kubek ${packageJSON.version}`));
         console.log(colors.inverse(packageJSON.repository.url.split("+")[1]));
