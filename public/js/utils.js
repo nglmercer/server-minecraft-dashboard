@@ -566,9 +566,9 @@ class KubekUI {
       }
   }
 }
-/* setInterval(() => {
+ setInterval(() => {
   KubekUI.refreshConsoleLog();
-}, 1000); */
+}, 1000); 
 class KubekAlerts {
     static stylesInjected = false;
 
@@ -828,12 +828,12 @@ class KubekRefresher {
     }
 }
 if (!window.location.href.includes("login")) {
-/*     KubekRefresher.addRefreshServerHeaderInterval();
+    KubekRefresher.addRefreshServerHeaderInterval();
     KubekRefresher.addRefreshUsageInterval();
-    KubekUI.loadServersList(); */
+    KubekUI.loadServersList(); 
 }
-/* KubekRefresher.addRefreshServerLogInterval();
-KubekRefresher.addRefreshTasksInterval(); */
+ KubekRefresher.addRefreshServerLogInterval();
+KubekRefresher.addRefreshTasksInterval(); 
 // Constants
 const UPPER_DIR_ITEM = "<tr onclick='KubekFileManagerUI.upperDir()'><td></td><td>..</td><td></td><td></td></tr>";
 const DIR_ITEM_PLACEHOLDER = "<tr data-filename='$0' data-path='$1' data-type='$5'><td><div class='icon-bg'><span class='material-symbols-rounded'>$2</span></div></td><td>$0</td><td>$3</td><td>$4</td></tr>";

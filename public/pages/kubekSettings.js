@@ -29,11 +29,6 @@ function initializeKubekSettings() {
       })
   });
 
-  // Загружаем версию Kubek
-  KubekRequests.get("/kubek/version", (data) => {
-      document.querySelector('#kubek-version').innerHTML = data.version;
-      console.log("version", data);
-  });
 }
 const userModal = document.querySelector('#userModal');
 const dropdown_component = document.querySelector('dropdown-component');
@@ -107,7 +102,7 @@ KubekSettingsUI = class {
     static usermodeeditor = false;
     static getConfig = (cb = () => {
     }) => {
-      var urlink = "/kubek/settings";  
+      var urlink = "/settings";  
       KubekRequests.get(urlink, cb);
       console.log("urlink", urlink);    
     }
@@ -118,6 +113,7 @@ KubekSettingsUI = class {
           currentConfig = config;
           //const recatogrized = getcategorizeddata(config);
           console.log("config", config, currentConfig);
+          if (!config) return;
             const serverPortInput = document.querySelector('#server-port-input');
             serverPortInput.setInputValues(config.webserverPort);
             const ftpLoginInput = document.querySelector('#ftp-login-input');
@@ -175,7 +171,7 @@ KubekSettingsUI = class {
         console.log("currentConfig", currentConfig);
         const componentdata = getAllInputValues();
         console.log("componentdata", componentdata);
-        KubekRequests.put("/kubek/settings?config=" + Base64.encodeURI(JSON.stringify(currentConfig)), (result) => {
+        KubekRequests.put("/settings?config=" + Base64.encodeURI(JSON.stringify(currentConfig)), (result) => {
             if (result === true) {
                 KubekAlerts.addAlert("{{kubekSettings.configSaved}}", "check", "", 5000);
             } else {
@@ -198,7 +194,7 @@ KubekSettingsUI = class {
           const newAccountItemElement = document.createElement("div");
           newAccountItemElement.innerHTML = NEW_ACCOUNT_ITEM;
           accountsListElement.appendChild(newAccountItemElement);
-  
+          if (!accounts || accounts.length < 1) return;
           // Iterar sobre las cuentas y agregar elementos a la lista
           accounts.forEach((account) => {
               const accountItemElement = document.createElement("div");
@@ -336,11 +332,11 @@ KubekSettingsUI = class {
       });
     }
     static refreshLanguagesList = (cb) => {
-        KubekRequests.get("/kubek/rawlanguages", (langs) => {
+        KubekRequests.get("/rawlanguages", (langs) => {
           console.log("rawlanguages", langs);
           localStorage.setItem("rawlanguages", JSON.stringify(langs));
         });
-        KubekRequests.get("/kubek/languages", (langs) => {
+        KubekRequests.get("/languages", (langs) => {
           console.log("langs", langs);  
           setlangselector(langs);
             cb();
@@ -459,7 +455,7 @@ function refreshLanguagesList(cb) {
   var apiget = (url, callback, apiEndpoint = true) => {
     makeAjaxRequest(url, "GET", "", apiEndpoint, callback);
   }
-  var languageslink = "/kubek/languages";
+  var languageslink = "/languages";
   apiget(languageslink, (langs) => {
       cb();
       console.log("langs", langs);

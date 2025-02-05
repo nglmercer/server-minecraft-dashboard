@@ -330,6 +330,47 @@ const isObjectsValid = (...objects) => {
   });
   return summCount === validCount;
 };
+const downloadFileFromUrl = (server, url, filePath, cb) => {
+  try {
+      // Validación de parámetros
+      if (!isObjectsValid(server, url, filePath)) {
+          return cb(false, "Parámetros inválidos");
+      }
+
+      // Validación de URL
+      if (!isValidUrl(url)) {
+          return cb(false, "URL inválida");
+      }
+
+      // Construir ruta completa
+      const uploadPath = path.join("./servers", server, filePath);
+
+      // Crear directorio si no existe
+      fs.mkdirSync(path.dirname(uploadPath), { recursive: true });
+
+      // Descargar archivo
+      axios({
+          method: "get",
+          url: url,
+          responseType: "stream"
+      })
+      .then(response => {
+          const writer = fs.createWriteStream(uploadPath);
+          response.data.pipe(writer);
+
+          writer.on("finish", () => cb(true));
+          writer.on("error", err => {
+              fs.unlink(uploadPath, () => cb(false, err.message));
+          });
+      })
+      .catch(error => {
+          cb(false, error.message);
+      });
+
+  } catch (error) {
+      cb(false, error.message);
+  }
+};
 const testForRegexArray = (text, regexArray) => {
   let testResult = false;
   regexArray.forEach((regexpItem) => {
@@ -390,6 +431,17 @@ const getPlatformInfo = () => {
       startScript: isWindows ? "start.bat" : "start.sh"
   };
 };
+const getSafeFilename = (url) => {
+  if (!url || typeof url !== "string") {
+      console.warn("isValidUrl: Invalid URL:", url);
+      return false;
+  }
+  const parsed = new URL(url);
+  return parsed.pathname
+      .split("/")
+      .pop()
+      .replace(/[^a-z0-9\.]/gi, "_");
+};
 export { 
   StorageManager, 
   LanguageManager, 
@@ -402,6 +454,8 @@ export {
   testForRegexArray, 
   moveUploadedFile,
   getImageBase64,
-  getPlatformInfo
+  getPlatformInfo,
+  downloadFileFromUrl,
+  getSafeFilename
 };
 export default StorageManager;
