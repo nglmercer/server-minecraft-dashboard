@@ -1,8 +1,32 @@
 import PREDEFINED from "../predefined.js";
 import * as CORES_MANAGER from "../minecraft/coresManager.js";
-import { isObjectsValid } from "../utils.js";
+import { isObjectsValid, moveUploadedFile } from "../utils.js";
+import { security } from "../security.js";
 //import * as WEBSERVER from "./../modules/webserver.js";
 import express from "express";
+export const serversRouterMiddleware = (req, res, next) => {
+    if (configManager.mainConfig.authorization === false) {
+        return next();
+    }
+
+    let chkValue = false;
+    if (isObjectsValid(req.params.server)) {
+        chkValue = req.params.server;
+    } else if (isObjectsValid(req.query.server)) {
+        chkValue = req.query.server;
+    }
+
+    if (chkValue === false) {
+        return next();
+    }
+
+    if (security.isUserHasCookies(req) && security.isUserHasServerAccess(req.cookies["kbk__login"], chkValue)) {
+        return next();
+    }
+
+    return res.sendStatus(403);
+}
+
 const router = express.Router();
     // Endpoint INFO for getting the list of cores
     router.get("/", function (req, res) {
@@ -36,42 +60,42 @@ const router = express.Router();
     });
     
     // Endpoint called when a core is uploaded
-/*     router.post("/:server", WEBSERVER.serversRouterMiddleware, function (req, res) {
-        let q = req.params;
-        let sourceFile;
-    
-        // Revisar si hay archivos en el request tradicional
-        if (req.files && Object.keys(req.files).length > 0) {
-            sourceFile = req.files["server-core-input"];
-            console.log("sourceFile router.post(/:server", sourceFile); 
+router.post("/:server", serversRouterMiddleware, function (req, res) {
+    let q = req.params;
+    let sourceFile;
+
+    // Revisar si hay archivos en el request tradicional
+    if (req.files && Object.keys(req.files).length > 0) {
+        sourceFile = req.files["server-core-input"];
+        console.log("sourceFile router.post(/:server", sourceFile); 
+    } 
+    // Revisar si hay datos en el body que necesiten ser convertidos a archivo
+    else if (req.body && req.body.fileData) {
+        // Si los datos vienen en base64
+        if (req.body.fileData.startsWith('data:')) {
+            const base64Data = req.body.fileData.split(';base64,').pop();
+            sourceFile = {
+                name: req.body.fileName,
+                data: Buffer.from(base64Data, 'base64')
+            };
         } 
-        // Revisar si hay datos en el body que necesiten ser convertidos a archivo
-        else if (req.body && req.body.fileData) {
-            // Si los datos vienen en base64
-            if (req.body.fileData.startsWith('data:')) {
-                const base64Data = req.body.fileData.split(';base64,').pop();
-                sourceFile = {
-                    name: req.body.fileName,
-                    data: Buffer.from(base64Data, 'base64')
-                };
-            } 
-            // Si los datos vienen en otro formato
-            else {
-                sourceFile = {
-                    name: req.body.fileName,
-                    data: Buffer.from(req.body.fileData)
-                };
-            }
-        } else {
-            return res.status(400).send("No file data provided");
+        // Si los datos vienen en otro formato
+        else {
+            sourceFile = {
+                name: req.body.fileName,
+                data: Buffer.from(req.body.fileData)
+            };
         }
-    
-        COMMONS.moveUploadedFile(q.server, sourceFile, "/" + sourceFile.name, (result) => {
-            if (result === true) {
-                return res.send({ success: true, serverName: q.server, sourceFile: sourceFile });
-            }
-            console.log("result server", result, sourceFile);
-            res.sendStatus(400);
-        });
-    }); */
+    } else {
+        return res.status(400).send("No file data provided");
+    }
+
+    moveUploadedFile(q.server, sourceFile, "/" + sourceFile.name, (result) => {
+        if (result === true) {
+            return res.send({ success: true, serverName: q.server, sourceFile: sourceFile });
+        }
+        console.log("result server", result, sourceFile);
+        res.sendStatus(400);
+    });
+});
 export default router;

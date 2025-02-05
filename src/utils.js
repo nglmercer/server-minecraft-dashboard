@@ -369,6 +369,27 @@ const moveUploadedFile = (server, sourceFile, filePath, cb) => {
       cb(400);
   }
 }
+function getImageBase64(input) {
+  if (typeof input === "string" && fs.existsSync(input)) {
+      const imageBuffer = fs.readFileSync(input);
+      return imageBuffer.toString("base64");
+  } else if (Buffer.isBuffer(input)) {
+      return input.toString("base64");
+  }
+  return null;
+}
 
-export { StorageManager, LanguageManager, storage, getDataByURL, logger, isObjectsValid, generateSecureID, detectUserLocale,testForRegexArray, moveUploadedFile};
+export { 
+  StorageManager, 
+  LanguageManager, 
+  storage, 
+  getDataByURL,
+  logger, 
+  isObjectsValid, 
+  generateSecureID, 
+  detectUserLocale,
+  testForRegexArray, 
+  moveUploadedFile,
+  getImageBase64
+};
 export default StorageManager;
