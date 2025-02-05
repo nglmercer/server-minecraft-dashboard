@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Sistema de Asistencia</title>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl font-bold text-center mb-4">Registro</h2>
+            <form id="registerForm">
+                <!-- Campo de correo electrónico -->
+                <div class="form-control">
+                    <label class="label" for="email">
+                        <span class="label-text">Correo Electrónico</span>
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Ingresa tu correo"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Campo de contraseña -->
+                <div class="form-control mt-4">
+                    <label class="label" for="password">
+                        <span class="label-text">Contraseña</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Ingresa tu contraseña"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Botón de envío -->
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary">Registrarse</button>
+                </div>
+            </form>
+            <!-- Enlace para iniciar sesión -->
+            <div class="text-center mt-4">
+                <a href="/login" class="text-sm text-primary hover:underline">¿Ya tienes una cuenta? Inicia sesión aquí</a>
+            </div>
+        </div>
+    </div>
+    <!-- Script para manejar el envío del formulario -->
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Evita que el formulario se envíe
+
+            // Obtener los valores del formulario
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const username = document.getElementById('email').value;
+            try {
+                // Enviar los datos al servidor usando Fetch API
+                const response = await fetch('/auth/register',{
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({username, email, password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Registro exitoso. Redirigiendo...');
+                    // Redirigir al usuario a la página de inicio de sesión
+                } else {
+                    alert(result.message || 'Error al registrar el usuario.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ocurrió un error al intentar registrar el usuario.');
+            }
+        });
+    </script>
+</body>
+</html>

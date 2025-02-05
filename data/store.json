@@ -1,0 +1,15 @@
+{
+  "123": "{\"edad\":30,\"ciudad\":\"Madrid\"}",
+  "algo": "undefined",
+  "undefined": "undefined",
+  "null": "null",
+  "true": "true",
+  "[object Object]": "{}",
+  "": "[]",
+  "NaN": {
+    "name": "name"
+  },
+  "false": {
+    "name": "name"
+  }
+}

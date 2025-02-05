@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.5.1/dist/full.css" rel="stylesheet" type="text/css" />
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar -->
+    <nav class="navbar bg-base-100 shadow-lg">
+        <div class="flex-1">
+            <a href="#" class="btn btn-ghost normal-case text-xl">Mi Dashboard</a>
+        </div>
+        <div class="flex-none gap-2">
+            <a href="login.html" class="btn btn-primary">Iniciar Sesión</a>
+            <a href="register.html" class="btn btn-secondary">Registrarse</a>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mx-auto p-4">
+
+        <!-- Formulario de Asistencia -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-4">
+            <h2 class="text-xl font-bold mb-4">Registrar Asistencia</h2>
+            <form id="asistenciaForm" class="space-y-4">
+                <div>
+                    <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo:</label>
+                    <select id="tipo" name="tipo" class="select select-bordered w-full">
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success w-full">Registrar</button>
+            </form>
+        </section>
+
+        <!-- Formulario de Permiso -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-4">
+            <h2 class="text-xl font-bold mb-4">Solicitar Permiso</h2>
+            <form id="permisoForm" class="space-y-4">
+                <div>
+                    <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha:</label>
+                    <input type="date" id="fecha" name="fecha" required class="input input-bordered w-full">
+                </div>
+                <div>
+                    <label for="motivo" class="block text-sm font-medium text-gray-700">Motivo:</label>
+                    <textarea id="motivo" name="motivo" required class="textarea textarea-bordered w-full"></textarea>
+                </div>
+                <button type="submit" class="btn btn-info w-full">Solicitar</button>
+            </form>
+        </section>
+
+        <!-- Información de Salario -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-4">
+            <h2 class="text-xl font-bold mb-4">Mi Salario</h2>
+            <p id="salario" class="text-lg text-gray-700">Salario: $0.00</p>
+        </section>
+
+        <!-- Historial de Ausencias -->
+        <section class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Historial de Ausencias</h2>
+            <ul id="ausenciasList" class="list-disc pl-5 space-y-2 text-gray-700">
+                <li>No hay ausencias registradas.</li>
+            </ul>
+        </section>
+
+    </div>
+
+</body>
+</html>
