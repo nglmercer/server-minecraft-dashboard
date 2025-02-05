@@ -9,6 +9,7 @@ import authRouter from './src/authRouter.js';
 import apirouter from './src/routers/hardware.js';
 import corerouter from './src/routers/cores.js';
 import javarouter from './src/routers/java.js';
+import serversrouter from './src/routers/servers.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 LanguageManager.loadAvailableLanguages();
@@ -71,6 +72,7 @@ app.use('/auth', authRouter); // Los endpoints serán: /auth/register, /auth/log
 app.use('/api', apirouter);
 app.use('/api/cores', corerouter);
 app.use('/api/java', javarouter);
+app.use('/api/servers', serversrouter);
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

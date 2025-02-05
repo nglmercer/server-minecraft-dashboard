@@ -4,7 +4,7 @@ import * as JAVA_MANAGER from "./javaManager.js";
 import * as DOWNLOADS_MANAGER from "../downloadsManager.js";
 import * as SERVERS_MANAGER from "./serversManager.js";
 import {logger, LanguageManager} from "../utils.js";
-
+import {configManager} from "../configuration.js";
 import fs from "fs";
 import path from "path";
 import colors from "colors";
@@ -39,7 +39,7 @@ const PREDEFINED = {
         FAILED: "failed"
     },
 }
-const configManager = {
+const configManagertest = {
     mainConfig: {
         language: "en"
     },

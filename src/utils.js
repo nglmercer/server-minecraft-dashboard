@@ -353,5 +353,22 @@ function detectUserLocale() {
   const defaultLocale = "en";
   return storage.get("lang") || defaultLocale;
 }
-export { StorageManager, LanguageManager, storage, getDataByURL, logger, isObjectsValid, generateSecureID, detectUserLocale,testForRegexArray };
+const moveUploadedFile = (server, sourceFile, filePath, cb) => { 
+  if (isObjectsValid(server, sourceFile.name)) {
+      let uploadPath;
+      uploadPath = "./servers/" + server + filePath;
+      fs.mkdirSync(path.dirname(uploadPath), {recursive: true});
+      sourceFile.mv(uploadPath, function (err) {
+          if (err) {
+              return cb(err);
+          }
+
+          cb(true);
+      });
+  } else {
+      cb(400);
+  }
+}
+
+export { StorageManager, LanguageManager, storage, getDataByURL, logger, isObjectsValid, generateSecureID, detectUserLocale,testForRegexArray, moveUploadedFile};
 export default StorageManager;
