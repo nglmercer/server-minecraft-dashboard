@@ -259,12 +259,12 @@ class KubekFileManager extends KubekBase {
 class KubekHardware extends KubekBase {
     // Получить суммарную информацию о hardware
     static getSummary(cb){
-        this.get("/kubek/hardware/summary", cb);
+        this.get("/hardware/summary", cb);
     }
 
     // Получить информацию об использовании ЦПУ, памяти и тд
     static getUsage(cb){
-        this.get("/kubek/hardware/usage", cb);
+        this.get("/hardware/usage", cb);
     }
 }
 class KubekJavaManager extends KubekBase {

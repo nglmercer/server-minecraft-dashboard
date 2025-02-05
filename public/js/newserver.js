@@ -61,7 +61,7 @@ function initializenewServer() {
     // Set default port
 
     // Get and configure memory settings
-    KubekRequests.get("/kubek/hardware/usage", usage => {
+    KubekRequests.get("/hardware/usage", usage => {
         if (!usage) return;
         const totalMemory = Math.ceil(Math.round(usage.ram.total / 1024 / 1024) / 512) * 512;
         const totalDigit = (totalMemory / 1024).toFixed(1) / 2;

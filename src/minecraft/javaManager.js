@@ -1,4 +1,4 @@
-import {getDataByURL} from '../utils/utils.js';
+import {getDataByURL} from '../utils.js';
 import path from "path";    
 import fs from "fs";            
 import { execSync } from 'child_process';

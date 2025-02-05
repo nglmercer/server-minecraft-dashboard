@@ -175,8 +175,8 @@ body {
                 selectedServer = servers[0];
             }
         });
-        KubekRequests.get("/kubek/settings", (settings) => {
-            console.log("settings /kubek/settings",settings);
+        KubekRequests.get("/settings", (settings) => {
+            console.log("settings /settings",settings);
             if (settings.eulaAccepted === false) {
                 document.querySelector("#Eula_dialog_container").show();
             }
@@ -188,7 +188,7 @@ body {
                 class: "save-btn",
                 callback: () => {
                     console.log("accept");
-                    KubekRequests.get("/kubek/eula/accept", (response) => {
+                    KubekRequests.get("/eula/accept", (response) => {
                         window.location.reload();
                     });
                 }

@@ -6,7 +6,7 @@ import colors from "colors";
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const packageJSON = require("../../package.json");
+const packageJSON = require("../package.json");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

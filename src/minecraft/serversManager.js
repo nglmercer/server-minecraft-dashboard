@@ -1,7 +1,7 @@
 import { configManager } from "../configuration.js";
 import fs from "fs";
 import TASK_MANAGER from "../taskManager.js";
-import {isObjectsValid} from "../utils/utils.js";
+import {isObjectsValid} from "../utils.js";
 const PREDEFINED = {
     SERVER_CREATION_STEPS: {
         SEARCHING_CORE: "searchingCore",

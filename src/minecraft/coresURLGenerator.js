@@ -1,4 +1,4 @@
-import {logger,getDataByURL} from "../utils/utils.js";
+import {logger,getDataByURL} from "../utils.js";
 
 class CoreDownloader {
     /**

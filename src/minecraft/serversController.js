@@ -7,7 +7,7 @@ import treekill from "tree-kill";
 import spParser from "minecraft-server-properties";
 import { spawn } from "node:child_process";
 import mcs from "node-mcstatus";
-import { testForRegexArray, isObjectsValid, LanguageManager } from "../utils/utils.js";
+import { testForRegexArray, isObjectsValid, LanguageManager } from "../utils.js";
 const PREDEFINED = {
     SERVER_STATUS_CHANGE_MARKERS: {
         STARTING: [

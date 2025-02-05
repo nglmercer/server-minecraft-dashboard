@@ -1,6 +1,6 @@
 import fs from "fs";
 import { Base64 } from "js-base64";
-import {generateSecureID} from "../utils/utils.js";
+import {generateSecureID} from "./utils.js";
 /**
  * @namespace FileOperations
  * @description Provides secure file system operations for server management with path validation and chunked file writing capabilities.

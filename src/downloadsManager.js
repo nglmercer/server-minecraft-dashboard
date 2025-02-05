@@ -1,5 +1,5 @@
 import TASK_MANAGER from "./taskManager.js";
-import {logger, LanguageManager} from "./utils/utils.js";
+import {logger, LanguageManager} from "./utils.js";
 import path from "path";
 import axios from "axios";
 import fs from "fs";

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import {logger, LanguageManager} from "./utils/utils.js";
+import {logger, LanguageManager} from "./utils.js";
 
 import colors from "colors";
 const PREDEFINED = {
