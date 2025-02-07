@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "test11123": {
+      "status": "running",
+      "restartOnError": true,
+      "maxRestartAttempts": 5,
+      "game": "minecraft",
+      "minecraftType": "java",
+      "stopCommand": "stop"
+    },
+    "newServer": {
+      "status": "running",
+      "restartOnError": false,
+      "maxRestartAttempts": 5,
+      "game": "minecraft",
+      "minecraftType": "bedrock",
+      "stopCommand": "quit"
+    }
+  }
+}
