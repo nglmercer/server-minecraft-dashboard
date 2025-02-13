@@ -200,9 +200,18 @@ async function unpackArchive(archivePath, unpackPath, deleteAfterUnpack = false)
         return false;
     }
 }
-
+function getalltasks() {
+    try {
+        const response = taskStorage.JSONget("tasks");
+        return response;
+    } catch (error) {
+        console.error("Error getting tasks:", error);
+        return false;
+    }
+}
 export {
     TASK_MANAGER,
     addDownloadTask,
-    unpackArchive
+    unpackArchive,
+    getalltasks
 }

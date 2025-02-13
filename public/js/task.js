@@ -319,12 +319,13 @@ class SPredefined {
     static refreshTasksList() {
         fetch(SPredefined.API_ENDPOINT + "/tasks")
             .then(response => response.json())
-            .then(tasks => {
+            .then(data => {
+                let tasks = data.data;
                 if (this.shouldClearTasks(tasks)) {
                     this.removeAllTasks();
                     return;
                 }
-
+                console.log("tasks refreshTasksList", tasks);
                 if (isConnectionLost) {
                     // KubekUI.connectionRestored();
                     isConnectionLost = false;
