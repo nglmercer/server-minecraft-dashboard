@@ -42,7 +42,7 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      console.log(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      //console.log(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
       return false;
     }
     return fs.readFileSync(filePath, { encoding: 'utf8' });
@@ -236,7 +236,7 @@ function existsfolder(folderName) {
 function getFileInfo(folderName, fileName) {
   try {
     const files = fileManager.readFile(folderName, fileName);
-    console.log(`Existe la carpeta '${folderName}':`, files);
+    //console.log(`Existe la carpeta '${folderName}' y el archivo '${fileName}':`, files);
     return files;
   } catch (error) {
     console.error(error.message);

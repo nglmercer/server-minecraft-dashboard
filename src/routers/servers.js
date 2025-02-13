@@ -51,4 +51,28 @@ import {
       res.status(500).json({ success: false, error: JSON.stringify(error) });
     }
   });
+  router.get('/createserver', (req, res) => {
+    const { serverName, core, coreVersion, startParameters, javaVersion, port, fileName } = req.query;
+    const configserver = {
+      serverName: serverName,
+      core: core,
+      coreVersion: coreVersion,
+      startParameters: startParameters,
+      javaVersion: javaVersion,
+      port: port,
+      fileName: fileName
+    };
+    console.log("configserver", configserver);
+    // verificar si el serverName existe y los datos son correctos y enviamos la respuesta de la validacion
+    if (!serverName || !core || !coreVersion || !startParameters || !javaVersion || !port || !fileName) {
+      return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, core, coreVersion, startParameters, javaVersion, port, fileName." });
+    }
+    return res.status(200).json({ success: true, data: "ok" });
+/*     try {
+      const serverInfo = prepareServerCreation(serverName, core, coreVersion, startParameters, javaVersion, port, fileName);
+      res.status(200).json({ success: true, data: serverInfo });
+    } catch (error) {
+      res.status(500).json({ success: false, error: JSON.stringify(error) });
+    } */
+  });
   export default router;

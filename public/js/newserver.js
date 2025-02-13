@@ -101,7 +101,9 @@ function refreshServerCoresList(cb = () => {}) {
     globalvars.currentSelectedCore = "";
     globalvars.currentSelectedVersion = "";
     
-    KubekCoresManager.getList(cores => {
+    KubekCoresManager.getList(data => {
+        console.log("data", data);
+        const cores = data.data;
         const coresGrid = document.querySelector('#cores-grids');
         const coreEntries = Object.entries(cores).map(([key, value]) => ({
             id: key,
@@ -127,7 +129,9 @@ function refreshServerCoresList(cb = () => {}) {
 function refreshCoreVersionsList(cb = () => {}) {
     globalvars.currentSelectedVersion = "";
     
-    KubekCoresManager.getCoreVersions(globalvars.currentSelectedCore, versions => {
+    KubekCoresManager.getCoreVersions(globalvars.currentSelectedCore, data => {
+        const versions = data.data;
+        console.log("versions", versions);
         if (!versions) return cb(false);
         
         const versionSelect = document.querySelector('#customselect_versions');
@@ -148,12 +152,15 @@ function refreshJavaList(cb) {
     placeholder.style.display = "block";
     javaList.style.display = "none";
 
-    KubekJavaManager.getAllJavas(javas => {
+    KubekJavaManager.getAllJavas(data => {
+        const javas = data.data;
+        if (!javas) return;
+        console.log("javas", javas);
         const parseJavaOptions = data => Object.entries(data).flatMap(([state, items]) =>
             items.map(item => ({
                 label: item.includes("java") ? item : `java-${item}`,
                 value: item,
-                state: state === "kubek" ? "(installed)" : ""
+                state: state === "installed" ? "(installed)" : ""
             }))
         );
 
@@ -192,7 +199,7 @@ function prepareServerCreation() {
         startScript: generateNewServerStart(),
         formData: document.querySelector('#core_upload').getSelectfile()
     };
-
+    console.log("serverData prepareServerCreation", serverData);
     const validation = validateNewServerInputs();
     if (validation === true) {
         startServerCreation(serverData);
@@ -204,13 +211,27 @@ function prepareServerCreation() {
 
 // Start server creation process
 function startServerCreation({ serverName, core, version, startScript, java, port }, fileData) {
-    const fileName = fileData?.name || core;
-    const endpoint = `/servers/new?server=${serverName}&core=${fileName}&coreVersion=${version}&startParameters=${startScript}&javaVersion=${java}&port=${port}`;
-    
-    KubekRequests.get(endpoint, () => {
-        document.querySelector(".new-server-container #after-creation-text").textContent = 
-            "{{newServerWizard.creationCompleted}}";
+    const serverData = new URLSearchParams({
+        serverName: serverName,
+        core: core,
+        coreVersion: version,
+        startParameters: startScript,
+        javaVersion: java,
+        port: port,
+        fileName: fileData?.name || core
     });
+
+    fetch(`/api/createserver?${serverData.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(".new-server-container #after-creation-text").textContent = 
+                    "{{newServerWizard.creationCompleted}}";
+            } else {
+                console.error("Error:", data.error);
+            }
+        })
+        .catch(error => console.error("Fetch error:", error));
 }
 
 // Send server data to backend
