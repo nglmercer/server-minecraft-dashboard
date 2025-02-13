@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambiar Contraseña - Sistema de Asistencia</title>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl font-bold text-center mb-4">Cambiar Contraseña</h2>
+            <form id="changePasswordForm">
+                <!-- Campo de nombre de usuario -->
+                <div class="form-control">
+                    <label class="label" for="username">
+                        <span class="label-text">Nombre de Usuario</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Ingresa tu nombre de usuario"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Campo de contraseña actual -->
+                <div class="form-control mt-4">
+                    <label class="label" for="currentPassword">
+                        <span class="label-text">Contraseña Actual</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        name="currentPassword"
+                        placeholder="Ingresa tu contraseña actual"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Campo de nueva contraseña -->
+                <div class="form-control mt-4">
+                    <label class="label" for="newPassword">
+                        <span class="label-text">Nueva Contraseña</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        placeholder="Ingresa tu nueva contraseña"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Botón de envío -->
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+                </div>
+            </form>
+            <!-- Enlace para volver al inicio de sesión -->
+            <div class="text-center mt-4">
+                <a href="/login.html" class="text-sm text-primary hover:underline">Volver al inicio de sesión</a>
+            </div>
+        </div>
+    </div>
+    <!-- Script para manejar el envío del formulario -->
+    <script>
+        document.getElementById('changePasswordForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Evita que el formulario se envíe
+
+            // Obtener los valores del formulario
+            const username = document.getElementById('username').value;
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            try {
+                // Enviar los datos al servidor usando Fetch API
+                const response = await fetch('/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, currentPassword, newPassword }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Contraseña cambiada exitosamente. Redirigiendo...');
+                    // Redirigir al usuario a la página de inicio de sesión
+                    window.location.href = '/login.html';
+                } else {
+                    alert(result.error || 'Error al cambiar la contraseña.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ocurrió un error al intentar cambiar la contraseña.');
+            }
+        });
+    </script>
+</body>
+</html>

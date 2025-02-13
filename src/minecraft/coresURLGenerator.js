@@ -1,151 +1,165 @@
-import {logger,getDataByURL} from "../utils.js";
+import { logger, getDataByURL } from '../utils/utils.js';
 
 class CoreDownloader {
     /**
-     * Get Paper-based core download URL (Paper, Folia, etc.)
-     * Verified API (2024-05-22): https://api.papermc.io/service-page
-     * @param {string} core - The core type (e.g., "paper", "folia").
-     * @param {string} version - The version of the core.
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene la URL de descarga de un core basado en PaperMC.
+     * @param {string} core - Tipo de core (paper, folia, etc.).
+     * @param {string} version - Versión del core.
+     * @returns {Promise<string | false>} - URL de descarga o `false` si falla.
      */
-    static getPaperCoreURL(core, version, cb) {
-        const firstStepURL = `https://api.papermc.io/v2/projects/${core}/versions/${version}`;
-        logger.log("PaperCore First Step URL", firstStepURL);
-        
-        getDataByURL(firstStepURL, (data) => {
-            if (!data) {
-                logger.warning("Failed to fetch Paper build data");
-                cb(false);
-                return;
+    static async getPaperCoreURL(core, version) {
+        try {
+            const baseUrl = `https://api.papermc.io/v2/projects/${core}/versions/${version}`;
+            logger.log("[INFO] PaperCore First Step URL", baseUrl);
+
+            const data = await getDataByURL(baseUrl);
+            if (!data || !data.builds?.length) {
+                logger.warning("[WARNING] No builds found for PaperMC");
+                return false;
             }
-            
-            const lastBuildNumber = Math.max(...data.builds);
-            getDataByURL(`${firstStepURL}/builds/${lastBuildNumber}`, (data2) => {
-                if (!data2) {
-                    logger.warning("Failed to fetch Paper build details");
-                    cb(false);
-                    return;
-                }
-                
-                const downloadFileName = data2.downloads.application.name;
-                const finishURL = `${firstStepURL}/builds/${lastBuildNumber}/downloads/${downloadFileName}`;
-                cb(finishURL);
-            });
-        });
+
+            // Obtener la última build disponible
+            const latestBuild = Math.max(...data.builds);
+            const buildUrl = `${baseUrl}/builds/${latestBuild}`;
+            const buildData = await getDataByURL(buildUrl);
+
+            if (!buildData || !buildData.downloads?.application?.name) {
+                logger.warning("[WARNING] No application download found for PaperMC");
+                return false;
+            }
+
+            // Construir la URL final de descarga
+            const fileName = buildData.downloads.application.name;
+            const downloadURL = `${buildUrl}/downloads/${fileName}`;
+
+            logger.log("[INFO] PaperMC Download URL:", downloadURL);
+            return downloadURL;
+        } catch (error) {
+            logger.error("[ERROR] Failed to fetch Paper core URL:", error);
+            return false;
+        }
     }
 
     /**
-     * Get Purpur core download URL
-     * Verified API (2024-05-22): https://purpurmc.org/docs/api
-     * @param {string} version - The version of the core.
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene la URL de descarga de Purpur.
+     * @param {string} version - Versión del core.
+     * @returns {Promise<string>} - URL de descarga.
      */
-    static getPurpurCoreURL(version, cb) {
-        cb(`https://api.purpurmc.org/v2/purpur/${version}/latest/download`);
+    static async getPurpurCoreURL(version) {
+        return `https://api.purpurmc.org/v2/purpur/${version}/latest/download`;
     }
 
     /**
-     * Get Magma core download URL
-     * Verified API (2024-05-22): https://magmafoundation.org/api-docs
-     * @param {string} version - The version of the core.
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene la URL de descarga de Magma.
+     * @param {string} version - Versión del core.
+     * @returns {Promise<string>} - URL de descarga.
      */
-    static getMagmaCoreURL(version, cb) {
-        cb(`https://api.magmafoundation.org/api/v2/${version}/latest/download`);
+    static async getMagmaCoreURL(version) {
+        return `https://api.magmafoundation.org/api/v2/${version}/latest/download`;
     }
 
     /**
-     * Get core URL from external API endpoint
-     * Note: External API must return { [version]: url } format
-     * @param {string} url - The external API URL.
-     * @param {string} version - The version of the core.
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene la URL de un core desde una API externa.
+     * @param {string} url - URL de la API externa.
+     * @param {string} version - Versión del core.
+     * @returns {Promise<string | false>} - URL de descarga o `false` si falla.
      */
-    static getCoreByExternalURL(url, version, cb) {
-        getDataByURL(url, (data) => {
+    static async getCoreByExternalURL(url, version) {
+        try {
+            const data = await getDataByURL(url);
             if (!data || !data[version]) {
                 logger.warning("External API response invalid or missing version");
-                cb(false);
-                return;
+                return false;
             }
-            cb(data[version]);
-        });
+            return data[version];
+        } catch (error) {
+            logger.error("Error fetching external core URL:", error);
+            return false;
+        }
     }
 
     /**
-     * Get Paper-based core versions (Paper, Folia, etc.)
-     * Returns reversed version list for chronological order
-     * @param {Function} cb - Callback function to handle the result.
-     * @param {string} core - The core type (e.g., "paper", "folia").
+     * Obtiene todas las versiones de cores basados en Paper.
+     * @param {string} core - Tipo de core (paper, folia, etc.).
+     * @returns {Promise<string[] | false>} - Lista de versiones o `false` si falla.
      */
-    static getAllPaperLikeCores(cb, core = "paper") {
-        const url = `https://api.papermc.io/v2/projects/${core}`;
-        getDataByURL(url, (data) => {
-            if (!data) {
+    static async getAllPaperLikeCores(core = "paper") {
+        try {
+            const url = `https://api.papermc.io/v2/projects/${core}`;
+            const data = await getDataByURL(url);
+
+            if (!data || !data.versions) {
                 logger.warning("Failed to fetch Paper-based core list");
-                cb(false);
-                return;
+                return false;
             }
 
             logger.log("PaperCore Version Data", data, core, url);
-            const versions = data.versions.reverse();
-            cb(versions);
-        });
+            return data.versions.reverse();
+        } catch (error) {
+            logger.error("Error fetching Paper core versions:", error);
+            return false;
+        }
     }
 
     /**
-     * Get Magma core versions
-     * Verified API returns array of versions
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene todas las versiones de Magma.
+     * @returns {Promise<string[] | false>} - Lista de versiones o `false` si falla.
      */
-    static getAllMagmaCores(cb) {
-        getDataByURL("https://api.magmafoundation.org/api/v2/allVersions", (data) => {
+    static async getAllMagmaCores() {
+        try {
+            const data = await getDataByURL("https://api.magmafoundation.org/api/v2/allVersions");
             if (!data) {
                 logger.warning("Failed to fetch Magma versions");
-                cb(false);
-                return;
+                return false;
             }
-            cb(data);
-        });
+            return data;
+        } catch (error) {
+            logger.error("Error fetching Magma versions:", error);
+            return false;
+        }
     }
 
     /**
-     * Get Purpur core versions
-     * Returns reversed version list for chronological order
-     * @param {Function} cb - Callback function to handle the result.
+     * Obtiene todas las versiones de Purpur.
+     * @returns {Promise<string[] | false>} - Lista de versiones o `false` si falla.
      */
-    static getAllPurpurCores(cb) {
-        getDataByURL("https://api.purpurmc.org/v2/purpur/", (data) => {
-            if (!data) {
+    static async getAllPurpurCores() {
+        try {
+            const data = await getDataByURL("https://api.purpurmc.org/v2/purpur/");
+            if (!data || !data.versions) {
                 logger.warning("Failed to fetch Purpur versions");
-                cb(false);
-                return;
+                return false;
             }
-            const versions = data.versions.reverse();
-            cb(versions);
-        });
+            return data.versions.reverse();
+        } catch (error) {
+            logger.error("Error fetching Purpur versions:", error);
+            return false;
+        }
     }
 
     /**
-     * Get core versions from external source
-     * Expects API to return { version: url } object
-     * @param {string} url - The external API URL.
-     * @param {Function} cb - Callback function to handle the result.
-     * @param {string} name - The name of the core.
+     * Obtiene todas las versiones desde una API externa.
+     * @param {string} url - URL de la API externa.
+     * @param {string} name - Nombre del core.
+     * @returns {Promise<string[] | false>} - Lista de versiones o `false` si falla.
      */
-    static getAllCoresByExternalURL(url, cb, name) {
-        logger.log("Fetching external cores", url, name);
-        getDataByURL(url, (data) => {
+    static async getAllCoresByExternalURL(url, name) {
+        try {
+            logger.log("Fetching external cores", url, name);
+            const data = await getDataByURL(url);
+
             if (!data || typeof data !== 'object') {
                 logger.warning("Invalid external core API response", url, data);
-                cb(false);
-                return;
+                return false;
             }
-            
+
             const resultList = Object.keys(data);
             logger.log("External core versions retrieved", url, resultList, name);
-            cb(resultList);
-        });
+            return resultList;
+        } catch (error) {
+            logger.error("Error fetching external core versions:", error);
+            return false;
+        }
     }
 }
 

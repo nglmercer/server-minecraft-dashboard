@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar Cuenta - Sistema de Asistencia</title>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl font-bold text-center mb-4">Eliminar Cuenta</h2>
+            <form id="deleteAccountForm">
+                <!-- Campo de nombre de usuario -->
+                <div class="form-control">
+                    <label class="label" for="username">
+                        <span class="label-text">Nombre de Usuario</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Ingresa tu nombre de usuario"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Campo de contraseña -->
+                <div class="form-control mt-4">
+                    <label class="label" for="password">
+                        <span class="label-text">Contraseña</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Ingresa tu contraseña"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+                <!-- Botón de envío -->
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-error">Eliminar Cuenta</button>
+                </div>
+            </form>
+            <!-- Enlace para volver al inicio de sesión -->
+            <div class="text-center mt-4">
+                <a href="/login.html" class="text-sm text-primary hover:underline">Volver al inicio de sesión</a>
+            </div>
+        </div>
+    </div>
+    <!-- Script para manejar el envío del formulario -->
+    <script>
+        document.getElementById('deleteAccountForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Evita que el formulario se envíe
+
+            // Obtener los valores del formulario
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Enviar los datos al servidor usando Fetch API
+                const response = await fetch('/auth/delete-account', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Cuenta eliminada exitosamente. Redirigiendo...');
+                    // Redirigir al usuario a la página de inicio de sesión
+                    window.location.href = '/login.html';
+                } else {
+                    alert(result.error || 'Error al eliminar la cuenta.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ocurrió un error al intentar eliminar la cuenta.');
+            }
+        });
+    </script>
+</body>
+</html>

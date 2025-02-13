@@ -1,0 +1,19 @@
+{
+  "archived_tasks": {
+    "e5f45b17-8561-4235-ab86-d334493bff12": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "total": 51375507,
+        "current": 51132821
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/150/downloads/paper-1.21.4-150.jar",
+      "path": "servers\\serverone\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1739418650584,
+      "updatedAt": 1739418653070,
+      "archivedAt": 1739418653071
+    }
+  }
+}
