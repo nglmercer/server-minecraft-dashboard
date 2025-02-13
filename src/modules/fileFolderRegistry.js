@@ -232,6 +232,16 @@ function existsfolder(folderName) {
     console.error(error.message);
   }
 }
+function getFileInfo(folderName, fileName) {
+  try {
+    const files = fileManager.readFile(folderName, fileName);
+    console.log(`Existe la carpeta '${folderName}':`, files);
+    return files;
+  } catch (error) {
+    console.error(error.message);
+  }
+}
+console.log(getFileInfo("servers", "eula.txt"))
 export {
   createserverfolder,
   createserverfile,
@@ -239,5 +249,6 @@ export {
   getfolderinfo,
   updatefolderinfo,
   getallfolderinfo,
-  existsfolder
+  existsfolder,
+  getFileInfo
 };
