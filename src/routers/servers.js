@@ -26,6 +26,18 @@ import {
       res.status(500).json({ success: false, error: JSON.stringify(error) });
     }
   });
+  router.get('/servers/:serverName/log', (req, res) => {
+    const { serverName } = req.params;
+    if (!serverName ) {
+      return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, fileName." });
+    }
+    try {
+      const fileInfo = getFileInfo(serverName, "logs/latest.log");
+      res.status(200).json({ success: true, data: fileInfo });
+    } catch (error) {
+      res.status(500).json({ success: false, error: JSON.stringify(error) });
+    }
+  });
   // get file by sername and filename
   router.get('/servers/:serverName/:fileName', (req, res) => {
     const { serverName, fileName } = req.params;

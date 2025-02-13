@@ -42,7 +42,8 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      console.log(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      return false;
     }
     return fs.readFileSync(filePath, { encoding: 'utf8' });
   }
