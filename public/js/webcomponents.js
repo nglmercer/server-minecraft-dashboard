@@ -1454,12 +1454,25 @@ class CustomDialog extends HTMLElement {
                 const url = `/api/servers/${serverId}/server.properties`;
                 const response = await fetch(url);
                 const result = response.ok ? await response.json() : {};
-
-                
+                let properties = result.data
+                if (typeof result.data === "string") {
+                    // sacar los datos a un objeto ya que es un string con saltos de linea
+                    // añadir un filtro si comienza con # o no tiene un split
+                    
+                    properties = result.data.split('\n').reduce((acc, line) => {
+                      // Filtrar líneas que comienzan con '#' o no contienen '='
+                      if (!line.startsWith('#') && line.includes('=')) {
+                          const [key, value] = line.split('=');
+                          // Eliminar espacios en blanco alrededor de la clave y el valor
+                          acc[key.trim()] = value.trim();
+                      }
+                      return acc;
+                  }, {});
+                }
                 const table = this.shadowRoot.querySelector('#sp-table');
                 table.innerHTML = ''; // Clear existing content
                 
-                for (const [key, value] of Object.entries(result)) {
+                for (const [key, value] of Object.entries(properties)) {
                     // Store original type
                     const originalType = this.getValueType(value);
                     this.propertyTypes.set(key, originalType);
