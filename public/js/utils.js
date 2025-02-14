@@ -839,9 +839,7 @@ if (!window.location.href.includes("login")) {
  KubekRefresher.addRefreshServerLogInterval();
 KubekRefresher.addRefreshTasksInterval(); 
 // Constants
-const UPPER_DIR_ITEM = "<tr onclick='KubekFileManagerUI.upperDir()'><td></td><td>..</td><td></td><td></td></tr>";
-const DIR_ITEM_PLACEHOLDER = "<tr data-filename='$0' data-path='$1' data-type='$5'><td><div class='icon-bg'><span class='material-symbols-rounded'>$2</span></div></td><td>$0</td><td>$3</td><td>$4</td></tr>";
-const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;
+ const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;
 
 let currentPath = "/";
 let currentEditorLang = "plaintext";
@@ -879,8 +877,9 @@ const editableExtensions = [
 class KubekFileManagerUI {
     static async refreshDir(saveScroll = true) {
         try {
-            let data = await awaitfilemanager.readDirectory(currentPath);
+            let response = await awaitfilemanager.readDirectory(currentPath);
                                        // Sort data to put directories on top
+            let data = response.data?.files;
                 if (data.length > 0) {
                 data = sortToDirsAndFiles(data);
             }
@@ -950,7 +949,7 @@ class KubekFileManagerUI {
                             "{{commons.delete}}", 
                             "delete",
                             () => {
-                                KubekFileManager.delete(path, (result) => {
+                                KubekFileManagerUI.delete(path, (result) => {
                                     if (result === false) {
                                         KubekAlerts.addAlert(
                                             "{{commons.actionFailed}}", 
@@ -979,7 +978,7 @@ class KubekFileManagerUI {
                             "bookmark_manager",
                             (txt) => {
                                 console.log("rename", path, txt);
-                                KubekFileManager.renameFile(path, txt, () => {
+                                KubekFileManagerUI.renameFile(path, txt, () => {
                                     KubekFileManagerUI.refreshDir();
                                 });
                             },
@@ -1025,7 +1024,7 @@ class KubekFileManagerUI {
                         "{{commons.delete}}", 
                         "delete",
                         () => {
-                            KubekFileManager.delete(path, (result) => {
+                            KubekFileManagerUI.delete(path, (result) => {
                                 if (result === false) {
                                     KubekAlerts.addAlert(
                                         "{{commons.actionFailed}}", 
@@ -1051,7 +1050,7 @@ class KubekFileManagerUI {
                         "{{commons.rename}}",
                         "bookmark_manager",
                         (txt) => {
-                            KubekFileManager.renameFile(dataTarget.path, txt, () => {
+                            KubekFileManagerUI.renameFile(dataTarget.path, txt, () => {
                                 KubekFileManagerUI.refreshDir();
                             });
                         },
@@ -1071,7 +1070,7 @@ class KubekFileManagerUI {
             callback: (dataTarget) => {
                 const basePath = currentPath.length < 1 ? "" : currentPath;
                 const parsedPath = (basePath.endsWith("/") ? basePath : basePath + "/") + dataTarget.filename;
-                KubekFileManager.downloadFile(parsedPath, () => {});
+                KubekFileManagerUI.downloadFile(parsedPath, () => {});
             }
         };
 
@@ -1154,7 +1153,7 @@ class KubekFileManagerUI {
             "{{fileManager.newDirectory}}",
             "create_new_folder",
             (txt) => {
-                KubekFileManager.newDirectory(currentPath, txt, () => {
+                KubekFileManagerUI.newDirectory(currentPath, txt, () => {
                     KubekFileManagerUI.refreshDir();
                 });
             },
@@ -1209,7 +1208,7 @@ class KubekFileManagerUI {
         
         currentEditorLang = languageMap[fileExt] || "plaintext";
 
-        KubekFileManager.readFile(path, (data) => {
+        KubekFileManagerUI.readFile(path, (data) => {
             const codeEdit = document.getElementById("code-edit");
             codeEdit.textContent = data;
             this.formatCode(false);
@@ -1248,13 +1247,13 @@ class KubekFileManagerUI {
         currentChunkWriting++;
         if (currentDataParts[currentChunkWriting]) {
             console.log("Writing chunk", currentChunkWriting, "to ID", currentChunkID);
-            KubekFileManager.addChunkWrite(
+            KubekFileManagerUI.addChunkWrite(
                 currentChunkID,
                 Base64.encodeURI(currentDataParts[currentChunkWriting]),
                 () => { this.writeNextChunk(); }
             );
         } else {
-            KubekFileManager.endChunkWrite(currentChunkID, () => {
+            KubekFileManagerUI.endChunkWrite(currentChunkID, () => {
                 console.log("Write of", currentChunkID, "ended");
                 currentChunkID = null;
                 currentDataParts = null;
@@ -1290,13 +1289,18 @@ class KubekFileManagerUI {
         document.getElementById("code-edit").textContent = "";
         document.querySelector(".blurScreen").style.display = "none";
     }
+    static async readFile(path, cb) {
+        const response = await awaitfilemanager.readFile(path);
+        console.log("readFile", path, response);
+        cb(response.data);
+    }
 }
 
 function sortToDirsAndFiles(data) {
     let dirs = [];
     let files = [];
     data.forEach(function (item) {
-        if (item.type === "directory") {
+        if (item.type === "directory" || item.isDirectory) {
             dirs.push(item);
         } else {
             files.push(item);

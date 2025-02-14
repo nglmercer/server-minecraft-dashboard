@@ -4,13 +4,15 @@ import {
   createserverfile,
   createsubfolder,
   getfolderinfo,
-  updatefolderinfo
+  updatefolderinfo,
+  readfilebyname,
+  readfilebypath
 }from '../modules/servers.js';
 
 const router = express.Router();
 
 // Ruta para crear una carpeta
-router.post('/create-folder', (req, res) => {
+router.post('/filemanager/create-folder', (req, res) => {
   const { directoryname } = req.body;
 
   if (!directoryname) {
@@ -26,7 +28,7 @@ router.post('/create-folder', (req, res) => {
 });
 
 // Ruta para crear un archivo
-router.post('/create-file', (req, res) => {
+router.post('/filemanager/create-file', (req, res) => {
   const { directoryname, filename, content } = req.body;
 
   if (!directoryname || !filename || !content) {
@@ -42,7 +44,7 @@ router.post('/create-file', (req, res) => {
 });
 
 // Ruta para crear una subcarpeta
-router.post('/create-subfolder', (req, res) => {
+router.post('/filemanager/create-subfolder', (req, res) => {
   const { directoryname, subfoldername } = req.body;
 
   if (!directoryname || !subfoldername) {
@@ -58,7 +60,7 @@ router.post('/create-subfolder', (req, res) => {
 });
 
 // Ruta para obtener información de una carpeta
-router.get('/folder-info/:folderName', (req, res) => {
+router.get('/filemanager/folder-info/:folderName', (req, res) => {
   const { folderName } = req.params;
 
   if (!folderName) {
@@ -74,7 +76,7 @@ router.get('/folder-info/:folderName', (req, res) => {
 });
 
 // Ruta para actualizar la información de una carpeta
-router.post('/update-folder-info', (req, res) => {
+router.post('/filemanager/update-folder-info', (req, res) => {
   const { folderName } = req.body;
 
   if (!folderName) {
@@ -88,5 +90,29 @@ router.post('/update-folder-info', (req, res) => {
     res.status(500).json({ success: false, error: JSON.stringify(error) });
   }
 });
+router.get('/filemanager/read-file/:folderName/:fileName', (req, res) => {
+  const { folderName, fileName } = req.params;
 
+  if (!folderName || !fileName) {
+    return res.status(400).json({ success: false, error: "Todos los campos son requeridos: folderName, fileName." });
+  }
+
+  try {
+    const result = readfilebyname(folderName, fileName);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: JSON.stringify(error) });
+  }
+});
+router.get('/filemanager/read-file-by-path/*', (req, res) => {
+  // 'req.params[0]' contendrá toda la ruta que venga después de '/filemanager/read-file-by-path/'
+  const filePath = req.params[0];
+  try {
+    const result = readfilebypath(filePath);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: JSON.stringify(error) });
+  }
+});
+     
 export default router;

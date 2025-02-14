@@ -117,7 +117,7 @@ import {
       return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, action." });
     }
     manager.addServer(serverName, "./servers/" + serverName, { stopCommand: "stop" });
-    console.log("action", action);
+    //console.log("action", action);
     switch (action) {
       case 'start':
         manager.startServer(serverName);

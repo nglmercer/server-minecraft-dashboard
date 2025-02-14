@@ -2909,7 +2909,9 @@ class FileExplorer extends HTMLElement {
     // Normalize paths in the data before setting
     this._data = value.map(item => ({
       ...item,
-      path: this.normalizePath(item.path)
+      path: this.normalizePath(item.path),
+      type: item.type || item.isDirectory ? "directory" : "file",
+      lastModified: item.lastModified || item.modified,
     }));
     this.render();
   }

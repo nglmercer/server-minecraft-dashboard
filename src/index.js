@@ -1,6 +1,6 @@
 import express from 'express';
 import authRouter from './authRouter.js';
-import filesRouter from './routers/filemanager.js';
+import filesRouter from './routers/fileManager.js';
 import serverRouter from './routers/servers.js';
 import hardwareRouter from './routers/hardware.js';
 import taskRouter from './routers/task.js';
@@ -20,7 +20,7 @@ app.use(express.static(publicPath));
 
 // Rutas de autenticación
 app.use('/auth', authRouter);
-app.use('/files', filesRouter);
+app.use('/api', filesRouter);
 app.use('/api', serverRouter);
 app.use('/api', hardwareRouter);
 app.use('/api', taskRouter);

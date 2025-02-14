@@ -47,7 +47,24 @@ class FileManager {
 
     return fs.readFileSync(filePath, { encoding: 'utf8' });
   }
+  readFilebyPath(filePath) {
+    const fileInfo = path.join(this.basePath, filePath);
+    console.log("readFilebyPath", fileInfo);
 
+    // Check if the path exists
+    if (!fs.existsSync(fileInfo)) {
+        return false;
+    }
+
+    // Check if the path is a directory
+    const stats = fs.statSync(fileInfo);
+    if (stats.isDirectory()) {
+        return false;
+    }
+
+    // Read the file
+    return fs.readFileSync(fileInfo, { encoding: 'utf8' });
+  }
   // Escribir/Actualizar el contenido de un archivo en una carpeta específica
   writeFile(folderName, fileName, content) {
     const folderPath = path.join(this.basePath, folderName);
@@ -229,6 +246,36 @@ function getfolderinfo(folderName) {
     console.error(error.message);
   }
 }
+function readfilebyname(folderName, fileName) {
+  try {
+    let file = fileManager.readFilebyPath(filePath);
+    console.log("readfilebyname", file);
+    if (file === false) {
+      file = folderManager.getFolderDetails(folderName);
+      console.log("readfilebyname", file);
+
+    }
+    console.log("readfilebyname", file);
+    return file;
+  } catch (error) {
+    console.error(error.message);
+  }
+}
+function readfilebypath(filePath) {
+  try {
+    let file = fileManager.readFilebyPath(filePath);
+    console.log("readfilebyname", file);
+    if (file === false) {
+      file = folderManager.getFolderDetails(filePath);
+      console.log("readfilebyname", file);
+
+    }
+    console.log("readfilebyname", file);
+    return file;
+  } catch (error) {
+    console.error(error.message);
+  }
+}
 /* createserverfolder("nueva_carpeta1");
 createsubfolder("nueva_carpeta1", "subcarpeta");
 getfolderinfo("nueva_carpeta1/subcarpeta");
@@ -238,5 +285,7 @@ export {
   createserverfile,
   createsubfolder,
   getfolderinfo,
-  updatefolderinfo
+  updatefolderinfo,
+  readfilebyname,
+  readfilebypath
 }

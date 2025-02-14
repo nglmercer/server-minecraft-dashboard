@@ -200,61 +200,7 @@ class KubekCoresManager extends KubekBase {
         this.get("/cores/" + core + "/" + version, cb);
     }
 }
-class KubekFileManager extends KubekBase {
-    // Получить содержимое папки
-    static readDirectory(path, cb) {
-        this.get("/fileManager/get?server=" + KubekRequests.selectedServer + "&path=" + path, cb);
-        // getvalue return
-    }
 
-    // Переименовать файл
-    static renameFile(path, newName, cb) {
-        console.log("rename", path, newName, cb);
-        this.get("/fileManager/rename?server=" + KubekRequests.selectedServer + "&path=" + path + "&newName=" + newName, cb);
-    }
-
-    // Удалить файл/директорию
-    static delete(path, cb) {
-        console.log("delete", path);
-        this.get("/fileManager/delete?server=" + KubekRequests.selectedServer + "&path=" + path, cb);
-    }
-
-    // Создать новую директорию
-    static newDirectory(path, name, cb) {
-        this.get("/fileManager/newDirectory?server=" + KubekRequests.selectedServer + "&path=" + path + "&name=" + name, cb);
-    }
-
-    // Скачать файл
-    static downloadFile(path, cb) {
-        window.open("/api/fileManager/download?server=" + KubekRequests.selectedServer + "&path=" + path, "_blank")
-    }
-
-    // Прочитать файл
-    static readFile(path, cb) {
-        this.readDirectory(path, (result) => {
-            if (result === false) {
-                cb(false);
-            }
-            cb(result.fileData);
-        });
-    }
-
-    // Создать элемент для записи
-    static startChunkWrite(path, cb){
-        this.get("/fileManager/chunkWrite/start?server=" + KubekRequests.selectedServer + "&path=" + path, cb);
-        return 
-    }
-
-    // Дополнить элемент для записи
-    static addChunkWrite(id, data, cb){
-        this.get("/fileManager/chunkWrite/add?id=" + id + "&data=" + data, cb);
-    }
-
-    // Завершить элемент для записи
-    static endChunkWrite(id, cb){
-        this.get("/fileManager/chunkWrite/end?id=" + id, cb);
-    }
-}
 
 class KubekHardware extends KubekBase {
     // Получить суммарную информацию о hardware
@@ -363,17 +309,19 @@ class KubekServers extends KubekBase {
     };
 }
 
-
+function getselectedserver() {
+    return window.localStorage.selectedServer;
+}
 
 class awaitfilemanager extends awaitBase {
     static readDirectory(path) {
-        return this.get("/fileManager/get?server=" + awaitRequests.selectedServer + "&path=" + path);
+        return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
     }
     static readFile(path) {
-        return this.get("/fileManager/get?server=" + awaitRequests.selectedServer + "&path=" + path);
+        return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
     }
     static startChunkWrite(path) {
-        return this.get("/fileManager/chunkWrite/start?server=" + awaitRequests.selectedServer + "&path=" + path);
+        return this.get("/fileManager/chunkWrite/start?server=" + getselectedserver() + "&path=" + path);
     }
     static addChunkWrite(id, data) {
         return this.get("/fileManager/chunkWrite/add?id=" + id + "&data=" + data);
@@ -382,17 +330,17 @@ class awaitfilemanager extends awaitBase {
         return this.get("/fileManager/chunkWrite/end?id=" + id);
     }
     static deleteFile(path) {
-        return this.get("/fileManager/delete?server=" + awaitRequests.selectedServer + "&path=" + path);
+        return this.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
     }
     static renameFile(path, newName) {
         console.log("rename", path, newName);
-        return this.get("/fileManager/rename?server=" + awaitRequests.selectedServer + "&path=" + path + "&newName=" + newName);
+        return this.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
     }
     static newDirectory(path, name) {
-        return this.get("/fileManager/newDirectory?server=" + awaitRequests.selectedServer + "&path=" + path + "&name=" + name);
+        return this.get("/fileManager/newDirectory?server=" + getselectedserver() + "&path=" + path + "&name=" + name);
     }
     static startChunkyFileWrite(path) {
-        return this.get("/fileManager/chunkWrite/start?server=" + awaitRequests.selectedServer + "&path=" + path);
+        return this.get("/fileManager/chunkWrite/start?server=" + getselectedserver() + "&path=" + path);
     }
     static addFileChunk(id, data) {
         return this.get("/fileManager/chunkWrite/add?id=" + id + "&data=" + data);
