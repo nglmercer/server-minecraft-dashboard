@@ -81,13 +81,13 @@ class CodeEditor {
       }
     }
   
-    updateHighlight() {
+    updateHighlight(currentContent) {
         // Save the current cursor position
         const cursorPosition = this.saveCursorPosition(this.editorElement);
         console.log(`Cursor position before update: ${cursorPosition}`);
       
         // Get the code content with line breaks
-        this.currentContent = this.editorElement.innerText;
+        this.currentContent = currentContent || this.editorElement.innerText
       
         // Highlight the code
         const result = hljs.highlightAuto(this.currentContent);
