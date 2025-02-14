@@ -99,8 +99,9 @@ class MinecraftServer {
   sendCommand(command) {
     if (this.process && this.process.stdin.writable) {
       this.process.stdin.write(command + "\n");
-      this.log += `\nComando enviado: ${command}`;
+      this.log += `Comando enviado: ${command}\n`;
     } else {
+      this.log += `\nNo se puede enviar el comando. El servidor ${this.serverName} no está activo.\n`;
       console.error(`No se puede enviar el comando. El servidor ${this.serverName} no está activo.`);
     }
   }
@@ -118,6 +119,7 @@ class MinecraftServer {
       this.sendCommand(this.stopCommand);
       this.status = 'stopping';
     } else {
+      this.log += `\nEl servidor ${this.serverName} no se encuentra en ejecución.\n`;
       console.log(`El servidor ${this.serverName} no se encuentra en ejecución.`);
     }
   }
@@ -129,6 +131,7 @@ class MinecraftServer {
         if (err) {
           console.error(`Error al matar el proceso ${this.process.pid}: ${err}`);
         } else {
+          this.log += `\nProceso ${this.process.pid} del servidor ${this.serverName} fue finalizado.\n`;
           console.log(`Proceso ${this.process.pid} del servidor ${this.serverName} fue finalizado.`);
           this.status = 'stopped';
         }

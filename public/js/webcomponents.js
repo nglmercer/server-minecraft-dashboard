@@ -285,135 +285,162 @@ class GameConsole extends HTMLElement {
 
 // Registrar el componente
 customElements.define('game-console', GameConsole);
-class inputCommand extends HTMLElement {
+class InputCommand extends HTMLElement {
   constructor() {
-      super();
-      this.attachShadow({ mode: 'open' });
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.commandHistory = []; // Array to store command history
+    this.historyIndex = -1; // Index to track position in history
   }
 
   connectedCallback() {
-      this.render();
-      this.setupEventListeners();
+    this.render();
+    this.setupEventListeners();
   }
+
   getstyles() {
-      return `
+    return `
       :host {
-      width: 100%;
-      border-radius: 8px;
-      box-sizing: border-box;
-      border: 1px solid #333;
-      font-family: 'Material Symbols Rounded';
+        width: 100%;
+        border-radius: 8px;
+        box-sizing: border-box;
+        border: 1px solid #333;
+        font-family: 'Material Symbols Rounded';
       }
-.material-symbols-outlined {
-font-variation-settings:
-'FILL' 0,
-'wght' 400,
-'GRAD' 0,
-'opsz' 24
-}
-.input {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  padding: 8px;
-  background: var(--bg-darker);
-  border-radius: 8px;
-  box-sizing: border-box;
-}
+      .material-symbols-outlined {
+        font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+      }
+      .input {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        padding: 8px;
+        background: var(--bg-darker);
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
 
-#cmd-input {
-  flex: 1;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 8px 12px;
-  color: var(--text-primary);
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
+      #cmd-input {
+        flex: 1;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
 
-#cmd-input:focus {
-  border-color: var(--primary-color);
-}
+      #cmd-input:focus {
+        border-color: var(--primary-color);
+      }
 
-#cmd-input::placeholder {
-  color: var(--text-secondary);
-}
+      #cmd-input::placeholder {
+        color: var(--text-secondary);
+      }
 
-.dark-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 8px;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+      .dark-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 8px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
 
-.dark-btn:hover {
-  background: var(--bg-dark-accent);
-  border-color: var(--primary-color);
-}
+      .dark-btn:hover {
+        background: var(--bg-dark-accent);
+        border-color: var(--primary-color);
+      }
 
-.dark-btn .material-symbols-rounded {
-  font-size: 20px;
-}
+      .dark-btn .material-symbols-rounded {
+        font-size: 20px;
+      }
 
-.icon-only {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-}`;
+      .icon-only {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+      }`;
   }
+
   render() {
-      this.shadowRoot.innerHTML = `
-          <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    this.shadowRoot.innerHTML = `
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
       <style>${this.getstyles()}</style>
       <div class="input">
-          <input type="text" id="cmd-input" placeholder="Enter command"/>
-          <button class="dark-btn icon-only">
-              <span class="material-symbols-outlined">
-              send
-              </span>
-          </button>
+        <input type="text" id="cmd-input" placeholder="Enter command"/>
+        <button class="dark-btn icon-only">
+          <span class="material-symbols-outlined">send</span>
+        </button>
       </div>
-      `;
+    `;
   }
+
   setupEventListeners() {
-      const button = this.shadowRoot.querySelector('button');
-      const input = this.shadowRoot.querySelector('#cmd-input');
+    const button = this.shadowRoot.querySelector('button');
+    const input = this.shadowRoot.querySelector('#cmd-input');
 
-      button.addEventListener('click', () => {
-          this.sendCommand();
-      });
+    button.addEventListener('click', () => {
+      this.sendCommand();
+    });
 
-      input.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-              this.sendCommand();
-          }
-      });
-  }
-  
-  sendCommand() {
-      const input = this.shadowRoot.querySelector('#cmd-input');
-      const command = input.value;
-      if (command) {
-          // Dispatch custom event for command sending
-          this.dispatchEvent(new CustomEvent('command', {
-              detail: { command },
-              bubbles: true,
-              composed: true
-          }));
-          input.value = '';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        this.sendCommand();
+      } else if (e.key === 'ArrowUp') {
+        this.navigateHistory(-1);
+      } else if (e.key === 'ArrowDown') {
+        this.navigateHistory(1);
       }
+    });
+  }
+
+  sendCommand() {
+    const input = this.shadowRoot.querySelector('#cmd-input');
+    const command = input.value.trim();
+    if (command) {
+      // Add command to history
+      if (this.historyIndex !== -1 && this.historyIndex < this.commandHistory.length - 1) {
+        // Remove all commands ahead of the current index
+        this.commandHistory = this.commandHistory.slice(0, this.historyIndex + 1);
+      }
+      this.commandHistory.push(command);
+      this.historyIndex = this.commandHistory.length - 1;
+
+      // Dispatch custom event for command sending
+      this.dispatchEvent(new CustomEvent('command', {
+        detail: { command },
+        bubbles: true,
+        composed: true
+      }));
+      input.value = '';
+    }
+  }
+
+  navigateHistory(direction) {
+    const input = this.shadowRoot.querySelector('#cmd-input');
+    if (this.commandHistory.length === 0) return;
+
+    this.historyIndex += direction;
+    this.historyIndex = Math.max(0, Math.min(this.historyIndex, this.commandHistory.length - 1));
+
+    input.value = this.commandHistory[this.historyIndex];
   }
 }
-customElements.define('input-command', inputCommand);
+
+customElements.define('input-command', InputCommand);
+
 
 class CustomDialog extends HTMLElement {
   constructor() {

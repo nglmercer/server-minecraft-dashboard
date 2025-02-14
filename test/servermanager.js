@@ -45,7 +45,7 @@ export class MinecraftServer {
 
     this.status = 'starting';
     console.log(`Iniciando servidor ${this.serverName}...`);
-
+    this.log += `\nIniciando servidor ${this.serverName}...\n`;
     // Configuración de la ejecución según el sistema operativo
     let command, args;
     if (process.platform === 'win32') {
@@ -99,8 +99,9 @@ export class MinecraftServer {
   sendCommand(command) {
     if (this.process && this.process.stdin.writable) {
       this.process.stdin.write(command + "\n");
-      this.log += `\nComando enviado: ${command}`;
+      this.log += `\nComando enviado: ${command}\n`;
     } else {
+      this.log += `\nNo se puede enviar el comando. El servidor ${this.serverName} no está activo.\n`;
       console.error(`No se puede enviar el comando. El servidor ${this.serverName} no está activo.`);
     }
   }
@@ -118,6 +119,7 @@ export class MinecraftServer {
       this.sendCommand(this.stopCommand);
       this.status = 'stopping';
     } else {
+      this.log += `\nEl servidor ${this.serverName} no se encuentra en ejecución.\n`;
       console.log(`El servidor ${this.serverName} no se encuentra en ejecución.`);
     }
   }
@@ -129,6 +131,7 @@ export class MinecraftServer {
         if (err) {
           console.error(`Error al matar el proceso ${this.process.pid}: ${err}`);
         } else {
+          this.log += `\nProceso ${this.process.pid} del servidor ${this.serverName} fue finalizado.\n`;
           console.log(`Proceso ${this.process.pid} del servidor ${this.serverName} fue finalizado.`);
           this.status = 'stopped';
         }
@@ -211,10 +214,10 @@ export class ServerManager {
 const manager = new ServerManager();
 
 // Agrega un servidor llamado "melserver" cuya carpeta se encuentra en "./servers/melserver"
-manager.addServer("melserver", "./servers/serverone", { stopCommand: "stop" });
+/* manager.addServer("melserver", "./servers/serverone", { stopCommand: "stop" });
 
 // Inicia el servidor
 manager.startServer("melserver");
 setInterval(() => {
     manager.sendCommand("melserver", "say Hola mundo!");
-  }, 10000);
+  }, 10000); */
