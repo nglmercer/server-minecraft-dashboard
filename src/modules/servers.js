@@ -166,7 +166,7 @@ class FolderManager {
   }
 
   // Listar archivos y subcarpetas dentro de una carpeta específica (superficialmente)
-  listFilesInFolder(folderPath) {
+/*   listFilesInFolder(folderPath) {
     if (!fs.existsSync(folderPath)) {
       return [];
     }
@@ -176,10 +176,49 @@ class FolderManager {
       return {
         name: item,
         path: path.relative(process.cwd(), itemPath), // Ruta relativa
+
         size: stats.size,
         modified: stats.mtime.toISOString(), // Fecha de la última modificación
         isDirectory: stats.isDirectory(), // Indicar si es un directorio
       };
+    });
+  } */
+  listFilesInFolder(folderPath) {
+    if (!fs.existsSync(folderPath)) {
+      return [];
+    }
+    
+    return fs.readdirSync(folderPath).map((item) => {
+      const itemPath = path.join(folderPath, item);
+      const stats = fs.statSync(itemPath);
+      
+      // Construimos una base que está 2 niveles más profunda que la raíz actual
+      // Asumiendo que itemPath ya está dentro de esa estructura
+      const relativePath = path.relative(process.cwd(), itemPath);
+      const pathParts = relativePath.split(path.sep);
+      
+      if (pathParts.length >= 2) {
+        // Tomamos los dos primeros segmentos del path relativo
+        const baseSegments = pathParts.slice(0, 2);
+        const basePath = path.join(process.cwd(), ...baseSegments);
+        
+        return {
+          name: item,
+          path: path.relative(basePath, itemPath), // Ruta relativa desde 2 niveles adentro
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+          isDirectory: stats.isDirectory(),
+        };
+      } else {
+        // Si no hay suficientes niveles, usar la ruta original
+        return {
+          name: item,
+          path: relativePath,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+          isDirectory: stats.isDirectory(),
+        };
+      }
     });
   }
 }

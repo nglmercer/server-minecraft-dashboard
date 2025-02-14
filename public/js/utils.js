@@ -1225,86 +1225,9 @@ class KubekFileManagerUI {
         currentEditorLang = languageMap[fileExt] || "plaintext";
 
         KubekFileManagerUI.readFile(path, (data) => {
-            const codeEdit = document.getElementById("code-edit");
-            codeEdit.textContent = data;
-            this.formatCode(false);
-            
-            document.querySelector(".blurScreen").style.display = "block";
-            document.querySelector(".fileEditor input").value = KubekUtils.pathFilename(path);
-            document.querySelector(".fileEditor").style.display = "block";
         });
     }
 
-    static  async writeFile() {
-        const inputElement = document.querySelector(".fileEditor input");
-        if (!inputElement.value || !FILE_NAME_REGEXP.test(inputElement.value)) {
-            return false;
-        }
-        const currentPathfile = currentPath.endsWith("/") ? currentPath : currentPath + "/";
-        const path = currentPathfile + inputElement.value;
-        const data = document.getElementById("code-edit").textContent;
-        
-        this.closeEditor();
-        currentDataParts = data.match(/[\s\S]{1,500}/g) || [];
-        currentChunkWriting = -1;
-        try {
-            const resultId = await awaitfilemanager.startChunkyFileWrite(path);
-            currentChunkID = resultId.id
-            console.log("Starting write for", currentChunkID, path,resultId);
-            this.writeNextChunk();
-            return true;
-        } catch (error) {
-            console.error("Error starting chunk write:", error, currentChunkID, path);
-            return false;
-        }
-    }
-
-    static writeNextChunk() {
-        currentChunkWriting++;
-        if (currentDataParts[currentChunkWriting]) {
-            console.log("Writing chunk", currentChunkWriting, "to ID", currentChunkID);
-            KubekFileManagerUI.addChunkWrite(
-                currentChunkID,
-                Base64.encodeURI(currentDataParts[currentChunkWriting]),
-                () => { this.writeNextChunk(); }
-            );
-        } else {
-            KubekFileManagerUI.endChunkWrite(currentChunkID, () => {
-                console.log("Write of", currentChunkID, "ended");
-                currentChunkID = null;
-                currentDataParts = null;
-                currentChunkWriting = null;
-                KubekAlerts.addAlert("{{fileManager.writeEnd}}", "check", "", 4000);
-                this.refreshDir();
-            });
-        }
-    }
-
-    static formatCode(saveCaret = true) {
-        const codeEdit = document.getElementById("code-edit");
-        let restore;
-        
-        if (saveCaret) {
-            restore = saveCaretPosition(codeEdit);
-        }
-
-        const result = hljs.highlight(codeEdit.textContent, {
-            language: currentEditorLang
-        });
-        
-        codeEdit.innerHTML = result.value;
-        
-        if (saveCaret) {
-            restore();
-        }
-    }
-
-    static closeEditor() {
-        document.querySelector(".fileEditor").style.display = "none";
-        document.querySelector(".fileEditor input").value = "";
-        document.getElementById("code-edit").textContent = "";
-        document.querySelector(".blurScreen").style.display = "none";
-    }
     static async readFile(path, cb) {
         const response = await awaitfilemanager.readFile(path);
         console.log("readFile", path, response);
@@ -1366,15 +1289,13 @@ class newFileEditor {
     }
     static setFileContent(path){
         let filepath = typeof path !== 'string' ? path.path : path;
-        if (!path || !path.includes('/')){
-            filepath = '/'+path;
-        }
-        const contentFile = newFileEditor.readFile(filepath, (data) => {
-            const fileditor = new CodeEditor('File_Editor', '# Initial code here', 'yaml');
-
-            fileditor.updateHighlight(data);
-        }
-        );
+            if (!path || !path.includes('/')){
+                filepath = '/'+path;
+            }
+            newFileEditor.readFile(filepath, (data) => {
+                const fileditor = new CodeEditor('File_Editor', '# Initial code here', 'yaml');
+                fileditor.updateHighlight(data);
+            });
     }
     static async readFile(path, cb) {
         const response = await awaitfilemanager.readFile(path);
