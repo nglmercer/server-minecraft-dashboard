@@ -427,10 +427,8 @@ catch (error) {
 }
 function deletefile(server, sourceFile) {
   try {
-    let uploadPath;
-    uploadPath = "./servers/" + server + path.dirname(sourceFile);
-    fs.unlinkSync(uploadPath);
-    return true;
+    let result = fileManager.deleteFile(server, sourceFile);
+    return result;
   } catch (error) {
     console.error(error);
     return false;
