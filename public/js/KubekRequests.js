@@ -320,15 +320,6 @@ class awaitfilemanager extends awaitBase {
     static readFile(path) {
         return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
     }
-    static startChunkWrite(path) {
-        return this.get("/fileManager/chunkWrite/start?server=" + getselectedserver() + "&path=" + path);
-    }
-    static addChunkWrite(id, data) {
-        return this.get("/fileManager/chunkWrite/add?id=" + id + "&data=" + data);
-    }
-    static endChunkWrite(id) {
-        return this.get("/fileManager/chunkWrite/end?id=" + id);
-    }
     static deleteFile(path) {
         return this.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
     }
@@ -339,13 +330,7 @@ class awaitfilemanager extends awaitBase {
     static newDirectory(path, name) {
         return this.get("/fileManager/newDirectory?server=" + getselectedserver() + "&path=" + path + "&name=" + name);
     }
-    static startChunkyFileWrite(path) {
-        return this.get("/fileManager/chunkWrite/start?server=" + getselectedserver() + "&path=" + path);
-    }
-    static addFileChunk(id, data) {
-        return this.get("/fileManager/chunkWrite/add?id=" + id + "&data=" + data);
-    }
-    static endChunkyFileWrite(id) {
-        return this.get("/fileManager/chunkWrite/end?id=" + id);
-    }
+    static writeFilebyName(folderName, fileName, content) {
+        return this.post("/fileManager/writeFilebyName", { folderName, fileName, content });
+    }    
 }

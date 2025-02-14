@@ -6,7 +6,8 @@ import {
   getfolderinfo,
   updatefolderinfo,
   readfilebyname,
-  readfilebypath
+  readfilebypath,
+  writeFilebyName
 }from '../modules/servers.js';
 
 const router = express.Router();
@@ -114,5 +115,23 @@ router.get('/filemanager/read-file-by-path/*', (req, res) => {
     res.status(500).json({ success: false, error: JSON.stringify(error) });
   }
 });
-     
+// return this.get("/fileManager/writeFilebyName?folderName=" + folderName + "&fileName=" + fileName + "&content=" + content);
+router.post('/filemanager/writeFilebyName', (req, res) => {
+  let { folderName, fileName, content } = req.body; // Ahora usa req.body en lugar de req.query
+  try {
+    if (!folderName || !fileName || !content) {
+      return res.status(400).json({ success: false, error: "Todos los campos son requeridos: folderName, fileName, content." });
+    }
+    if (fileName.includes("/")) {
+      fileName = fileName.replace("/", "");
+    }
+    console.log("writeFilebyName", folderName, fileName, content);
+    const result = writeFilebyName(folderName, fileName, content);
+    console.log("result", result, folderName, fileName, content);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: JSON.stringify(error) });
+  }
+});
+
 export default router;

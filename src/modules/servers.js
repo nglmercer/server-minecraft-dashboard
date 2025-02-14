@@ -75,6 +75,12 @@ class FileManager {
     }
 
     fs.writeFileSync(filePath, content, { encoding: 'utf8' });
+    return {
+      result: true,
+      fileName: fileName,
+      folderName: folderName,
+      content: content
+    }
   }
 
   // Eliminar un archivo en una carpeta específica
@@ -315,6 +321,20 @@ function readfilebypath(filePath) {
     console.error(error.message);
   }
 }
+function writeFilebyName(folderName, fileName, content) {
+  try {
+    let file = fileManager.writeFile(folderName, fileName,content);
+    console.log("writeFilebyName", file);
+    if (file === false) {
+      file = folderManager.getFolderDetails(folderName);
+      console.log("writeFilebyName", file);
+    }
+    console.log("writeFilebyName", file);
+    return file;
+  } catch (error) {
+    console.error(error.message);
+  }
+}
 /* createserverfolder("nueva_carpeta1");
 createsubfolder("nueva_carpeta1", "subcarpeta");
 getfolderinfo("nueva_carpeta1/subcarpeta");
@@ -326,5 +346,6 @@ export {
   getfolderinfo,
   updatefolderinfo,
   readfilebyname,
-  readfilebypath
+  readfilebypath,
+  writeFilebyName
 }
