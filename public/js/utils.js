@@ -367,7 +367,8 @@ var uiDebugger = DebuggerGroupManager.create('UI');
    */
   static loadServerByName(server, callback = () => {}) {
       KubekServers.getServerInfo(server, (data) => {
-          if (data.status !== false) {
+          if (data && data.data) {
+              //console.log("data getServerInfo", data);
               // Update server title
               const captionElement = document.querySelector('.content-header > .caption');
               if (captionElement) {
@@ -375,7 +376,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
               }
 
               // Update server status
-              this.setServerStatus(data.status);
+              this.setServerStatus(data.data);
 
               // Update server icon
               const iconElement = document.querySelector('.content-header .icon-bg img');
@@ -488,11 +489,13 @@ class KubekUI {
     }
 
     static loadServersList() {
-            KubekServers.getServersList(servers => {
+            KubekServers.getServersList(data => {
+                let servers = data.data?.files;
                 const allserver = [];
                 if (!servers) return;
                 console.log("servers getServersList", servers);
-                servers.forEach(serverItem => {
+                servers.forEach(data => {
+                    let serverItem = data?.name ? data.name : data;
                     const sidebar = document.querySelector('server-menu') || document.getElementById("main-menu-sidebar");
                     setTimeout(() => {
                         sidebar.setActiveElement(window.localStorage.selectedServer);
@@ -560,8 +563,9 @@ class KubekUI {
           //console.log("consoleTextElem", consoleTextElem, typeof consoleTextElem);
           KubekServers.getServerLog(selectedServer, (data) => {
               if (!data) return;
+              let log = data.data;
               //console.log("getServerLog", selectedServer, {data});
-              consoleTextElem.refreshConsoleLog(data.serverLog);
+              consoleTextElem.refreshConsoleLog(log);
           });
       }
   }

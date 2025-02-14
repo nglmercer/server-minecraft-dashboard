@@ -80,17 +80,36 @@ export class ServerManager {
           return false;
       }
   }
+  formatStartParameters(startParameters) {
+    // Dividir los parámetros en un array
+    const parametersArray = startParameters.split(" ");
 
+    // Formatear cada parámetro para evitar problemas con caracteres especiales
+    const formattedParameters = parametersArray.map(param => {
+        // Si el parámetro contiene ":", "=", "+", etc., asegurarse de que esté correctamente escapado
+        if (param.includes(":") || param.includes("=") || param.includes("+")) {
+            return `"${param}"`; // Envolver en comillas si contiene caracteres especiales
+        }
+        return param;
+    });
+
+    // Unir los parámetros formateados en una sola cadena
+    return formattedParameters.join(" ");
+  }
   generateStartScript(platformInfo, javaPath, coreFileName, parameters) {
-    const fullJavaPath = (platform) => platform.isWindows ? `"${javaPath}\\java.exe"` : `"${javaPath}/java"`;
-    const fullParams = `${parameters} -jar "${coreFileName}" nogui`;
+    const fullJavaPath = (platform) => 
+      platform.isWindows 
+        ? `"${path.join(javaPath, 'java.exe')}"` 
+        : `"${path.join(javaPath, 'java')}"`;
+  
+    const formattedParameters = this.formatStartParameters(parameters);
+    const fullParams = `${formattedParameters} -jar "${coreFileName}" nogui`;
+  
     if (platformInfo.isWindows) {
-      return `@echo off\n${fullJavaPath(platformInfo)} ${fullParams}`;
-    } else 
-    if (platformInfo.isTermux || platformInfo.isLinux) {
-        // Agrega el export del PATH; en este ejemplo, se asume que javaPath es el directorio del ejecutable.
-        return `#!/bin/bash\nexport PATH=$PATH:${javaPath}\ncd "$(dirname "$0")"\n${fullJavaPath(platformInfo)} ${fullParams}`;
-    } 
+      return `@echo off\ncd /d "%~dp0"\n${fullJavaPath(platformInfo)} ${fullParams}\npause`;
+    } else if (platformInfo.isTermux || platformInfo.isLinux) {
+      return `#!/bin/bash\nexport PATH=$PATH:${javaPath}\ncd "$(dirname "$0")"\n${fullJavaPath(platformInfo)} ${fullParams}`;
+    }
   }
 
   getChangeDirectoryCommand(serverName) {

@@ -9,6 +9,11 @@ import {
     existsfolder,
     getFileInfo
   } from '../modules/fileFolderRegistry.js';
+  import {
+    manager,
+    MinecraftServer,
+    ServerManager
+  } from "../minecraft/servermanager.js";
   import { startJavaServerGeneration } from "../minecraft/createserver.js";
   const router = express.Router();
   router.get('/servers', (req, res) => {
@@ -105,5 +110,38 @@ import {
     } catch (error) {
       res.status(500).json({ success: false, error: JSON.stringify(error) });
     } */
+  });
+  router.get('/servermanager/:serverName/:action', (req, res) => {
+    const { serverName, action } = req.params;
+    if (!serverName || !action) {
+      return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, action." });
+    }
+    manager.addServer(serverName, "./servers/" + serverName, { stopCommand: "stop" });
+    console.log("action", action);
+    switch (action) {
+      case 'start':
+        manager.startServer(serverName);
+        break;
+      case 'stop':
+        manager.stopServer(serverName);
+        break;
+      case 'restart':
+        manager.sendCommand(serverName, "stop");
+        manager.startServer(serverName);
+        break;
+      case 'send':
+        manager.sendCommand(serverName, req.query.cmd);
+        break;
+      case 'log':
+        const log = manager.getServerLogs(serverName);
+        res.status(200).json({ success: true, data: log });
+        break;
+      case 'info':
+        const info = manager.getServerStatus(serverName);
+        res.status(200).json({ success: true, data: info });
+        break;
+      default:
+        res.status(400).json({ success: false, error: "La acción no es válida." });
+    }
   });
   export default router;

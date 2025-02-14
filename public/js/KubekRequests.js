@@ -308,7 +308,7 @@ class KubekServers extends KubekBase {
 
     // Получить информацию о сервере (в т.ч. статус)
     static getServerInfo = (server, cb) => {
-        this.get("/servers/" + server + "/info", cb);
+        this.get("/servermanager/" + server + "/info", cb);
     };
 
     // Проверить сервер на существование
@@ -320,7 +320,7 @@ class KubekServers extends KubekBase {
 
     // Получить лог сервера
     static getServerLog = (server, cb) => {
-        this.get("/servers/" + server + "/log", (log) => {
+        this.get("/servermanager/" + server + "/log", (log) => {
             if(log === false){
                 cb("");
             } else {
@@ -331,7 +331,7 @@ class KubekServers extends KubekBase {
 
     // Отправить команду на сервер
     static sendCommandToServer = (server, cmd) => {
-        this.get("/servers/" + server + "/send?cmd=" + cmd);
+        this.get("/servermanager/" + server + "/send?cmd=" + cmd);
     };
 
     // Отправить команду на сервер из поля ввода консоли
@@ -344,21 +344,21 @@ class KubekServers extends KubekBase {
     // Запустить сервер
     static startServer = (server) => {
         if(currentServerStatus === KubekPredefined.SERVER_STATUSES.STOPPED){
-            this.get("/servers/" + server + "/start");
+            this.get("/servermanager/" + server + "/start");
         }
     };
 
     // Перезапустить сервер
     static restartServer = (server) => {
         if(currentServerStatus === KubekPredefined.SERVER_STATUSES.RUNNING){
-            this.get("/servers/" + server + "/restart");
+            this.get("/servermanager/" + server + "/restart");
         }
     };
 
     // Остановить сервер
     static stopServer = (server) => {
         if(currentServerStatus === KubekPredefined.SERVER_STATUSES.RUNNING){
-            this.get("/servers/" + server + "/stop");
+            this.get("/servermanager/" + server + "/stop");
         }
     };
 }
