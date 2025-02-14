@@ -9,6 +9,7 @@ import {
     existsfolder,
     getFileInfo
   } from '../modules/fileFolderRegistry.js';
+  import { startJavaServerGeneration } from "../minecraft/createserver.js";
   const router = express.Router();
   router.get('/servers', (req, res) => {
     const servers = getallfolderinfo();
@@ -67,7 +68,37 @@ import {
     if (!serverName || !core || !coreVersion || !startParameters || !javaVersion || !port || !fileName) {
       return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, core, coreVersion, startParameters, javaVersion, port, fileName." });
     }
-    return res.status(200).json({ success: true, data: "ok" });
+    const mapedServerInfo = {
+      existsfolder: existsfolder(serverName),
+      existsfile: existsfolder(serverName),
+      fileName: fileName,
+      core: core,
+      coreVersion: coreVersion,
+      startParameters: startParameters,
+      javaVersion: javaVersion,
+      port: port,
+      serverPort: port,
+      serverName: serverName
+    };
+    
+    // verificar si el folderName existe y si tambien existe tanto el archivo core como el startScript
+    if (!mapedServerInfo.existsfolder) {
+      try {
+        const serverInfo = startJavaServerGeneration(mapedServerInfo, result => {
+          if (result) {
+            console.log({ success: true, data: serverInfo, ServerInfo: mapedServerInfo });
+          } else {
+            console.log({ success: false, error: "Error al crear el servidor.", ServerInfo: mapedServerInfo  });
+          }
+        });
+        res.status(200).json({ success: true, data: serverInfo });
+      } catch (error) {
+        res.status(500).json({ success: false, error: JSON.stringify(error) });
+      }
+    } else {
+      return res.status(200).json({ success: true, data: mapedServerInfo, message: "El servidor ya existe." });
+      // return res.status(400).json({ success: false, error: "El servidor ya existe." });
+    }
 /*     try {
       const serverInfo = prepareServerCreation(serverName, core, coreVersion, startParameters, javaVersion, port, fileName);
       res.status(200).json({ success: true, data: serverInfo });

@@ -1,21 +1,17 @@
 var globalvars = {
     SERVER_NAME_REGEXP: /^[a-zA-Z0-9\-_]{1,20}$/,
-    AIKAR_FLAGS : "--add-modules=jdk.incubator.vector -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20",
+    AIKAR_FLAGS: "--XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:InitiatingHeapOccupancyPercent=15",
     currentSelectedCore: "",
     currentSelectedVersion: "",
     allServersList: [],
     initialized: false
-}
-/**    // Regular expression for validating server names (1-20 alphanumeric, hyphen, underscore)
-    const SERVER_NAME_REGEXP = /^[a-zA-Z0-9\-_]{1,20}$/;
+};
+const cleanFolderName = (folderName) => {
+    // Expresión regular para eliminar caracteres no válidos
+    return folderName.replace(/[^a-zA-Z0-9\-_.]/g, '');
+};
+//AIKAR_FLAGS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xms1G -Xmx2G -XX:+UnlockExperimentalVMOptions -XX:+AlwaysPreTouch -Dusing.aikars.flags=https://mcflags.emc.gs"
 
-    // Aikar's recommended JVM flags for Minecraft servers
-    const AIKAR_FLAGS = "--add-modules=jdk.incubator.vector -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20";
-
-    // Global state variables
-    let currentSelectedCore = "";
-    let globalvars.currentSelectedVersion = "";
-    let allServersList = []; */
 function initializenewServer() {
     initialized = true;
 
@@ -190,7 +186,8 @@ function prepareServerCreation() {
     btn.querySelector(".material-symbols-rounded.spinning").style.display = "block";
 
     const serverData = {
-        serverName: document.querySelector('#server_name_input').getInputValues(),
+        serverName: cleanFolderName(
+        document.querySelector('#server_name_input').getInputValues()),
         memory: document.querySelector('#server-mem').value,
         port: document.querySelector('#server-port').value,
         core: globalvars.currentSelectedCore,
