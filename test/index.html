@@ -1,8 +1,9 @@
+  <!-- update cursor and refresh cursor point not work--- because update refresh code update input and change cursor point -->
 <!DOCTYPE html>
 <html>
 <head>
   <!-- Highlight.js CSS -->
-  <link id="highlightTheme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+  <link id="highlightTheme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/vs2015.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 </head>
 <body>
@@ -16,86 +17,8 @@
   
   <!-- Combined Editor-Preview Area -->
   <div id="editor" style="width: 90%; height: 80vh; border: 1px solid #ccc; padding: 10px; font-family: monospace;">
-    <pre><code id="code-editor" contenteditable="true" spellcheck="false"></code></pre>
   </div>
-
-  <!-- Highlight.js JavaScript -->
-  <script>
-    // Get the code editor element
-    const codeEditor = document.getElementById('code-editor');
-
-    // Highlight initial code
-    hljs.highlightElement(codeEditor);
-
-    // Function to restore cursor position
-    function restoreCursorPosition(element, position) {
-      if (!element) return;
-
-      let charIndex = 0;
-      const nodeStack = [element];
-      let found = false;
-
-      while (nodeStack.length && !found) {
-        const currentNode = nodeStack.pop();
-
-        if (currentNode.nodeType === Node.TEXT_NODE) {
-          const nodeLength = currentNode.nodeValue.length;
-          if (charIndex + nodeLength >= position) {
-            const range = document.createRange();
-            range.setStart(currentNode, position - charIndex);
-            range.collapse(true);
-
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            found = true;
-            return true; // Cursor restored successfully
-          }
-          charIndex += nodeLength;
-        } else {
-          let i = currentNode.childNodes.length;
-          while (i--) {
-            nodeStack.push(currentNode.childNodes[i]);
-          }
-        }
-      }
-      return false; // Cursor position not restored (position out of range or error)
-    }
-
-
-    // Update code on input
-    codeEditor.addEventListener('input', () => {
-      // Save the current cursor position
-      const selection = window.getSelection();
-      let cursorPosition = 0;
-      if (selection.rangeCount) {
-        const range = selection.getRangeAt(0);
-        const preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(codeEditor);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        cursorPosition = preCaretRange.toString().length;
-      }
-
-
-      // Get the code content
-      const code = codeEditor.textContent;
-
-      // Highlight the code
-      const result = hljs.highlightAuto(code);
-      console.log(`Language detected: ${result.language}`);
-
-      // Update the editor content without breaking the cursor
-      codeEditor.innerHTML = result.value;
-
-      // Restore the cursor position
-      restoreCursorPosition(codeEditor, cursorPosition);
-    });
-
-    // Configure Highlight.js to only use specific languages
-    hljs.configure({
-      languages: ['javascript', 'yaml', 'html', 'css', 'json']
-    });
-  </script>
+  <button id="reset-button">Reset</button>
   <script>
     function switchTheme(theme) {
       document.getElementById('highlightTheme').href = 
@@ -103,5 +26,7 @@
       hljs.highlightAll(); // Re-highlight all elements with the new theme
     }
   </script>
+    <script src="./script.js"></script>
+
 </body>
 </html>
