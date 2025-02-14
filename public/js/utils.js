@@ -929,7 +929,8 @@ class KubekFileManagerUI {
                          editableExtensions.includes(KubekUtils.pathExt(name))) {
                             const filetoedit = verifycurrentpath + name
                             console.log("filetoedit", filetoedit);
-                            KubekFileManagerUI.editFile(filetoedit);
+                            newFileEditor.editFile(filetoedit);
+                            //KubekFileManagerUI.editFile(filetoedit);
                 }
         });
 
@@ -1295,7 +1296,52 @@ class KubekFileManagerUI {
         cb(response.data);
     }
 }
-
+class newFileEditor {
+    static async editFile(path) {
+        const generateoptions = newFileEditor.generateoptions();
+        newFileEditor.setOptions(generateoptions);
+        newFileEditor.show();
+        this.show();
+    }
+    static generateoptions() {
+        const options = [
+            {
+                label: 'Guardar',
+                class: "save-btn",
+                callback: () => {
+                    newFileEditor.hide();
+                }
+            },
+            {
+                label: 'borrar',
+                class: "delete-btn",
+                callback: () => {
+                    newFileEditor.hide();
+                }
+            },
+            {
+                label: 'Cancelar',
+                class: "cancel-btn",
+                callback: () => {
+                    newFileEditor.hide();
+                }
+            }
+        ];
+        return options;
+    }
+    static show(){
+        const dialogElement = document.querySelector('#File_editor_dialog');
+        dialogElement.show();
+    }
+    static hide(){
+        const dialogElement = document.querySelector('#File_editor_dialog');
+        dialogElement.hide();
+    }
+    static async setOptions(options) {
+        const dialogElement = document.querySelector('#File_editor_content');
+        dialogElement.options = options;
+    }
+}
 function sortToDirsAndFiles(data) {
     let dirs = [];
     let files = [];
