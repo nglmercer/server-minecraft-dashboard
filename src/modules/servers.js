@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
+// import zlib from 'zlib';
 const ALLOWED_EXTENSIONS = ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png'];
 
 
@@ -107,6 +107,62 @@ class FileManager {
     return fs.readdirSync(folderPath).filter((item) => {
       const itemPath = path.join(folderPath, item);
       return fs.statSync(itemPath).isFile();
+    });
+  }
+  compressFile(fileName, outputPath = null) {
+    const filePath = path.join(this.basePath, fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`El archivo '${fileName}' no existe.`);
+    }
+
+    const compressedFileName = `${fileName}.gz`;
+    const outputFolder = outputPath ? path.join(this.basePath, outputPath) : this.basePath;
+    
+    if (!fs.existsSync(outputFolder)) {
+      fs.mkdirSync(outputFolder, { recursive: true });
+    }
+
+    const compressedFilePath = path.join(outputFolder, compressedFileName);
+    const fileStream = fs.createReadStream(filePath);
+    const writeStream = fs.createWriteStream(compressedFilePath);
+    const gzip = zlib.createGzip();
+
+    fileStream.pipe(gzip).pipe(writeStream);
+
+    return new Promise((resolve, reject) => {
+      writeStream.on('finish', () => resolve(compressedFilePath));
+      writeStream.on('error', reject);
+    });
+  }
+
+  // Descomprimir un archivo
+  decompressFile(compressedFileName, outputPath = null) {
+    const compressedFilePath = path.join(this.basePath, compressedFileName);
+    if (!fs.existsSync(compressedFilePath)) {
+      throw new Error(`El archivo comprimido '${compressedFileName}' no existe.`);
+    }
+
+    if (!compressedFileName.endsWith('.gz')) {
+      throw new Error(`El archivo '${compressedFileName}' no es un archivo comprimido válido.`);
+    }
+
+    const originalFileName = compressedFileName.replace('.gz', '');
+    const outputFolder = outputPath ? path.join(this.basePath, outputPath) : this.basePath;
+
+    if (!fs.existsSync(outputFolder)) {
+      fs.mkdirSync(outputFolder, { recursive: true });
+    }
+
+    const decompressedFilePath = path.join(outputFolder, originalFileName);
+    const fileStream = fs.createReadStream(compressedFilePath);
+    const writeStream = fs.createWriteStream(decompressedFilePath);
+    const gunzip = zlib.createGunzip();
+
+    fileStream.pipe(gunzip).pipe(writeStream);
+
+    return new Promise((resolve, reject) => {
+      writeStream.on('finish', () => resolve(decompressedFilePath));
+      writeStream.on('error', reject);
     });
   }
 }
