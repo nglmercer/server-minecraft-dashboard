@@ -430,7 +430,7 @@ class CustomDialog extends HTMLElement {
     }
   
     static get observedAttributes() {
-      return ['title', 'description', 'theme'];
+      return ['title', 'description', 'theme', 'tittle'];
     }
   
     attributeChangedCallback(name, oldValue, newValue) {

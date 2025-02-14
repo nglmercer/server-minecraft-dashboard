@@ -159,7 +159,140 @@ class DebuggerGroupManager {
     this.groups.forEach(group => group.toggle(enable));
   }
 }
-
+class CodeEditor {
+    constructor(editorId, initialContent = '', initialLanguage = 'plaintext') {
+      this.editorElement = document.getElementById(editorId);
+      this.initialContent = initialContent;
+      this.initialLanguage = initialLanguage;
+      this.currentContent = initialContent;
+      this.currentLanguage = initialLanguage;
+        if (this.editorElement) {
+      this.initializeEditor();
+        }
+    }
+  
+    initializeEditor() {
+      // Set initial content
+      // set editable content
+      this.editorElement.contentEditable = true;
+      this.editorElement.innerHTML = this.initialContent;
+      this.editorElement.style.whiteSpace = 'pre-wrap'; // O 'pre-line'
+      // Highlight initial code
+      hljs.highlightElement(this.editorElement);
+  
+      // Debounce function to limit the frequency of updates
+      this.debouncedUpdateHighlight = this.debounce(this.updateHighlight.bind(this), 1000);
+  
+      // Listen for input events
+      this.editorElement.addEventListener('input', this.debouncedUpdateHighlight);
+  
+      // Handle paste event to preserve spaces and line breaks
+      this.editorElement.addEventListener('paste', this.handlePaste.bind(this));
+    }
+  
+    debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+  
+    saveCursorPosition(element) {
+      const selection = window.getSelection();
+      let cursorPosition = 0;
+      if (selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        cursorPosition = preCaretRange.toString().length;
+      }
+      return cursorPosition;
+    }
+  
+    restoreCursorPosition(element, cursorPosition) {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+      let currentPosition = 0;
+      let targetNode = null;
+      let targetOffset = 0;
+  
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeLength = node.length;
+  
+        if (currentPosition + nodeLength >= cursorPosition) {
+          targetNode = node;
+          targetOffset = cursorPosition - currentPosition;
+          break;
+        }
+        currentPosition += nodeLength;
+      }
+  
+      if (targetNode) {
+        const range = document.createRange();
+        range.setStart(targetNode, targetOffset);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        console.log(`Cursor restored to position: ${cursorPosition}`);
+      } else {
+        console.error('Cursor position could not be restored');
+      }
+    }
+  
+    updateHighlight(currentContent) {
+        // Save the current cursor position
+        const cursorPosition = this.saveCursorPosition(this.editorElement);
+        console.log(`Cursor position before update: ${cursorPosition}`);
+      
+        // Get the code content with line breaks
+        this.currentContent = currentContent || this.editorElement.innerText
+      
+        // Highlight the code
+        const result = hljs.highlightAuto(this.currentContent);
+        console.log(`Language detected: ${result.language}`, result.value);
+        this.editorElement.innerHTML = result.value;
+        this.currentLanguage = result.language;
+      
+        // Restore the cursor position
+        this.restoreCursorPosition(this.editorElement, cursorPosition);
+      }
+    handlePaste(event) {
+      event.preventDefault(); // Prevent default paste behavior
+  
+      // Get pasted text
+      const text = (event.clipboardData || window.clipboardData).getData('text');
+  
+      // Insert the pasted text at the cursor position
+      const selection = window.getSelection();
+      if (selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents(); // Remove any selected text
+        range.insertNode(document.createTextNode(text)); // Insert the pasted text
+      }
+  
+      // Trigger input event to update highlighting
+      const inputEvent = new Event('input', { bubbles: true });
+      this.editorElement.dispatchEvent(inputEvent);
+    }
+  
+    getContent() {
+      return this.currentContent;
+    }
+  
+    getLanguage() {
+      return this.currentLanguage;
+    }
+  
+    resetToInitial() {
+      this.currentContent = this.initialContent;
+      this.currentLanguage = this.initialLanguage;
+      this.editorElement.innerHTML = this.initialContent;
+      hljs.highlightElement(this.editorElement);
+    }
+  }
 
 class KubekUtils {
   // Convertir tamaño de archivo a un formato legible por humanos
@@ -901,10 +1034,6 @@ class KubekFileManagerUI {
             // Bind breadcrumb events
             this.bindBreadcrumbClicks();
 
-
-            // Bind file list events
-            this.bindFMFilesList(bindEvent);
-
             document.getElementById("fm-table").scrollTop = scrollData;
         } catch (error) {
             console.error("Error:", error);
@@ -929,7 +1058,7 @@ class KubekFileManagerUI {
                          editableExtensions.includes(KubekUtils.pathExt(name))) {
                             const filetoedit = verifycurrentpath + name
                             console.log("filetoedit", filetoedit);
-                            newFileEditor.editFile(filetoedit);
+                            newFileEditor.editFile(e.detail.item);
                             //KubekFileManagerUI.editFile(filetoedit);
                 }
         });
@@ -1010,121 +1139,7 @@ class KubekFileManagerUI {
             console.log("dataTarget", baseOptions, e.target);
         });
     }
-    static bindFMFilesList(bindEvent) {
-/*         const baseOptions = [
-            {
-                id: 'delete',
-                text: '{{commons.delete}}',
-                icon: 'delete',
-                callback: (dataTarget) => {
-                    console.log('delete', dataTarget);
-                    const path = dataTarget.path;
-                    KubekNotifyModal.create(
-                        "{{commons.delete}}", 
-                        "{{fileManager.areYouWantToDelete}} " + KubekUtils.pathFilename(path),
-                        "{{commons.delete}}", 
-                        "delete",
-                        () => {
-                            KubekFileManagerUI.delete(path, (result) => {
-                                if (result === false) {
-                                    KubekAlerts.addAlert(
-                                        "{{commons.actionFailed}}", 
-                                        "warning",
-                                        "{{commons.delete}} " + KubekUtils.pathFilename(path),
-                                        4000,
-                                        "colored"
-                                    );
-                                }
-                                KubekFileManagerUI.refreshDir();
-                            });
-                        },
-                        KubekPredefined.MODAL_CANCEL_BTN
-                    );
-                }
-            },
-            {
-                id: 'rename',
-                text: '{{commons.rename}}',
-                icon: 'bookmark_manager',
-                callback: (dataTarget) => {
-                    KubekNotifyModal.askForInput(
-                        "{{commons.rename}}",
-                        "bookmark_manager",
-                        (txt) => {
-                            KubekFileManagerUI.renameFile(dataTarget.path, txt, () => {
-                                KubekFileManagerUI.refreshDir();
-                            });
-                        },
-                        "",
-                        "{{fileManager.enterName}}",
-                        KubekUtils.pathFilename(dataTarget.path),
-                        "text"
-                    );
-                }
-            }
-        ];
 
-        const downloadOption = {
-            id: 'download',
-            text: '{{commons.download}}',
-            icon: 'download',
-            callback: (dataTarget) => {
-                const basePath = currentPath.length < 1 ? "" : currentPath;
-                const parsedPath = (basePath.endsWith("/") ? basePath : basePath + "/") + dataTarget.filename;
-                KubekFileManagerUI.downloadFile(parsedPath, () => {});
-            }
-        };
-
-        const getElementData = (target) => {
-            const parent = target.closest('tr');
-            return {
-                filename: parent.dataset.filename,
-                path: parent.dataset.path,
-                type: parent.dataset.type
-            };
-        };
-
-        // Bind context menu
-        document.querySelectorAll('#fm-table tbody tr').forEach(row => {
-            row.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const dataTarget = getElementData(e.target);
-                if (dataTarget.type !== 'directory') {
-                    options.push(downloadOption);
-                }
-                const options = [...baseOptions];
-
-                const popupOptions = options.map(option => ({
-                    html: `${hoverStyles}
-                        <div class="dropdown-item">
-                            <span class="material-symbols-rounded">${option.icon}</span>
-                            <span class="default-font">${option.text}</span>
-                        </div>
-                    `,
-                    callback: () => option.callback(dataTarget)
-                }));
-                console.log("dataTarget", dataTarget,baseOptions);
-
-                setPopupOptions(popupOptions);
-                openPopup(e.target);
-            });
-
-            // Bind click/double-click
-            row.addEventListener(bindEvent, function(e) {
-                const data = getElementData(e.target);
-                console.log("data", data);
-                const currentPathfile = currentPath.endsWith("/") ? currentPath : currentPath + "/";
-                if (data.type === "directory") {
-                    currentPath = currentPathfile   + data.filename;
-                    KubekFileManagerUI.refreshDir();
-                } else if (data.type === "file" && 
-                         editableExtensions.includes(KubekUtils.pathExt(data.filename))) {
-                            console.log("editableExtensions", currentPath + data.filename);
-                    KubekFileManagerUI.editFile(currentPathfile + data.filename);
-                }
-            });
-        }); */
-    }
 
     static bindBreadcrumbClicks() {
         const breadcrumbLinks = document.querySelectorAll("#fm-breadcrumb a:not(:last-child)");
@@ -1296,10 +1311,13 @@ class KubekFileManagerUI {
         cb(response.data);
     }
 }
+
 class newFileEditor {
-    static async editFile(path) {
+    static async editFile(file) {
         const generateoptions = newFileEditor.generateoptions();
         newFileEditor.setOptions(generateoptions);
+        newFileEditor.setTittle(file.name);
+        newFileEditor.setFileContent(file.name);
         newFileEditor.show();
         this.show();
     }
@@ -1340,6 +1358,28 @@ class newFileEditor {
     static async setOptions(options) {
         const dialogElement = document.querySelector('#File_editor_content');
         dialogElement.options = options;
+    }
+    static setTittle(tittle) {
+        const dialogElement = document.querySelector('#File_editor_content');
+        dialogElement.setAttribute('tittle', tittle);
+        dialogElement.setAttribute('description', tittle);
+    }
+    static setFileContent(path){
+        let filepath = typeof path !== 'string' ? path.path : path;
+        if (!path || !path.includes('/')){
+            filepath = '/'+path;
+        }
+        const contentFile = newFileEditor.readFile(filepath, (data) => {
+            const fileditor = new CodeEditor('File_Editor', '# Initial code here', 'yaml');
+
+            fileditor.updateHighlight(data);
+        }
+        );
+    }
+    static async readFile(path, cb) {
+        const response = await awaitfilemanager.readFile(path);
+        console.log("readFile", path, response);
+        cb(response.data);
     }
 }
 function sortToDirsAndFiles(data) {
