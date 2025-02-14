@@ -1,4 +1,7 @@
 import express from 'express';
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import {
   createserverfolder,
   createserverfile,
@@ -9,7 +12,8 @@ import {
   readfilebypath,
   writeFilebyName
 }from '../modules/servers.js';
-
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 const router = express.Router();
 
 // Ruta para crear una carpeta
@@ -131,6 +135,30 @@ router.post('/filemanager/writeFilebyName', (req, res) => {
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, error: JSON.stringify(error) });
+  }
+});
+// add upload file 
+router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => {
+  try {
+      const { server, path: serverPath } = req.query;
+
+      if (!server || !serverPath || !req.file) {
+          return res.status(400).json({ success: false, message: "Faltan parámetros" });
+      }
+
+      const fileName = req.file.originalname;
+      const fileContent = req.file.buffer; // Es un buffer porque es una imagen u otro archivo binario
+      console.log(server,serverPath)
+      // Guardar el archivo en la ruta especificada
+/*       const filePath = path.join("./servers", server, serverPath, fileName);
+      fs.writeFileSync(filePath, fileContent); // Guardar archivo binario */
+      const filename =  serverPath + "/" + fileName
+      createserverfile(server,filename, fileContent);
+      console.log(server,filename, fileContent)
+      return res.status(200).json({ success: true, filename });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
   }
 });
 

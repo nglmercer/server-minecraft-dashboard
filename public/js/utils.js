@@ -1190,15 +1190,24 @@ class KubekFileManagerUI {
         if (oldListener) {
             inputElement.removeEventListener('change', oldListener);
         }
-
         inputElement.addEventListener("change", () => {
             const formData = new FormData(document.getElementById("g-file-form"));
-            KubekRequests.post(
-                `/fileManager/upload?server=${this.selectedServer}&path=${currentPath}`,
-                () => { KubekFileManagerUI.refreshDir(); },
-                formData
-            );
+
+            console.log("Archivo a enviar:", formData.get("file")); // Asegúrate de que se captura correctamente
+
+        
+            const server = "test123"; // Define el nombre del servidor
+            const currentPath = "plugins"; // Define la ruta donde guardar
+        
+            fetch(`/api/filemanager/upload?server=${server}&path=${currentPath}`, {
+                method: "POST",
+                body: formData,
+            })
+            .then((response) => response.json())
+            .then((data) => console.log("Archivo subido:", data))
+            .catch((error) => console.error("Error al subir archivo:", error));
         });
+        
     }
 
 
