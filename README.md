@@ -1,5 +1,3 @@
-[Readme на русском](README_RU.md)
-
 # What is this project?
  a minecraft server dashboard
 **Features:**
