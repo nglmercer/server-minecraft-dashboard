@@ -1058,7 +1058,7 @@ class KubekFileManagerUI {
                          editableExtensions.includes(KubekUtils.pathExt(name))) {
                             const filetoedit = verifycurrentpath + name
                             console.log("filetoedit", filetoedit);
-                            newFileEditor.editFile(e.detail.item);
+                            newFileEditor.editFile(e.detail.item, filetoedit);
                             //KubekFileManagerUI.editFile(filetoedit);
                 }
         });
@@ -1313,11 +1313,11 @@ class KubekFileManagerUI {
 }
 
 class newFileEditor {
-    static async editFile(file) {
+    static async editFile(file, path) {
         const generateoptions = newFileEditor.generateoptions();
         newFileEditor.setOptions(generateoptions);
         newFileEditor.setTittle(file.name);
-        newFileEditor.setFileContent(file.name);
+        newFileEditor.setFileContent(path);
         newFileEditor.show();
         this.show();
     }

@@ -392,8 +392,11 @@
             title="editor de archivos" 
             description="desea editar este archivo"
             theme="dark">
+            <slot id="slot">
+                <div id="File_Editor"> </div>
+            </slot>
         </custom-dialog>
-        <div id="File_Editor"> </div>
+
         </dialog-container>
         <form id="g-file-form" enctype="multipart/form-data">
             <input
