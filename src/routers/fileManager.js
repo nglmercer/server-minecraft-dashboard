@@ -8,7 +8,9 @@ import {
   updatefolderinfo,
   readfilebyname,
   readfilebypath,
-  writeFilebyName
+  writeFilebyName,
+  renamefile,
+  deletefile
 }from '../modules/servers.js';
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -158,5 +160,30 @@ router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => 
       return res.status(500).json({ success: false, message: error.message });
   }
 });
-
+router.get('/filemanager/rename', (req, res) => {
+  const { server, path: serverPath, newName } = req.query;
+  if (!server || !serverPath || !newName) {
+      return res.status(400).json({ success: false, message: "Faltan parámetros" });
+  }
+  try {
+      const result = renamefile(server, serverPath, newName);
+      return res.status(200).json({ success: true, result });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+});
+router.get('/filemanager/delete', (req, res) => {
+  const { server, path: serverPath } = req.query;
+  if (!server || !serverPath) {
+      return res.status(400).json({ success: false, message: "Faltan parámetros" });
+  }
+  try {
+      const result = deletefile(server, serverPath);
+      return res.status(200).json({ success: true, result });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+});
 export default router;

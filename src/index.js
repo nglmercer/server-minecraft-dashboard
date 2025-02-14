@@ -6,6 +6,7 @@ import hardwareRouter from './routers/hardware.js';
 import taskRouter from './routers/task.js';
 import coresRouter from './routers/minecraft/cores.js';
 import javaVersionsRouter from './routers/minecraft/javaversions.js';
+import pluginMCRouter from './routers/minecraft/plugins.js';
 import path from 'path'; // Importa el módulo path para manejar rutas de archivos
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use('/api', hardwareRouter);
 app.use('/api', taskRouter);
 app.use('/api', coresRouter);
 app.use('/api', javaVersionsRouter);
+app.use('/api', pluginMCRouter);
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

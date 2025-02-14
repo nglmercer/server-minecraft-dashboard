@@ -1919,7 +1919,8 @@ if (!customElements.get('kubek-plugins-ui')) {
         this.shadowRoot.addEventListener('click', this.handleDelete.bind(this));
       }
     
-      createItemHTML(item, itemType) {
+      createItemHTML(ITEM, itemType) {
+        let item = typeof ITEM === "string" ? ITEM : ITEM.name;
         const isEnabled = !item.endsWith('.dis');
         const displayName = item.replace('.jar', '').replace('.dis', '');
         console.log(displayName);

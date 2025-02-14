@@ -43,11 +43,33 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`,filePath);
     }
 
     return fs.readFileSync(filePath, { encoding: 'utf8' });
   }
+  renameFile(folderName, fileName, newName) {
+      const folderPath = path.join(this.basePath, folderName);
+      const oldFilePath = path.join(folderPath, fileName);
+      
+      // Mantener la subcarpeta del archivo original
+      const fileDir = path.dirname(fileName); 
+      const newFilePath = path.join(folderPath, fileDir, newName);
+
+      if (!fs.existsSync(oldFilePath)) {
+        throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      }
+
+      // Evitar sobrescribir archivos existentes
+      if (fs.existsSync(newFilePath)) {
+        throw new Error(`El archivo '${newName}' ya existe en '${fileDir}'.`);
+      }
+
+      fs.renameSync(oldFilePath, newFilePath);
+      return newFilePath;
+  }
+
+
   readFilebyPath(filePath) {
     const fileInfo = path.join(this.basePath, filePath);
     console.log("readFilebyPath", fileInfo);
@@ -392,6 +414,28 @@ function writeFilebyName(folderName, fileName, content) {
     console.error(error.message);
   }
 }
+function renamefile(server, sourceFile, newName) {
+  try {
+    console.log("renamefile", server, sourceFile, newName);
+    const result = fileManager.renameFile(server, sourceFile, newName);
+    return result; 
+  }
+catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+function deletefile(server, sourceFile) {
+  try {
+    let uploadPath;
+    uploadPath = "./servers/" + server + path.dirname(sourceFile);
+    fs.unlinkSync(uploadPath);
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
 /* createserverfolder("nueva_carpeta1");
 createsubfolder("nueva_carpeta1", "subcarpeta");
 getfolderinfo("nueva_carpeta1/subcarpeta");
@@ -404,5 +448,7 @@ export {
   updatefolderinfo,
   readfilebyname,
   readfilebypath,
-  writeFilebyName
+  writeFilebyName,
+  renamefile,
+  deletefile
 }

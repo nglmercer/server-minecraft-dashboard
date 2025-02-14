@@ -123,9 +123,14 @@ class PluginsAndModsManager {
   // Métodos asíncronos para obtener datos
   async fetchPlugins() {
     return new Promise((resolve) => {
-      KubekPlugins.getPluginsList((plugins) => {
-        if (plugins) {
+      KubekPlugins.getPluginsList((data) => {
+        let plugins = typeof data === "object" ? data.data : data;
+        // check if plugins content is array or object
+        console.log("plugins", plugins);
+        if (Array.isArray(plugins)) {
           this.setPlugins(plugins);
+        } else {
+          this.setPlugins(Object.values(plugins));
         }
         resolve(plugins);
       });
@@ -198,7 +203,7 @@ class PluginsAndModsController {
     const validType = this.validateItemType(itemType);
     const itemPath = `/${validType}/${item}`;
 
-    KubekFileManager.delete(itemPath, (success) => {
+    KubekFileManagerUI.deleteFile(itemPath, (success) => {
       if (success) {
         const ui = validType === ITEM_TYPES.PLUGINS ? this.pluginsUI : this.modsUI;
         ui.removeElement(item);
@@ -212,7 +217,7 @@ class PluginsAndModsController {
     
     if (newName) {
       const filePath = `/${validType}/${item}`;
-      KubekFileManager.renameFile(filePath, newName, (success) => {
+      KubekFileManagerUI.renameFile(filePath, newName, (success) => {
         if (success) {
           console.log(`${validType} item renamed:`, { from: item, to: newName });
           this.refresh(validType);
