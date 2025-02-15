@@ -3,6 +3,7 @@ import authRouter from './authRouter.js';
 import filesRouter from './routers/fileManager.js';
 import serverRouter from './routers/servers.js';
 import hardwareRouter from './routers/hardware.js';
+import dicoverRouter from './routers/discover.js';
 import taskRouter from './routers/task.js';
 import langRouters from './routers/langRouters.js';
 import coresRouter from './routers/minecraft/cores.js';
@@ -73,6 +74,7 @@ app.use(express.static(publicPath));
 
 // Rutas de autenticación
 app.use('/auth', authRouter);
+app.use('/network', dicoverRouter);
 app.use('/api', filesRouter);
 app.use('/api', serverRouter);
 app.use('/api', hardwareRouter);

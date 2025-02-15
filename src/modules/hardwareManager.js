@@ -12,25 +12,25 @@ const isValidObject = (obj) => {
 
 // Obtener datos de CPU y memoria
 const fetchCpuAndMemory = async () => {
-  console.log("[DEBUG] Iniciando fetchCpuAndMemory");
+  //console.log("[DEBUG] Iniciando fetchCpuAndMemory");
   const cpuLoad = await si.currentLoad();
-  console.log("[DEBUG] Datos de carga CPU obtenidos:", cpuLoad);
+  //console.log("[DEBUG] Datos de carga CPU obtenidos:", cpuLoad);
   const memInfo = await si.mem();
-  console.log("[DEBUG] Datos de memoria obtenidos:", memInfo);
+  //console.log("[DEBUG] Datos de memoria obtenidos:", memInfo);
   return { cpuLoad, memInfo };
 };
 
 // Obtener datos de hardware (discos, CPU, tiempo, batería, gráficos)
 const fetchHardwareData = async () => {
-  console.log("[DEBUG] Iniciando fetchHardwareData");
+  //console.log("[DEBUG] Iniciando fetchHardwareData");
   const [disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo] = await Promise.all([
     si.fsSize(), si.cpu(), si.time(), si.battery(), si.graphics()
   ]);
-  console.log("[DEBUG] Datos de discos obtenidos:", disks);
-  console.log("[DEBUG] Datos de CPU obtenidos:", cpuInfo);
-  console.log("[DEBUG] Datos de tiempo obtenidos:", timeInfo);
-  console.log("[DEBUG] Datos de batería obtenidos:", batteryInfo);
-  console.log("[DEBUG] Datos de gráficos obtenidos:", graphicsInfo);
+  //console.log("[DEBUG] Datos de discos obtenidos:", disks);
+  //console.log("[DEBUG] Datos de CPU obtenidos:", cpuInfo);
+  //console.log("[DEBUG] Datos de tiempo obtenidos:", timeInfo);
+  //console.log("[DEBUG] Datos de batería obtenidos:", batteryInfo);
+  //console.log("[DEBUG] Datos de gráficos obtenidos:", graphicsInfo);
   return { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo };
 };
 
@@ -40,7 +40,7 @@ const fetchHardwareData = async () => {
 
 // Obtener uso de recursos (CPU y RAM)
 const getResourcesUsage = async (cb) => {
-  console.log("[DEBUG] Iniciando getResourcesUsage");
+  //console.log("[DEBUG] Iniciando getResourcesUsage");
   try {
     const { cpuLoad, memInfo } = await fetchCpuAndMemory();
 
@@ -64,7 +64,7 @@ const getResourcesUsage = async (cb) => {
       }
     };
 
-    console.log("[DEBUG] Resultado de getResourcesUsage:", usage);
+    //console.log("[DEBUG] Resultado de getResourcesUsage:", usage);
     cb(usage);
   } catch (error) {
     console.error("[ERROR] getResourcesUsage encontró un error:", error);
@@ -74,7 +74,7 @@ const getResourcesUsage = async (cb) => {
 
 // Obtener información del hardware y sistema
 const getHardwareInfo = async (cb) => {
-  console.log("[DEBUG] Iniciando getHardwareInfo");
+  //console.log("[DEBUG] Iniciando getHardwareInfo");
   try {
     const { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo } = await fetchHardwareData();
 
@@ -126,7 +126,7 @@ const getHardwareInfo = async (cb) => {
       }));
       info.rawdisks = disks;
     } else {
-      console.log("[DEBUG] No se encontraron discos.");
+      //console.log("[DEBUG] No se encontraron discos.");
     }
 
     // Agregar batería (siempre se espera que esté disponible; en caso de no existir, podría omitirse de manera similar)
@@ -151,10 +151,10 @@ const getHardwareInfo = async (cb) => {
         }))
       };
     } else {
-      console.log("[DEBUG] No se encontraron controladores gráficos.");
+      //console.log("[DEBUG] No se encontraron controladores gráficos.");
     }
 
-    console.log("[DEBUG] Resultado de getHardwareInfo:", info);
+    //console.log("[DEBUG] Resultado de getHardwareInfo:", info);
     cb(info);
   } catch (error) {
     console.error("[ERROR] getHardwareInfo encontró un error:", error);
