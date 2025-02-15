@@ -26,7 +26,7 @@ class KubekPluginsUI {
         }
         console.log("descargar string",uploadURL,fileUrl);
         // Enviar la URL al servidor para que descargue el archivo
- /*        KubekRequests.post(uploadURL, (response) => {
+        KubekRequests.post(uploadURL, (response) => {
             if (response === true) {
                 console.log("Archivo descargado y subido correctamente");
                 pluginsAndModsController.refresh(itemType); // Actualizar la lista de plugins/mods
@@ -34,7 +34,7 @@ class KubekPluginsUI {
                 console.error("Error en el servidor:", response);
                 KubekAlerts.addAlert("Error en el servidor", "error", response, 5000);
             }
-        }, { url: fileUrl }); // Enviar la URL en el cuerpo de la solicitud */
+        }, { url: fileUrl }); // Enviar la URL en el cuerpo de la solicitud
 
     } catch (error) {
         console.error("Error en downloadAndUploadFromURL:", error.message, itemType, fileUrl);
@@ -62,7 +62,10 @@ class KubekPluginsUI {
             body: formData,
         })
         .then((response) => response.json())
-        .then((data) => console.log("Archivo subido:", data))
+        .then((data) => {
+            console.log("Archivo subido:", data);
+            pluginsAndModsController.refresh(itemType+"s");
+        })
         .catch((error) => console.error("Error al subir archivo:", error));
     });
   }
@@ -111,7 +114,7 @@ document.addEventListener('download-request', (e) => {
 
   }
 });
-//KubekPluginsUI.downloadAndUploadFromURL("plugin","https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar");
+KubekPluginsUI.downloadAndUploadFromURL("plugin","https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar");
  /// Clase principal para gestionar el estado de plugins y mods
 
 class PluginsAndModsManager {
