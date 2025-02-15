@@ -118,7 +118,7 @@ export class ServerManager {
     return `if not exist "${serverPath}" mkdir "${serverPath}"\ncd "${serverPath}"`;
   }
   generateServerProperties(serverName, port) {
-    return `server-port=${port}\nquery.port=${port}\nmotd=${serverName}\noffline-mode=false\nmotid=Paper\nmotid-message-prefix=[${serverName}]`;
+    return `server-port=${port}\nquery.port=${port}\nmotd=${serverName}\noffline-mode=true\nmotid=Paper\nmotid-message-prefix=[${serverName}]\nonline-mode=false`;
 }
 }
 
