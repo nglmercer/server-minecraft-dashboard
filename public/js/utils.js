@@ -559,40 +559,6 @@ var uiDebugger = DebuggerGroupManager.create('UI');
   }
 }
 class KubekUI {
-    // Cargar sección en bloque - Reemplazamos $.get por fetch
-    static loadSection = (name, container = "body", cb = () => {}) => {
-        fetch(`/sections/${name}.html`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text();
-            })
-            .then(code => {
-                console.log("Loading section:", name, container);
-                //$(container).append(code);
-                //container.appendChild(code);
-                //document.querySelector(container).appendChild(code);
-                cb();
-            })
-            .catch(error => {
-                console.error('Error loading section:', error);
-            });
-    }
-
-    static showPreloader() {
-
-    }
-
-    static hidePreloader() {
-
-    }
-
-    static changeItemByPage = (page) => {
-        this.setAllSidebarItemsUnactive();
-        this.setActiveItemByPage(page);
-    }
-
     static loadSelectedServer = () => {
         if (typeof window.localStorage.selectedServer !== "undefined") {
             selectedServer = window.localStorage.selectedServer;
@@ -651,34 +617,6 @@ class KubekUI {
             });
 
     }
-
-    static connectionLost() {
-       // KubekAlerts.addAlert("{{commons.connectionLost}}", "warning", moment().format("DD.MM / HH:MM:SS"), 6000);
-        this.showPreloader();
-    }
-
-    static connectionRestored() {
-       // KubekAlerts.addAlert("{{commons.connectionRestored}}", "check", moment().format("DD.MM / HH:MM:SS"), 3000);
-        setTimeout(() => {
-          //console.log("connectionRestored");
-        }, 1000);
-    }
-
-    static toggleSidebar() {
-        const sidebar = document.querySelector(".main-layout .sidebar");
-        const blurScreen = document.querySelector(".blurScreen");
-
-        if (window.matchMedia("(max-width: 1360px)").matches && sidebar) {
-            if (sidebar.classList.contains("minimized")) {
-                sidebar.classList.remove("minimized");
-                if (blurScreen) blurScreen.style.display = "block";
-            } else {
-                sidebar.classList.add("minimized");
-                if (blurScreen) blurScreen.style.display = "none";
-            }
-        }
-    }
-
     static setTitle(title) {
         document.title = title;
     }

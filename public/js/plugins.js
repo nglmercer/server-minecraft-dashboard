@@ -1,7 +1,4 @@
-// Configuración inicial de la UI
-KubekUI.setTitle("Kubek | {{sections.plugins}}");
 
-// Constantes para mejorar la mantenibilidad
 const UI_SELECTORS = {
   PLUGINS: '#plugins-ui',
   MODS: '#mods-ui'

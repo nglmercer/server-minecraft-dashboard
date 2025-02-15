@@ -11,7 +11,6 @@ function systemMonitor(data) {
 }
 initializedSectionSystemMonitor();
 async function initConsole() {
-    KubekUI.setTitle("Kubek | {{sections.console}}");
     KubekHardware.getUsage((usage) => {
         console.log("usage", usage);
         if (!usage || !usage.cpu || !usage.ram) {
