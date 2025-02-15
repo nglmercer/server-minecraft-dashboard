@@ -414,10 +414,10 @@ class SideBar extends HTMLElement {
           ${STYLES}
         </style>
         <div class="sidebar fixed top-16 left-0 h-full w-64 bg-gray-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out">
-          <nav class="mt-5">
+        <slot name="sidebar-content"></slot> <!-- Aquí va el slot -->
+          <nav>
             ${pages.map((page, index) => AppConfig.getSidebarContent(page, index, activePage)).join('')}
           </nav>
-          <slot name="sidebar-content"></slot> <!-- Aquí va el slot -->
         </div>
       `;
     }

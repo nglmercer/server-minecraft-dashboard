@@ -1,6 +1,14 @@
 var globalvars = {
     SERVER_NAME_REGEXP: /^[a-zA-Z0-9\-_]{1,20}$/,
-    AIKAR_FLAGS: "--XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:InitiatingHeapOccupancyPercent=15",
+    AIKAR_FLAGS: `-XX:+UseG1GC 
+     -XX:MaxGCPauseMillis=200 
+     -XX:G1HeapRegionSize=4M 
+     -XX:InitiatingHeapOccupancyPercent=35 
+     -XX:+ParallelRefProcEnabled 
+     -XX:+PerfDisableSharedMem 
+     -XX:+UseStringDeduplication
+     -XX:+UnlockExperimentalVMOptions
+     `,
     currentSelectedCore: "",
     currentSelectedVersion: "",
     allServersList: [],

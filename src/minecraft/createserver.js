@@ -109,7 +109,8 @@ export class ServerManager {
     if (platformInfo.isWindows) {
       return `@echo off\ncd /d "%~dp0"\n${fullJavaPath(platformInfo)} ${fullParams}\npause`;
     } else if (platformInfo.isTermux || platformInfo.isLinux) {
-      return `#!/bin/bash\nexport PATH=$PATH:${javaPath}\ncd "$(dirname "$0")"\n${fullJavaPath(platformInfo)} ${fullParams}`;
+      //      return `#!/bin/bash\nexport PATH=$PATH:${javaPath}\ncd "$(dirname "$0")"\n${fullJavaPath(platformInfo)} ${fullParams}`;
+      return `#!/bin/bash\nexport PATH=$PATH:${javaPath}\ncd "$(dirname "$0")"\njava ${fullParams}`;
     }
   }
 

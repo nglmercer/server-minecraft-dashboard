@@ -588,6 +588,8 @@ class KubekUI {
                 console.log("servers getServersList", servers);
                 servers.forEach(data => {
                     let serverItem = data?.name ? data.name : data;
+                    if (serverItem.includes(".json")) return;
+                    console.log("serverItem", serverItem);
                     const sidebar = document.querySelector('server-menu') || document.getElementById("main-menu-sidebar");
                     setTimeout(() => {
                         sidebar.setActiveElement(window.localStorage.selectedServer);
