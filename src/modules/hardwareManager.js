@@ -1,56 +1,137 @@
 import os from 'os';
 import si from 'systeminformation';
 
-// Función para verificar si un objeto es válido
-const isValidObject = (obj) => {
-  return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
-};
+const isValidObject = (obj) =>
+  obj && typeof obj === 'object' && Object.keys(obj).length > 0;
 
-// ======================
-// Funciones Auxiliares
-// ======================
+class Logger {
+  constructor(enableLogs = true) {
+    this.enableLogs = enableLogs;
+  }
 
-// Obtener datos de CPU y memoria
+  log(...args) {
+    if (this.enableLogs) {
+      console.log('[LOG]', ...args);
+    }
+  }
+
+  error(...args) {
+    if (this.enableLogs) {
+      console.error('[ERROR]', ...args);
+    }
+  }
+
+  debug(...args) {
+    if (this.enableLogs) {
+      console.debug('[DEBUG]', ...args);
+    }
+  }
+}
+
+const logger = new Logger(false); // Cambia a true para ver logs de debug
+
+// Detección de entorno Android/Termux
+const isAndroid = process.platform === 'android' || process.env.TERMUX_VERSION !== undefined;
+
+/**
+ * Obtiene la información de carga de CPU y memoria, con manejo de errores.
+ */
 const fetchCpuAndMemory = async () => {
-  //console.log("[DEBUG] Iniciando fetchCpuAndMemory");
-  const cpuLoad = await si.currentLoad();
-  //console.log("[DEBUG] Datos de carga CPU obtenidos:", cpuLoad);
-  const memInfo = await si.mem();
-  //console.log("[DEBUG] Datos de memoria obtenidos:", memInfo);
+  logger.log('Iniciando fetchCpuAndMemory');
+  let cpuLoad = {};
+  let memInfo = {};
+
+  try {
+    cpuLoad = await si.currentLoad();
+    logger.debug('Datos de carga CPU obtenidos:', cpuLoad);
+  } catch (e) {
+    logger.error('Error obteniendo currentLoad:', e);
+  }
+
+  try {
+    memInfo = await si.mem();
+    logger.debug('Datos de memoria obtenidos:', memInfo);
+  } catch (e) {
+    logger.error('Error obteniendo memoria:', e);
+  }
+
   return { cpuLoad, memInfo };
 };
 
-// Obtener datos de hardware (discos, CPU, tiempo, batería, gráficos)
+/**
+ * Obtiene datos de hardware (discos, CPU, tiempo, batería, gráficos) con
+ * manejo individual de errores y alternativas para entornos Android.
+ */
 const fetchHardwareData = async () => {
-  //console.log("[DEBUG] Iniciando fetchHardwareData");
-  const [disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo] = await Promise.all([
-    si.fsSize(), si.cpu(), si.time(), si.battery(), si.graphics()
-  ]);
-  //console.log("[DEBUG] Datos de discos obtenidos:", disks);
-  //console.log("[DEBUG] Datos de CPU obtenidos:", cpuInfo);
-  //console.log("[DEBUG] Datos de tiempo obtenidos:", timeInfo);
-  //console.log("[DEBUG] Datos de batería obtenidos:", batteryInfo);
-  //console.log("[DEBUG] Datos de gráficos obtenidos:", graphicsInfo);
+  logger.log('Iniciando fetchHardwareData');
+
+  let disks = [];
+  let cpuInfo = {};
+  let timeInfo = {};
+  let batteryInfo = {};
+  let graphicsInfo = {};
+
+  // Intentar obtener información de discos
+  try {
+    disks = await si.fsSize();
+    logger.debug('Datos de discos (fsSize) obtenidos:', disks);
+
+    // En Android/Termux fsSize() puede no devolver datos; usar blockDevices como alternativa
+    if ((!Array.isArray(disks) || disks.length === 0) && isAndroid) {
+      disks = await si.blockDevices();
+      logger.debug('Datos de discos (blockDevices) obtenidos en Android:', disks);
+    }
+  } catch (e) {
+    logger.error('Error obteniendo discos:', e);
+  }
+
+  try {
+    cpuInfo = await si.cpu();
+    logger.debug('Datos de CPU obtenidos:', cpuInfo);
+  } catch (e) {
+    logger.error('Error obteniendo CPU:', e);
+  }
+
+  try {
+    timeInfo = await si.time();
+    logger.debug('Datos de tiempo obtenidos:', timeInfo);
+  } catch (e) {
+    logger.error('Error obteniendo tiempo:', e);
+  }
+
+  try {
+    batteryInfo = await si.battery();
+    logger.debug('Datos de batería obtenidos:', batteryInfo);
+  } catch (e) {
+    logger.error('Error obteniendo batería:', e);
+  }
+
+  try {
+    graphicsInfo = await si.graphics();
+    logger.debug('Datos de gráficos obtenidos:', graphicsInfo);
+  } catch (e) {
+    logger.error('Error obteniendo gráficos:', e);
+  }
+
   return { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo };
 };
 
-// ======================
-// Funciones Principales
-// ======================
-
-// Obtener uso de recursos (CPU y RAM)
+/**
+ * Función principal para obtener el uso de recursos (CPU y RAM).
+ */
 const getResourcesUsage = async (cb) => {
-  //console.log("[DEBUG] Iniciando getResourcesUsage");
+  logger.log('Iniciando getResourcesUsage');
+
   try {
     const { cpuLoad, memInfo } = await fetchCpuAndMemory();
 
     if (!isValidObject(cpuLoad)) {
-      console.error("[ERROR] Datos de CPU inválidos:", cpuLoad);
-      throw new Error("Datos incompletos o inválidos");
+      logger.error('Datos de CPU inválidos:', cpuLoad);
+      throw new Error('Datos incompletos o inválidos de CPU');
     }
     if (!isValidObject(memInfo)) {
-      console.error("[ERROR] Datos de memoria inválidos:", memInfo);
-      throw new Error("Datos incompletos o inválidos");
+      logger.error('Datos de memoria inválidos:', memInfo);
+      throw new Error('Datos incompletos o inválidos de memoria');
     }
 
     const usage = {
@@ -59,78 +140,80 @@ const getResourcesUsage = async (cb) => {
         total: memInfo.total,
         free: memInfo.free,
         used: memInfo.used,
-        percent: Math.round((memInfo.used / memInfo.total) * 100),
+        percent: memInfo.total
+          ? Math.round((memInfo.used / memInfo.total) * 100)
+          : 0,
         rawmemInfo: memInfo,
-      }
+      },
     };
 
-    //console.log("[DEBUG] Resultado de getResourcesUsage:", usage);
+    logger.debug('Resultado de getResourcesUsage:', usage);
     cb(usage);
   } catch (error) {
-    console.error("[ERROR] getResourcesUsage encontró un error:", error);
-    cb({ error: "Error al obtener uso de recursos" });
+    logger.error('getResourcesUsage encontró un error:', error);
+    cb({ error: 'Error al obtener uso de recursos' });
   }
 };
 
-// Obtener información del hardware y sistema
+/**
+ * Función principal para obtener información del hardware y sistema.
+ */
 const getHardwareInfo = async (cb) => {
-  //console.log("[DEBUG] Iniciando getHardwareInfo");
-  try {
-    const { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo } = await fetchHardwareData();
+  logger.log('Iniciando getHardwareInfo');
 
-    // Validaciones para datos obligatorios
+  try {
+    const { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo } =
+      await fetchHardwareData();
+
+    // Validar datos obligatorios
     if (!isValidObject(cpuInfo)) {
-      console.error("[ERROR] Datos de CPU inválidos:", cpuInfo);
-      throw new Error("Datos incompletos o inválidos");
+      logger.error('Datos de CPU inválidos:', cpuInfo);
+      throw new Error('Datos incompletos o inválidos de CPU');
     }
     if (!isValidObject(timeInfo)) {
-      console.error("[ERROR] Datos de tiempo inválidos:", timeInfo);
-      throw new Error("Datos incompletos o inválidos");
-    }
-    if (!isValidObject(batteryInfo)) {
-      console.error("[ERROR] Datos de batería inválidos:", batteryInfo);
-      throw new Error("Datos incompletos o inválidos");
+      logger.error('Datos de tiempo inválidos:', timeInfo);
+      throw new Error('Datos incompletos o inválidos de tiempo');
     }
 
-    // Armado del objeto de respuesta
     const info = {
-      uptime: Math.round(timeInfo.uptime),
+      uptime: timeInfo.uptime ? Math.round(timeInfo.uptime) : 0,
       platform: {
         name: os.type(),
         release: os.release(),
         arch: process.arch,
-        version: os.version(),
+        version: typeof os.version === 'function' ? os.version() : 'N/A',
       },
-      totalmem: Math.round(os.totalmem() / 1024 / 1024),
+      totalmem: os.totalmem() ? Math.round(os.totalmem() / 1024 / 1024) : 0,
       cpu: {
-        model: cpuInfo.brand,
-        speed: cpuInfo.speed,
-        cores: cpuInfo.physicalCores,
-        cache: cpuInfo.cache,
+        model: cpuInfo.brand || cpuInfo.model || 'N/A',
+        speed: cpuInfo.speed || 'N/A',
+        cores: cpuInfo.physicalCores || cpuInfo.cores || 'N/A',
+        cache: cpuInfo.cache || 'N/A',
         rawCpuInfo: cpuInfo,
       },
       enviroment: process.env,
-      networkInterfaces: os.networkInterfaces()
+      networkInterfaces: os.networkInterfaces(),
     };
 
-    // Agregar discos si existen
+    // Agregar información de discos, con alternativas en caso de ausencia de datos
     if (Array.isArray(disks) && disks.length > 0) {
-      info.disks = disks.map(disk => ({
-        filesystem: disk.fs,
-        total: disk.size,
-        used: disk.used,
-        available: disk.available,
-        use: disk.use,
-        mount: disk.mount,
+      info.disks = disks.map((disk) => ({
+        filesystem: disk.fs || disk.name || 'N/A',
+        total: disk.size || disk.total || 0,
+        used: disk.used || 0,
+        available: disk.available || 0,
+        use: disk.use || disk.usePercent || 0,
+        mount: disk.mount || disk.path || 'N/A',
         rawDiskInfo: disk,
       }));
       info.rawdisks = disks;
     } else {
-      //console.log("[DEBUG] No se encontraron discos.");
+      logger.log('No se encontraron discos.');
+      info.disks = [];
     }
 
-    // Agregar batería (siempre se espera que esté disponible; en caso de no existir, podría omitirse de manera similar)
-    if (isValidObject(batteryInfo)) {
+    // Batería: en Android es posible que no esté disponible, por lo que se omite si no es válida
+    if (isValidObject(batteryInfo) && typeof batteryInfo.hasBattery !== 'undefined') {
       info.battery = {
         hasBattery: batteryInfo.hasBattery,
         cycleCount: batteryInfo.cycleCount,
@@ -138,31 +221,36 @@ const getHardwareInfo = async (cb) => {
         percent: batteryInfo.percent,
         rawBatteryInfo: batteryInfo,
       };
+    } else {
+      logger.log('No se encontró información de batería.');
+      info.battery = null;
     }
 
-    // Agregar gráficos solo si se encuentran controladores
-    if (isValidObject(graphicsInfo) && Array.isArray(graphicsInfo.controllers) && graphicsInfo.controllers.length > 0) {
+    // Gráficos: solo se incluyen si hay controladores detectados
+    if (
+      isValidObject(graphicsInfo) &&
+      Array.isArray(graphicsInfo.controllers) &&
+      graphicsInfo.controllers.length > 0
+    ) {
       info.graphics = {
-        controllers: graphicsInfo.controllers.map(ctrl => ({
-          model: ctrl.model,
-          vendor: ctrl.vendor,
-          vram: ctrl.vram,
+        controllers: graphicsInfo.controllers.map((ctrl) => ({
+          model: ctrl.model || 'N/A',
+          vendor: ctrl.vendor || 'N/A',
+          vram: ctrl.vram || 0,
           rawGraphicsInfo: ctrl,
-        }))
+        })),
       };
     } else {
-      //console.log("[DEBUG] No se encontraron controladores gráficos.");
+      logger.log('No se encontraron controladores gráficos.');
+      info.graphics = null;
     }
 
-    //console.log("[DEBUG] Resultado de getHardwareInfo:", info);
+    logger.debug('Resultado de getHardwareInfo:', info);
     cb(info);
   } catch (error) {
-    console.error("[ERROR] getHardwareInfo encontró un error:", error);
-    cb({ error: "Error al obtener información del hardware" });
+    logger.error('getHardwareInfo encontró un error:', error);
+    cb({ error: 'Error al obtener información del hardware' });
   }
 };
 
-export {
-  getResourcesUsage,
-  getHardwareInfo
-};
+export { getResourcesUsage, getHardwareInfo };
