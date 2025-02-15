@@ -1,19 +1,21 @@
+const globalflags = [
+    "-XX:+UseG1GC",
+    "-XX:MaxGCPauseMillis=200",
+    "-XX:G1HeapRegionSize=4M",
+    "-XX:InitiatingHeapOccupancyPercent=35",
+    "-XX:+ParallelRefProcEnabled",
+    "-XX:+PerfDisableSharedMem",
+    "-XX:+UseStringDeduplication"
+  ].join(" \\\n")
 var globalvars = {
     SERVER_NAME_REGEXP: /^[a-zA-Z0-9\-_]{1,20}$/,
-    AIKAR_FLAGS: `-XX:+UseG1GC 
-     -XX:MaxGCPauseMillis=200 
-     -XX:G1HeapRegionSize=4M 
-     -XX:InitiatingHeapOccupancyPercent=35 
-     -XX:+ParallelRefProcEnabled 
-     -XX:+PerfDisableSharedMem 
-     -XX:+UseStringDeduplication
-     -XX:+UnlockExperimentalVMOptions
-     `,
+    AIKAR_FLAGS: globalflags,
     currentSelectedCore: "",
     currentSelectedVersion: "",
     allServersList: [],
     initialized: false
 };
+console.log("globalflags",globalflags)
 const cleanFolderName = (folderName) => {
     // Expresión regular para eliminar caracteres no válidos
     return folderName.replace(/[^a-zA-Z0-9\-_.]/g, '');
@@ -180,7 +182,7 @@ function refreshJavaList(cb) {
 function generateNewServerStart() {
     let command = `-Xmx${document.querySelector('#server-mem').value * 1024}M`;
     if (document.querySelector('#add-aikar-flags').checked) {
-        command += ` ${encodeURIComponent(globalvars.AIKAR_FLAGS)}`;
+        command += ` ${globalvars.AIKAR_FLAGS}`;
     }
     return command;
 }

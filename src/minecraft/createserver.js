@@ -81,21 +81,16 @@ export class ServerManager {
           return false;
       }
   }
-  formatStartParameters(startParameters) {
-    // Dividir los parámetros en un array
-    const parametersArray = startParameters.split(" ");
-
-    // Formatear cada parámetro para evitar problemas con caracteres especiales
-    const formattedParameters = parametersArray.map(param => {
-        // Si el parámetro contiene ":", "=", "+", etc., asegurarse de que esté correctamente escapado
-        if (param.includes(":") || param.includes("=") || param.includes("+")) {
-            return `"${param}"`; // Envolver en comillas si contiene caracteres especiales
-        }
-        return param;
-    });
-
-    // Unir los parámetros formateados en una sola cadena
-    return formattedParameters.join(" ");
+  formatStartParameters(parameters) {
+    if (Array.isArray(parameters)) {
+      // Une cada parámetro usando " ^\n" como separador
+      return parameters.join(" ^\n");
+    }
+    if (typeof parameters === "string") {
+      // Reemplaza cualquier secuencia de backslash seguido de salto de línea por " ^\n"
+      return parameters.replace(/\\+\n/g, " ^\n").trim();
+    }
+    return "";
   }
   generateStartScript(platformInfo, javaPath, coreFileName, parameters) {
     const fullJavaPath = (platform) => 
