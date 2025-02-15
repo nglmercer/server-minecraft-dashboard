@@ -11,31 +11,37 @@ const ITEM_TYPES = {
 selectedServer = window.localStorage.selectedServer;
 
 class KubekPluginsUI {
+  static getSelectedServer() {
+    return window.localStorage.selectedServer;
+  }
   /**
    * Descarga un archivo desde una URL y lo sube al servidor.
    * @param {string} itemType - Tipo de archivo (plugin o mod).
    * @param {string} fileUrl - URL del archivo a descargar.
    */
   static async downloadAndUploadFromURL(itemType, fileUrl) {
-    const uploadURL = `/${itemType}s/${selectedServer}/from-url`;
-
+    //const { server, path: serverPath, url } = req.query;
+    const servername = KubekPluginsUI.getSelectedServer();
+    const serverPath = itemType+"s";
+    const url = fileUrl;
+    const cb = (success) => {
+      console.log("downloadFileFromUrl", success);
+    };
+    const fileConfig = {server: servername, url: url, filePath: serverPath, cb };
+    const apiUrl = `/api/filemanager/download-file?server=${servername}&path=${serverPath}&url=${url}`;
     try {
-        // Validar la URL
-        if (!fileUrl || !fileUrl.startsWith("http")) {
-            throw new Error("URL inválida");
-        }
-        console.log("descargar string",uploadURL,fileUrl);
-        // Enviar la URL al servidor para que descargue el archivo
-        KubekRequests.post(uploadURL, (response) => {
-            if (response === true) {
-                console.log("Archivo descargado y subido correctamente");
-                pluginsAndModsController.refresh(itemType); // Actualizar la lista de plugins/mods
+        fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("downloadAndUploadFromURL", data);
+            if (data.success) {
+                console.log("downloadAndUploadFromURL", data);
+                pluginsAndModsController.refresh(itemType+"s");
             } else {
-                console.error("Error en el servidor:", response);
-                KubekAlerts.addAlert("Error en el servidor", "error", response, 5000);
+                console.error("Error en el servidor:", data);
+                KubekAlerts.addAlert("Error en el servidor", "error", data.message, 5000);
             }
-        }, { url: fileUrl }); // Enviar la URL en el cuerpo de la solicitud
-
+        })
     } catch (error) {
         console.error("Error en downloadAndUploadFromURL:", error.message, itemType, fileUrl);
         KubekAlerts.addAlert("Error al descargar/subir el archivo", "error", error.message, 5000);
@@ -114,7 +120,7 @@ document.addEventListener('download-request', (e) => {
 
   }
 });
-KubekPluginsUI.downloadAndUploadFromURL("plugin","https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar");
+//KubekPluginsUI.downloadAndUploadFromURL("plugin","https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar");
  /// Clase principal para gestionar el estado de plugins y mods
 
 class PluginsAndModsManager {

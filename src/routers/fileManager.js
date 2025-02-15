@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from "multer";
+import path from "path";
 import {
   createserverfolder,
   createserverfile,
@@ -12,6 +13,9 @@ import {
   renamefile,
   deletefile
 }from '../modules/servers.js';
+import {
+  downloadFileFromUrl
+} from "../utils/utils.js"
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
@@ -218,4 +222,32 @@ router.get('/filemanager/delete', (req, res) => {
       return res.status(500).json({ success: false, message: error.message });
   }
 });
+router.get("/filemanager/download-file", (req, res) => {
+  const { server, path: serverPath, url } = req.query;
+  
+  if (!server || !serverPath || !url) {
+      return res.status(400).json({ success: false, message: "Faltan parámetros" });
+  }
+
+  // Extraer el nombre del archivo desde la URL
+  const fileName = path.basename(url);
+
+  // Construir la ruta completa con el archivo
+  const fullPath = path.join(serverPath, fileName);
+
+  const cb = (...args) => {
+      console.log("downloadFileFromUrl", ...args);
+  };
+
+  const fileConfig = { server, url, filePath: fullPath, cb };
+
+  try {
+      downloadFileFromUrl(fileConfig);
+      return res.status(200).json({ success: true, message: "Descarga iniciada" });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default router;

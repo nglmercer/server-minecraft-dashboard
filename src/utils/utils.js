@@ -345,7 +345,8 @@ const isObjectsValid = (...objects) => {
   });
   return summCount === validCount;
 };
-const downloadFileFromUrl = (server, url, filePath, cb) => {
+const downloadFileFromUrl = (fileConfig) => {
+  const {server, url, filePath, cb } =fileConfig;
   try {
       // Validación de parámetros
       if (!isObjectsValid(server, url, filePath)) {
