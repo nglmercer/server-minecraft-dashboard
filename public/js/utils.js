@@ -990,7 +990,6 @@ class KubekFileManagerUI {
                             const filetoedit = verifycurrentpath + name
                             console.log("filetoedit", filetoedit);
                             newFileEditor.editFile(e.detail.item, filetoedit);
-                            //KubekFileManagerUI.editFile(filetoedit);
                 }
         });
 
@@ -1025,6 +1024,9 @@ class KubekFileManagerUI {
                             },
                             KubekPredefined.MODAL_CANCEL_BTN
                         );
+                        setTimeout(() => {
+                            KubekFileManagerUI.refreshDir()
+                        }, 1000);
                     }
                 },
                 {
@@ -1289,7 +1291,11 @@ class editNameModal {
                 callback: async () => {
                     const filenewname = document.querySelector('#EditName_Input').value;
                     console.log("filenewname", filenewname, path);
+                    KubekFileManagerUI.renameFile(path, filenewname, () => {
+                        KubekFileManagerUI.refreshDir()
+                    });
                     editNameModal.hide();
+                    KubekFileManagerUI.refreshDir()
                 }
             },
             {

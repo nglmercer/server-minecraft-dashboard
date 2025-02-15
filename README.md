@@ -95,3 +95,12 @@ cd server-minecraft-dashboard
 npm install
 npm run start
 ```
+#### tasks
+- add download file or folder
+- add backup server
+- add restore server
+- compress file and uncompress file
+
+- add delete server
+- fix reload langs to select
+- add usermanagement
