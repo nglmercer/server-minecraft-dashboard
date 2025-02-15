@@ -325,8 +325,8 @@ class Logger {
         return this.logMessage("ERR", colors.red, ...text);
     }
 
-    // Mostrar mensaje de bienvenida de Kubek
-    kubekWelcomeMessage() {
+    // Mostrar mensaje de bienvenida
+    WelcomeMessage() {
         console.log("");
         console.log(colors.cyan("your logo ASCII art here"));
         console.log("");

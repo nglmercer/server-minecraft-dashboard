@@ -2,7 +2,8 @@ import dgram from 'dgram';
 import os from 'os';
 let mainConfig = {
     webserverPort: 3000,
-    serverName: "Minecraft Server"
+    serverName: "Minecraft Server",
+    version: "1.0.0"
 }
 const DISCOVERY_PORT = 48899;
 const DISCOVERY_MSG = 'discvery_server';
@@ -89,7 +90,7 @@ export function getCurrentServerInfo() {
         ip: localIPs[0], // Usar la primera IP local
         port: mainConfig.webserverPort,
         name: mainConfig.serverName || 'Minecraft Server',
-        version: globalThis.kubekVersion
+        version: mainConfig.version
     };
 }
 console.log("getCurrentServerInfo", getCurrentServerInfo());

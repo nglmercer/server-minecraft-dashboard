@@ -5,9 +5,9 @@ const router = express.Router();
 let mainConfig = globalThis.mainConfig;
 router.get('/', (req, res) => {
     res.json({
-        name: mainConfig.serverName || 'Kubek Server',
+        name: mainConfig.serverName || 'MC Server',
         port: mainConfig.webserverPort,
-        version: globalThis.kubekVersion,
+        version: mainConfig.version,
         servers: mainConfig.servers
     });
 });
