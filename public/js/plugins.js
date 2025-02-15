@@ -27,9 +27,9 @@ class KubekPluginsUI {
         if (!fileUrl || !fileUrl.startsWith("http")) {
             throw new Error("URL inválida");
         }
-
+        console.log("descargar string",uploadURL,fileUrl);
         // Enviar la URL al servidor para que descargue el archivo
-        KubekRequests.post(uploadURL, (response) => {
+ /*        KubekRequests.post(uploadURL, (response) => {
             if (response === true) {
                 console.log("Archivo descargado y subido correctamente");
                 pluginsAndModsController.refresh(itemType); // Actualizar la lista de plugins/mods
@@ -37,7 +37,7 @@ class KubekPluginsUI {
                 console.error("Error en el servidor:", response);
                 KubekAlerts.addAlert("Error en el servidor", "error", response, 5000);
             }
-        }, { url: fileUrl }); // Enviar la URL en el cuerpo de la solicitud
+        }, { url: fileUrl }); // Enviar la URL en el cuerpo de la solicitud */
 
     } catch (error) {
         console.error("Error en downloadAndUploadFromURL:", error.message, itemType, fileUrl);
@@ -49,17 +49,53 @@ class KubekPluginsUI {
   static uploadItem(itemType) {
     const baseelement = `#server-${itemType}`;
     const inputElement = document.querySelector(`${baseelement}-input`);
-    const uploadURL = `/${itemType}s/${selectedServer}`;
+    const uploadURL = `/api/filemanager/upload?server=${selectedServer}&path=${itemType}s`;
 
     inputElement.click();
     inputElement.addEventListener("change", () => {
-      const formData = new FormData(document.querySelector(`${baseelement}-form`));
-      KubekRequests.post(uploadURL, () => {
-        pluginsAndModsController.refresh(itemType);
-        console.log("Upload completed:", { uploadURL, selectedServer, formData });
-      }, formData);
+        if (inputElement.files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append("g-file-input", inputElement.files[0]); // Solo este campo
+
+        console.log("Archivo a enviar:", formData.get("g-file-input"));
+
+        fetch(uploadURL, {
+            method: "POST",
+            body: formData,
+        })
+        .then((response) => response.json())
+        .then((data) => console.log("Archivo subido:", data))
+        .catch((error) => console.error("Error al subir archivo:", error));
     });
   }
+  static uploadItems(itemType) {
+    const baseelement = `#server-${itemType}`;
+    const inputElement = document.querySelector(`${baseelement}-input`);
+    const uploadURL = `/api/filemanager/upload?server=${selectedServer}&path=${itemType}s`;
+
+    inputElement.click();
+    inputElement.addEventListener("change", () => {
+        if (inputElement.files.length === 0) return;
+
+        const formData = new FormData();
+        for (const file of inputElement.files) {
+            formData.append("g-file-input", file); // Mismo nombre esperado en el backend
+        }
+
+        console.log("Archivos a enviar:", formData.getAll("g-file-input"));
+
+        fetch(uploadURL, {
+            method: "POST",
+            body: formData,
+        })
+        .then((response) => response.json())
+        .then((data) => console.log("Archivos subidos:", data))
+        .catch((error) => console.error("Error al subir archivos:", error));
+    });
+  }
+
+
 } 
 document.addEventListener('download-request', (e) => {
   const details = e.detail;

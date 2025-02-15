@@ -41,6 +41,36 @@ router.get('/mods/:serverName', (req, res) => {
       res.status(500).json({ success: false, error: JSON.stringify(error) });
     }
   });
+  router.post('/plugins/:serverName', (req, res) => {
+    let { serverName, pluginName, name, filename } = req.params;
+    if (!serverName || !pluginName) {
+      serverName = name;
+      pluginName = filename;
+    }
+    console.log(serverName, pluginName, name, filename ,"serverName, pluginName, name, filename " );
+    try {
+      const pluginPath = serverName + "/plugins";
+      const filePath = path.join(pluginPath, pluginName);
+      const result = readfilebypath(filePath);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, error: JSON.stringify(error) });
+    }
+  });
+  router.post('/mods/:serverName', (req, res) => {
+    const { serverName, modName } = req.params;
+    if (!serverName || !modName) {
+      return res.status(400).json({ success: false, error: "Faltan parámetros" });
+    }
+    try {
+      const modPath = serverName + "/mods";
+      const filePath = path.join(modPath, modName);
+      const result = readfilebypath(filePath);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, error: JSON.stringify(error) });
+    }
+  });
   // necesitamos retornar un array de plugins y mods de unicamente los archivos que tengan extension .jar o con extension .zip
   function isPluginORMod(item) {
     const itemTOeval = typeof item === "string" ? item : item.name;

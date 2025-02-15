@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 // import zlib from 'zlib';
-const ALLOWED_EXTENSIONS = ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png'];
+const ALLOWED_EXTENSIONS = ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar'];
 
 
 class FileManager {
