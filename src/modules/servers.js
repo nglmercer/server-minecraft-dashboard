@@ -365,7 +365,7 @@ function updatefolderinfo(folderName) {
 function getfolderinfo(folderName) {
   try {
     const files = folderManager.getFolderDetails(folderName);
-    console.log(`Archivos en la subcarpeta '${folderName}':`, files);
+   // console.log(`Archivos en la subcarpeta '${folderName}':`, files);
     return files;
   } catch (error) {
     console.error(error.message);
@@ -374,13 +374,13 @@ function getfolderinfo(folderName) {
 function readfilebyname(folderName, fileName) {
   try {
     let file = fileManager.readFilebyPath(filePath);
-    console.log("readfilebyname", file);
+    //console.log("readfilebyname", file);
     if (file === false) {
       file = folderManager.getFolderDetails(folderName);
-      console.log("readfilebyname", file);
+    //  console.log("readfilebyname", file);
 
     }
-    console.log("readfilebyname", file);
+    //console.log("readfilebyname", file);
     return file;
   } catch (error) {
     console.error(error.message);
@@ -389,13 +389,13 @@ function readfilebyname(folderName, fileName) {
 function readfilebypath(filePath) {
   try {
     let file = fileManager.readFilebyPath(filePath);
-    console.log("readfilebyname", file);
+    //console.log("readfilebyname", file);
     if (file === false) {
       file = folderManager.getFolderDetails(filePath);
-      console.log("readfilebyname", file);
+     // console.log("readfilebyname", file);
 
     }
-    console.log("readfilebyname", file);
+    //console.log("readfilebyname", file);
     return file;
   } catch (error) {
     console.error(error.message);

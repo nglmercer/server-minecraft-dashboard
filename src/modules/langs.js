@@ -34,13 +34,51 @@ function getLangStore(lang) {
 function getAllLangs() {
     return allStores; // Ya está inicializado en `initializeLangs`
 }
+function translateText(lang, text, ...placers) {
+    text = text.toString();
+
+    const store = getLangStore(lang);
+    if (!store) {
+        return text; // Retorna el texto original si no hay traducciones disponibles
+    }
+
+    // Buscar marcadores de traducción usando expresión regular
+    let matches = text.match(/\{{[0-9a-zA-Z\-_.]+\}}/gm);
+    if (matches) {
+        matches.forEach(match => {
+            let keyPath = match.replace(/[\{\}]/g, "").split(".");
+            let category = keyPath[0];
+            let key = keyPath[1];
+            let modificator = keyPath[2];
+
+            // Buscar la traducción
+            let translation = store?.translations?.[category]?.[key];
+            if (translation) {
+                if (modificator === "upperCase") {
+                    translation = translation.toUpperCase();
+                } else if (modificator === "lowerCase") {
+                    translation = translation.toLowerCase();
+                }
+                text = text.replace(match, translation);
+            }
+        });
+    }
+
+    // Reemplazar los placeholders (%0%, %1%, etc.) con los valores proporcionados
+    placers.forEach((replacement, i) => {
+        text = text.replace(`%${i}%`, replacement);
+    });
+
+    return text;
+}
 
 // Asegurar que los datos se inicialicen antes de su uso
 await initializeLangs();
 export {
     getLangInstance,
     getLangStore,
-    getAllLangs
+    getAllLangs,
+    translateText
 };
 // Ejemplo de uso
 //console.log("getAllLangs", getAllLangs());

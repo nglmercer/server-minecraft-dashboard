@@ -218,7 +218,7 @@ function getfolderinfo(folderName) {
 function getallfolderinfo() {
   try {
     const files = folderManager.getFolderDetails(".");
-    console.log(`Archivos en la carpeta:`, files);
+    //console.log(`Archivos en la carpeta:`, files);
     return files;
   } catch (error) {
     console.error(error.message);

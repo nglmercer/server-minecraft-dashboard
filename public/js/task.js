@@ -502,7 +502,6 @@ class SPredefined {
     }
 
     static handleConnectionError() {
-        if (!isConnectionLost) KubekUI.connectionLost();
-        isConnectionLost = true;
+
     }
 }

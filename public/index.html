@@ -38,6 +38,8 @@
     <script src="js/mineParse.js"></script>
     <script src="js/ANSIParse.js"></script>
     <script src="js/modalcomponents.js"></script>
+    <script src="./pages/serverSettings.js" type="module"></script>
+    <script src="./pages/serverproperties.js" type="module"></script>
 
     <!-- Classes -->
     <script type="module" src="/initialize.js"></script>
@@ -564,7 +566,6 @@
 
         </div>
         <div slot="4-content" class="bg-slate-800 text-white">
-            <link rel="stylesheet" href="/pages/serverSettings.css" />
 
             <div class="ssettings-container animate__animated animate__fadeIn animate__faster h-full" style="overflow: auto;">
             <!-- Заголовок -->
@@ -657,7 +658,6 @@
             </div>
         </div>
         <div slot="5-content" class="bg-slate-800 text-white"  style="margin-bottom: 32px;">
-            <link rel="stylesheet" href="/pages/server.properties.css" />
 
             <div
               class="speditor-container animate__animated animate__fadeIn animate__faster"
@@ -1197,9 +1197,9 @@ document.addEventListener('DOMContentLoaded', function () {
             selectedServer = servers[0];
         }
     });
-    KubekRequests.get("/rawlanguages", (langs) => {
+/*     KubekRequests.get("/rawlanguages", (langs) => {
         localStorage.setItem("rawlanguages", JSON.stringify(langs));
-    });
+    }); */
 });
 function uploadServerIcon() {
     // Obtener el elemento input
