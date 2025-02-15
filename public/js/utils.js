@@ -506,7 +506,8 @@ var uiDebugger = DebuggerGroupManager.create('UI');
               // Update server icon
               const iconElement = document.querySelector('.content-header .icon-bg img');
               if (iconElement) {
-                  iconElement.src = `/api/servers/${server}/icon?${Date.now()}`;
+                //  iconElement.src = `/api/servers/${server}/icon?${Date.now()}`;
+                iconElement.src = `../assets/kubek_icon.png `;
               }
 
               callback(true);

@@ -4,6 +4,7 @@ import filesRouter from './routers/fileManager.js';
 import serverRouter from './routers/servers.js';
 import hardwareRouter from './routers/hardware.js';
 import taskRouter from './routers/task.js';
+import langRouters from './routers/langRouters.js';
 import coresRouter from './routers/minecraft/cores.js';
 import javaVersionsRouter from './routers/minecraft/javaversions.js';
 import pluginMCRouter from './routers/minecraft/plugins.js';
@@ -79,6 +80,7 @@ app.use('/api', taskRouter);
 app.use('/api', coresRouter);
 app.use('/api', javaVersionsRouter);
 app.use('/api', pluginMCRouter);
+app.use('/api', langRouters);
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

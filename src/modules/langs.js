@@ -22,6 +22,9 @@ async function initializeLangs() {
 
 function getLangInstance(lang) {
     // Normalizar nombre del archivo (asegurar que sea `.json`)
+    if (!lang || !lang.endsWith(".json")) {
+        lang = lang + ".json";
+    }
     const normalizedLang = lang.endsWith(".json") ? lang : `${lang}.json`;
     return langIntances[normalizedLang] || null;
 }
