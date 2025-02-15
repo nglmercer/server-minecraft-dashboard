@@ -112,7 +112,6 @@ function refreshServerCoresList(cb = () => {}) {
             globalvars.currentSelectedCore = e.detail.selected;
             refreshCoreVersionsList(() => {
                 validateNewServerInputs();
-                KubekUI.hidePreloader();
             });
         });
 

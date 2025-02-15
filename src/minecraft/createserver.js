@@ -59,7 +59,8 @@ export class ServerManager {
           if (!serverName || !coreFileName || !serverPort) {
               throw new Error("Parámetros inválidos.");
           }
-          const javaExecutablePath = getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaBinPath;
+          const javaExecutablePath = getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaBinPath || getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaPath;
+          console.log("javaExecutablePath",javaExecutablePath,getJavaInfoByVersion(gameVersionToJava(coreVersion)))
           // Crear carpeta del servidor si no existe
           createserverfolder(serverName);
 
@@ -69,7 +70,7 @@ export class ServerManager {
           const platformInfo = getPlatformInfo();
           const scriptName = platformInfo.startScript;
           const scriptContent = this.generateStartScript(platformInfo, javaExecutablePath, coreFileName, startParameters);
-          
+          console.log("scriptContent",scriptContent)
           createserverfile(serverName, scriptName, scriptContent);
           createserverfile(serverName, "server.properties", this.generateServerProperties(serverName, serverPort));
 
@@ -126,7 +127,7 @@ const newServerManager = new ServerManager();
 export async function startJavaServerGeneration(params, cb) {
   let { serverName, core, coreVersion, startParameters, serverPort } = params;
   const javaRequirements = await generateserverrequirements(params);
-
+  //console.log("javaRequirements",javaRequirements) works
   if (!javaRequirements || !javaRequirements.installed) {
     console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements.javaVersionRequired);
     await prepareJavaForServer(javaRequirements.javaVersionRequired);
@@ -145,6 +146,7 @@ export async function startJavaServerGeneration(params, cb) {
     }
 
     const coreFilePath = path.join(serverDirectoryPath, coreFileName);
+   // console.log("coreFilePath",coreFilePath,serverDirectoryPath,coreFileName) works
     await addDownloadTask(coreDownloadURL, coreFilePath);
 
     newServerManager.writeStartFiles({ serverName, coreFileName, startParameters, serverPort,coreVersion });

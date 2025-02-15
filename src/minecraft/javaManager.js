@@ -140,9 +140,9 @@ const getJavaInfoByVersion = (javaVersion) => {
             version: javaVersion,
             packageName: `openjdk-${javaVersion}`,
             installCmd: `pkg install openjdk-${javaVersion}`,
-            javaPath: '/data/data/com.termux/files/usr/bin/java',
+            javaPath: '/data/data/com.termux/files/usr/bin/',
             installed: checkJavaVersionTermux(javaVersion),
-            absoluteJavaPath: '/data/data/com.termux/files/usr/bin/java'
+            absoluteJavaPath: '/data/data/com.termux/files/usr/bin/'
         };
     }
 
