@@ -82,7 +82,7 @@ class MinecraftServer {
     this.process.on('close', (code) => {
       this.status = 'stopped';
       this.log += `\nProceso cerrado con código ${code}`;
-      console.log(`Servidor ${this.serverName} detenido con código ${code}`);
+      console.log(`Servidor ${this.serverName} detenido con código ${code}\n`);
       // Aquí puedes agregar lógica de reinicio automático en caso de error
     });
   }
@@ -107,7 +107,7 @@ class MinecraftServer {
   }
 
   // Devuelve los últimos N renglones del log
-  getLogs(linesCount = 100) {
+  getLogs(linesCount = 150) {
     const logLines = this.log.split('\n');
     return logLines.slice(-linesCount).join('\n');
   }

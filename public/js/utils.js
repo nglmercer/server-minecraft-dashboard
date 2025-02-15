@@ -914,11 +914,10 @@ let currentChunkWriting = null;
 
 const editableExtensions = [
     "txt", "log", "yml", "xml", "cfg", "conf", "config",
-    "json", "yaml", "properties", "sh", "bat"
+    "json", "yaml", "properties", "sh", "bat","gz"
 ];
 
 // Initialize on DOM load
-    KubekUI.setTitle("Kubek | {{sections.fileManager}}");
     const hoverStyles = `
     <style>
         .dropdown-item {
@@ -1011,7 +1010,7 @@ class KubekFileManagerUI {
                             "{{commons.delete}}", 
                             "delete",
                             () => {
-                                KubekFileManagerUI.delete(path, (result) => {
+                                KubekFileManagerUI.deleteFile(path, (result) => {
                                     if (result === false) {
                                         KubekAlerts.addAlert(
                                             "{{commons.actionFailed}}", 
@@ -1033,22 +1032,9 @@ class KubekFileManagerUI {
                     text: '{{commons.rename}}',
                     icon: 'bookmark_manager',
                     callback: (dataTarget) => {
-                        console.log(dataTarget, e.detail.item, dataTarget);
                         const path = verifycurrentpath + e.detail.item.name;
-                        KubekNotifyModal.askForInput(
-                            "{{commons.rename}}",
-                            "bookmark_manager",
-                            (txt) => {
-                                console.log("rename", path, txt);
-                                KubekFileManagerUI.renameFile(path, txt, () => {
-                                    KubekFileManagerUI.refreshDir();
-                                });
-                            },
-                            "",
-                            "{{fileManager.enterName}}",
-                            KubekUtils.pathFilename(e.detail.item.name),
-                            "text"
-                        );
+                        console.log("rename", e.detail, path);
+                        editNameModal.editFile(e.detail.item.name, path);
                     }
                 }
             ];
@@ -1259,6 +1245,62 @@ class newFileEditor {
         const response = await awaitfilemanager.readFile(path);
         console.log("readFile", path, response);
         cb(response.data);
+    }
+}
+class editNameModal {
+    static editFile(file, path) {
+        const fileElement = document.querySelector('#EditName_Input');
+        fileElement.value = file;
+        // el simbolo de salto de linea es el caracter \n
+        editNameModal.setTittle("archivo : \n"+ file + "\nubicacion : \n" + path);
+        editNameModal.setFileContent(path);
+        editNameModal.setOptions(editNameModal.generateoptions(path));
+        console.log("fileElement", fileElement);
+        editNameModal.show();
+    }
+    static show(){
+        const dialogcontent = document.querySelector('#EditName_dialog');
+        dialogcontent.show();
+    }
+    static hide(){
+        const dialogcontent = document.querySelector('#EditName_dialog');
+        dialogcontent.hide();
+    }
+    static async setOptions(options) {
+        const dialogcontent = document.querySelector('#EditName_content');
+        dialogcontent.options = options;
+    }
+    static setTittle(tittle) {
+        const dialogcontent = document.querySelector('#EditName_content');
+        dialogcontent.setAttribute('tittle', tittle);
+        dialogcontent.setAttribute('description', tittle);
+    }
+    static setFileContent(path){
+        let filepath = typeof path !== 'string' ? path.path : path;
+            if (!path || !path.includes('/')){
+                filepath = '/'+path;
+            }
+    }
+    static generateoptions(path) {
+        const options = [
+            {
+                label: "{{commons.save}}",
+                class: "save-btn",
+                callback: async () => {
+                    const filenewname = document.querySelector('#EditName_Input').value;
+                    console.log("filenewname", filenewname, path);
+                    editNameModal.hide();
+                }
+            },
+            {
+                label: "{{commons.cancel}}",
+                class: "cancel-btn",
+                callback: () => {
+                    editNameModal.hide();
+                }
+            }
+        ];
+        return options;
     }
 }
 function sortToDirsAndFiles(data) {

@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 
 // import zlib from 'zlib';
-const ALLOWED_EXTENSIONS = ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar'];
+const ALLOWED_EXTENSIONS = 
+['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
 
 class FileManager {
@@ -113,11 +114,19 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+        throw new Error(`El archivo o directorio '${fileName}' no existe en la carpeta '${folderName}'.`);
     }
 
-    fs.unlinkSync(filePath);
-  }
+    const stats = fs.statSync(filePath);
+
+    if (stats.isDirectory()) {
+        // Eliminar directorio
+        fs.rmSync(filePath, { recursive: true, force: true });
+    } else {
+        // Eliminar archivo
+        fs.unlinkSync(filePath);
+    }
+}
 
   // Listar todos los archivos en una carpeta específica
   listFiles(folderName) {

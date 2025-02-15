@@ -462,6 +462,7 @@ class CustomDialog extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue !== newValue) {
       switch (name) {
+        case 'tittle':
         case 'title':
           this._title = newValue;
           this.shadowRoot.querySelector('.title').textContent = this._title;
@@ -596,7 +597,7 @@ class CustomDialog extends HTMLElement {
     const slot = document.createElement('slot'); // Slot permanece fijo
     slot.id = 'slot';
 
-    container.append(title, description, options, slot);
+    container.append(title, description,slot, options );
     this.shadowRoot.append(style, container);
 
     this.updateOptions();
