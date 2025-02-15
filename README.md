@@ -1,8 +1,7 @@
 [Readme на русском](README_RU.md)
 
 # What is this project?
-Kubek is a Minecraft web server control panel that supports Linux and Windows. The project offers an intuitive interface for managing servers, plugins and mods and more. Includes an integrated FTP server and file manager with syntax highlighting. Users can control access to servers through a user and role system
-
+ a minecraft server dashboard
 **Features:**
 - **Linux, Windows and Android(Termux) supported**
 - **Intuitive Single-Page UI:** A clean and straightforward user interface for easy navigation and usage
@@ -55,7 +54,7 @@ docker run -d --name kubek \
 			-v /YOUR_DIRECTORY/logs:/usr/kubek/logs \
 			-v /YOUR_DIRECTORY/binaries:/usr/kubek/binaries \
 			-v /YOUR_DIRECTORY/config.json:/usr/kubek/config.json \
-			seeroy/kubek-minecraft-dashboard
+			nglmercer/server-minecraft-dashboard
 ```
 
 If you want to open all ports, then use the command below (with it, Kubek will always work on port 3000, port remapping is not available)
@@ -66,7 +65,7 @@ docker run -d --name kubek --network host \
 			-v /YOUR_DIRECTORY/logs:/usr/kubek/logs \
 			-v /YOUR_DIRECTORY/binaries:/usr/kubek/binaries \
 			-v /YOUR_DIRECTORY/config.json:/usr/kubek/config.json \
-			seeroy/kubek-minecraft-dashboard
+			nglmercer/server-minecraft-dashboard
 ```
 ## Use termux (Android)
 

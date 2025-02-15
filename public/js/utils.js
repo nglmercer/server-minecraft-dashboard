@@ -594,7 +594,8 @@ class KubekUI {
                     }, 1000);
                     const parsedserver = {
                       title: serverItem,
-                      icon: `/api/servers/${serverItem}/icon`
+                    //  icon: `/api/servers/${serverItem}/icon`
+                        icon: `../assets/kubek_icon.png`
                     }
                     allserver.push(parsedserver);
                     sidebar.setServersList(allserver);
