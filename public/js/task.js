@@ -350,7 +350,7 @@ class SPredefined {
                     }
                     if (task.type === SPredefined.TASKS_TYPES.DELETION && 
                        task.status === SPredefined.SERVER_CREATION_STEPS.COMPLETED) {
-                        window.location = "/?act=console";
+                        window.location = "/";
                     }
                 });
             })
@@ -456,7 +456,7 @@ class SPredefined {
                         "check",
                         () => {
                             window.localStorage.selectedServer = task.serverName;
-                            window.location = "/?act=console";
+                            window.location = "/";
                         },
                         SPredefined.MODAL_CANCEL_BTN
                     );

@@ -151,7 +151,7 @@ body {
             console.log('Changing to page:', detail);
             window.localStorage.selectedServer = detail.server;
             if (window.localStorage.selectedServer && detail.server) {
-                window.location.href = `/?act=console`;
+                window.location.href = `/`;
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
