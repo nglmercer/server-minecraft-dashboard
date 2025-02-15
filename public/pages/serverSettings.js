@@ -50,18 +50,14 @@ class KubekServerSettingsUI {
         loadedSettings.restartOnError = document.querySelector('#restart-on-error').getInputValues();
         loadedSettings.stopCommand = document.querySelector("#stop-command").getInputValues();
         const startScript = document.querySelector('#start-script').getInputValues();
-
-        // Save settings and start script
-        const encodedSettings = Base64.encodeURI(JSON.stringify(loadedSettings));
-        const encodedScript = Base64.encodeURI(startScript);
-
-        KubekRequests.put(`/servers/${selectedServer}/info?data=${encodedSettings}`, (settingsResult) => {
+        console.log("startScript", startScript);
+/*         KubekRequests.put(`/servers/${selectedServer}/info?data=${encodedSettings}`, (settingsResult) => {
             KubekRequests.put(`/servers/${selectedServer}/startScript?data=${encodedScript}`, (scriptResult) => {
                 if (settingsResult !== false && scriptResult !== false) {
                     KubekAlerts.addAlert("{{fileManager.writeEnd}}", "check", "", 5000);
                 }
             });
-        });
+        }); */
     }
 
     /**
@@ -83,6 +79,10 @@ class KubekServerSettingsUI {
 
 // Event listener for restart-on-error toggle
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById("serverSettingsSaveBtn").addEventListener('click', () => {
+    console.log("saveServerSettings");
+    KubekServerSettingsUI.writeSettings();
+  });
   const restartOnErrorSwitch = document.querySelector('#restart-on-error');
   restartOnErrorSwitch.addEventListener('input-change', (e) => {
       console.log("Restart on error setting changed:", e.detail);
@@ -119,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
       ];
     }
-    KubekUI.setTitle("Kubek | {{sections.serverSettings}}");
     KubekServerSettingsUI.loadSettings();
     KubekServerSettingsUI.loadStartScript();
     
