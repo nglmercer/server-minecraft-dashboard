@@ -109,6 +109,7 @@ function refreshServerCoresList(cb = () => {}) {
     
     KubekCoresManager.getList(data => {
         console.log("data", data);
+        if (!data || !data.data) return;
         const cores = data.data;
         const coresGrid = document.querySelector('#cores-grids');
         const coreEntries = Object.entries(cores).map(([key, value]) => ({
@@ -125,7 +126,7 @@ function refreshServerCoresList(cb = () => {}) {
             });
         });
 
-        coresGrid.selected = "vanilla";
+        coresGrid.selected = "paper";
         cb(true);
     });
 }
