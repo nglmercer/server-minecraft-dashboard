@@ -1126,8 +1126,7 @@ class KubekFileManagerUI {
             console.log("Archivo a enviar:", formData.get("file")); // Asegúrate de que se captura correctamente
 
         
-            const server = "test123"; // Define el nombre del servidor
-            const currentPath = "plugins"; // Define la ruta donde guardar
+            const server = window.localStorage.selectedServer; // Define el nombre del servidor
         
             fetch(`/api/filemanager/upload?server=${server}&path=${currentPath}`, {
                 method: "POST",

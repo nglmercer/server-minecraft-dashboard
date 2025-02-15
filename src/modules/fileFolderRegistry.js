@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import StorageManager from '../utils.js'; // Asegúrate de que este módulo esté correctamente implementado
 
-const ALLOWED_EXTENSIONS = ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js'];
+const ALLOWED_EXTENSIONS = 
+['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
 class FileManager {
   constructor(basePath = '.') {
@@ -21,7 +22,7 @@ class FileManager {
 
   createFile(folderName, fileName, content = '') {
     const folderPath = path.join(this.basePath, folderName);
-  
+    console.log("folderPath", folderPath);
     if (!fs.existsSync(folderPath)) {
       fs.mkdirSync(folderPath, { recursive: true });
     }
@@ -30,8 +31,8 @@ class FileManager {
     if (!this._isValidExtension(ext)) {
       throw new Error(`Extensión no permitida. Extensiones válidas: ${ALLOWED_EXTENSIONS.join(', ')}`);
     }
-  
     const filePath = path.join(folderPath, fileName);
+    console.log("fileName", fileName,filePath);
     fs.writeFileSync(filePath, content, { encoding: 'utf8' });
     fs.chmodSync(filePath, 0o755); // Asigna permisos después de crear el archivo.
     return filePath;
@@ -175,7 +176,7 @@ function createserverfolder(directoryname) {
 function createserverfile(directoryname, filename, content) {
   try {
     const filePath = fileManager.createFile(directoryname, filename, content);
-    console.log(`Archivo creado: ${filePath}`);
+   // console.log(`Archivo creado: ${filePath}`);
     updatefolderinfo(directoryname);
     return filePath;
   } catch (error) {

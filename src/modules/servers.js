@@ -22,7 +22,6 @@ class FileManager {
   // Crear un archivo en una carpeta específica
   createFile(folderName, fileName, content = '') {
     const folderPath = path.join(this.basePath, folderName);
-
     // Crear la carpeta si no existe
     if (!fs.existsSync(folderPath)) {
       fs.mkdirSync(folderPath, { recursive: true });
@@ -32,8 +31,9 @@ class FileManager {
     if (!this._isValidExtension(ext)) {
       throw new Error(`Extensión no permitida. Extensiones válidas: ${ALLOWED_EXTENSIONS.join(', ')}`);
     }
-
+    
     const filePath = path.join(folderPath, fileName);
+  //debug create file  console.log("folderPath filePath", folderPath, filePath,fileName);
 
     fs.writeFileSync(filePath, content, { encoding: 'utf8' });
     return filePath;
@@ -334,6 +334,7 @@ function createserverfolder(directoryname) {
   }
 }
 function createserverfile(directoryname, filename, content) {
+//  console.log("createserverfile", directoryname, filename, content);
   try {
     const filePath = fileManager.createFile(
       path.join(directoryname), // Ruta relativa a la subcarpeta

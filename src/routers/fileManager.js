@@ -153,7 +153,7 @@ router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => 
       });
     }
 
-    console.log("Archivo recibido:", req.file);
+   // console.log("Archivo recibido:", req.file);
 
     const fileName = req.file.originalname;
     const fileContent = req.file.buffer;
