@@ -1,5 +1,8 @@
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import {
+  comparePassword,
+  hashPassword
+} from './utils/jcrypt.js'
 import StorageManager from './utils.js';
 const configStorage = new StorageManager('access-config.json', './data');
 const saveAccessControl = configStorage.JSONget('accessControl');
@@ -56,7 +59,7 @@ class UserManager {
       throw new Error('El email ya está en uso');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password,10);
     this.users[username] = {
       username,
       email,
@@ -80,7 +83,7 @@ class UserManager {
       throw new Error('Usuario no encontrado');
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await comparePassword(password, user.password);
     if (!passwordMatch) {
       throw new Error('Contraseña incorrecta');
     }
@@ -101,12 +104,12 @@ class UserManager {
       throw new Error('Usuario no encontrado');
     }
 
-    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+    const passwordMatch = await comparePassword(currentPassword, user.password);
     if (!passwordMatch) {
       throw new Error('Contraseña actual incorrecta');
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = await hashPassword(newPassword, 10);
     this.saveUsers();
     return { message: 'Contraseña cambiada exitosamente' };
   }
@@ -173,7 +176,7 @@ class UserManager {
       throw new Error('Usuario no encontrado');
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await comparePassword(password, user.password);
     if (!passwordMatch) {
       throw new Error('Contraseña incorrecta');
     }

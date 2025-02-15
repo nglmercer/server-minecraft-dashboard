@@ -1,6 +1,9 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import {
+  comparePassword,
+  hashPassword
+} from './utils/jcrypt.js'
 import {UserManager, accessControl} from './UserManager.js'; // Importa la clase UserManager
 
 const router = express.Router();
@@ -59,7 +62,7 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(400).json({ error: 'El usuario no existe' });
     }
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await comparePassword(user.password, password);
     if (!passwordMatch) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
