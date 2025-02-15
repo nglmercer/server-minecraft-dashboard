@@ -1641,8 +1641,8 @@ customElements.define('custom-dialog', CustomDialog);
     
                     @media (prefers-color-scheme: light) {
                         :host {
-                            color: #1a1a1a;
-                            background-color: #ffffff;
+                            color: #1a1a1a !important;
+                            background-color: #ffffff !important;
                         }
                         table {
                             border-color: #ddd;
