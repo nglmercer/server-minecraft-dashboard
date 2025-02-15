@@ -23,7 +23,7 @@ class KubekServerSettingsUI {
             restartToggle.setInputValues(serverSettings.restartOnError !== false);
             
             // Update other settings
-            document.querySelector("#stop-command").setInputValues(serverSettings.stopCommand);
+            document.querySelector("#stop-command").setInputValues("stop");
             document.querySelector('#restart-attempts').setInputValues(serverSettings.maxRestartAttempts);
         });
     }
@@ -34,9 +34,9 @@ class KubekServerSettingsUI {
     static loadStartScript = () => {
       let selectedServer = window.localStorage.selectedServer;
 
-        KubekRequests.get(`/servers/${selectedServer}/startScript`, (data) => {
+        KubekRequests.get(`/servers/${selectedServer}/start.sh`, (data) => {
             console.log("Loading start script:", data);
-            document.querySelector('#start-script').setInputValues(data.startScript);
+            document.querySelector('#start-script').setInputValues(data.data);
         });
     }
 

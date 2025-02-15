@@ -586,14 +586,14 @@
             </div>
             <!-- Настройки -->
             <div class="tableWrapper">
-                <table>
+                <table style="width: 100%;">
                 <tr>
                     <td>
                     {{serverSettings.startScript}}
                     </td>
                     <td>
                     <custom-input
-                    type="text"
+                    type="textarea"
                     id="start-script"
                     name="start-script"
                     value="start.sh"
@@ -601,7 +601,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>
+                    <td style="text-wrap: wrap;">
                     {{serverSettings.restartOnError}}
                     </td>
                     <td>
@@ -688,7 +688,7 @@
             
         </div>
         <div slot="6-content" class="bg-slate-800 text-white">
-            <script type="module" src="pages/kubekSettings.js"></script>
+            <script type="module" src="pages/generalSettings.js"></script>
 
             <div class="ksettings-container animate__animated animate__fadeIn animate__faster h-full" style="overflow: auto;">
                 <!-- Заголовок -->
