@@ -175,12 +175,6 @@ body {
                 selectedServer = servers[0];
             }
         });
-        KubekRequests.get("/settings", (settings) => {
-            console.log("settings /settings",settings);
-            if (settings.eulaAccepted === false) {
-                document.querySelector("#Eula_dialog_container").show();
-            }
-        });
         const Eula_dialog = document.querySelector("#Eula_dialog");
         Eula_dialog.options = [
             {
