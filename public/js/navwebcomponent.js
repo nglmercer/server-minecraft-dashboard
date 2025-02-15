@@ -15,7 +15,7 @@ const STYLES = `
     box-sizing: border-box;
 }
   .material-symbols-rounded {
-    font-family: 'Material Symbols Rounded';
+    font-family: 'Material Symbols Outlined';
     font-size: 1.5rem;
   }
   .hidden { display: none; }

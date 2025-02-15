@@ -305,7 +305,7 @@ class InputCommand extends HTMLElement {
         border-radius: 8px;
         box-sizing: border-box;
         border: 1px solid #333;
-        font-family: 'Material Symbols Rounded';
+        font-family: 'Material Symbols Outlined';
       }
       .material-symbols-outlined {
         font-variation-settings:
@@ -3127,7 +3127,7 @@ class SidebarComponent extends HTMLElement {
           overflow-y: auto;
         }
         .material-symbols-rounded {
-                font-family: 'Material Symbols Rounded';
+                font-family: 'Material Symbols Outlined';
                 font-size: 1.5rem;
         }
         .sidebar-box {
@@ -4035,7 +4035,7 @@ class ActionButtons extends HTMLElement {
         }
         
         .material-symbols-rounded {
-          font-family: 'Material Symbols Rounded';
+          font-family: 'Material Symbols Outlined';
           font-size: 20px;
         }
         
