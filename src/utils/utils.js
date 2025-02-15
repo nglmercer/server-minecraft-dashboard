@@ -1,12 +1,12 @@
 import fs from "fs";
-import path from "path";
+import path, { join } from "path";
 import https from 'https';
 import axios from "axios";
 import colors from "colors";
 import stripAnsi from "strip-ansi";
 import { fileURLToPath } from "url";
 import { createRequire } from 'module';
-
+import { readdir } from "fs/promises";
 const require = createRequire(import.meta.url);
 const packageJSON = require("../../package.json");
 const __filename = fileURLToPath(import.meta.url);
@@ -529,6 +529,17 @@ const readCoresFile = (coresFilePath) => {
     }
     return null;
 };
+async function getFileNames(directoryPath) {
+  try {
+      const files = await readdir(directoryPath, { withFileTypes: true });
+      return files
+          .filter(file => file.isFile()) // Filtrar solo archivos
+          .map(file => file.name); // Obtener los nombres de los archivos
+  } catch (error) {
+      console.error("Error al leer la carpeta:", error);
+      return [];
+  }
+}
 export { 
   StorageManager, 
   LanguageManager, 
@@ -550,6 +561,7 @@ export {
   fetchData,
   isDataRecent,
   writeCoresFile,
-  readCoresFile
+  readCoresFile,
+  getFileNames
 };
 export default StorageManager;
