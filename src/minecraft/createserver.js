@@ -81,7 +81,8 @@ export class ServerManager {
           return false;
       }
   }
-  formatStartParameters(parameters) {
+  formatStartParameters(parameters,platformInfo) {
+    if (!platformInfo.isWindows) return parameters;
     if (Array.isArray(parameters)) {
       // Une cada parámetro usando " ^\n" como separador
       return parameters.join(" ^\n");
@@ -98,7 +99,7 @@ export class ServerManager {
         ? `"${path.join(javaPath, 'java.exe')}"` 
         : `"${path.join(javaPath, 'java')}"`;
   
-    const formattedParameters = this.formatStartParameters(parameters);
+    const formattedParameters = this.formatStartParameters(parameters,platformInfo);
     const fullParams = `${formattedParameters} -jar "${coreFileName}" nogui`;
   
     if (platformInfo.isWindows) {
