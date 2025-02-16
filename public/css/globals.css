@@ -63,8 +63,6 @@ body {
   position: absolute;
   left: -2582px;
   right: 0;
-  top: 0;
-  bottom: 0;
   z-index: -285;
 }
 
@@ -354,3 +352,9 @@ html {
   margin-top: 18px;
 }
 
+.plugins-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100%;
+}

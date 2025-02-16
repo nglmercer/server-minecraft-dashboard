@@ -284,7 +284,15 @@ class CodeEditor {
         this.restoreCursorPosition(this.editorElement, cursorPosition);
     }
 }
-
+function returnDialogOptions(labelName, className, callback) {
+    return  {
+      label: labelName,
+      class: className,
+      callback: () => {
+        callback();
+      }
+    }
+  }
 
 class KubekUtils {
   // Convertir tamaño de archivo a un formato legible por humanos
@@ -946,14 +954,11 @@ class KubekFileManagerUI {
             let response = await awaitfilemanager.readDirectory(currentPath);
                                        // Sort data to put directories on top
             let data = response.data?.files;
-                if (data.length > 0) {
+
+                if (data && data.length > 0) {
                 data = sortToDirsAndFiles(data);
             }
 
-            let bindEvent = window.matchMedia("(min-width: 320px)").matches && 
-                            window.matchMedia("(max-width: 480px)").matches ? "click" : "dblclick";
-
-            // Save scroll position if needed
             const scrollData = saveScroll ? 
                 document.querySelector(".fm-container").scrollTop : 0;
             const tableListElement = document.querySelector("#fm-table tbody");
@@ -964,8 +969,6 @@ class KubekFileManagerUI {
             explorer.data = data;
             
             document.getElementById('path-display').textContent = `Current Path: ${currentPath}`;
-            // Bind breadcrumb events
-            this.bindBreadcrumbClicks();
 
             document.getElementById("fm-table").scrollTop = scrollData;
         } catch (error) {
@@ -1059,30 +1062,6 @@ class KubekFileManagerUI {
             setPopupOptions(popupOptions);
             openPopup(e.detail.target);
             console.log("dataTarget", baseOptions, e.target);
-        });
-    }
-
-
-    static bindBreadcrumbClicks() {
-        const breadcrumbLinks = document.querySelectorAll("#fm-breadcrumb a:not(:last-child)");
-        
-        breadcrumbLinks.forEach(link => {
-            link.addEventListener("click", function() {
-                if (this.textContent === this.selectedServer) {
-                    KubekFileManagerUI.refreshDir(false);
-                    return;
-                }
-
-                const currentIndex = Array.from(breadcrumbLinks).indexOf(this);
-                
-                breadcrumbLinks.forEach((item, index) => {
-                    if (item.textContent !== this.selectedServer && index <= currentIndex) {
-                        path += item.textContent + "/";
-                    }
-                });
-
-                KubekFileManagerUI.refreshDir(false);
-            });
         });
     }
 
@@ -1286,26 +1265,18 @@ class editNameModal {
     }
     static generateoptions(path) {
         const options = [
-            {
-                label: "{{commons.save}}",
-                class: "save-btn",
-                callback: async () => {
-                    const filenewname = document.querySelector('#EditName_Input').value;
-                    console.log("filenewname", filenewname, path);
-                    KubekFileManagerUI.renameFile(path, filenewname, () => {
-                        KubekFileManagerUI.refreshDir()
-                    });
-                    editNameModal.hide();
+            returnDialogOptions("{{commons.save}}", "save-btn", () => {
+                const filenewname = document.querySelector('#EditName_Input').value;
+                console.log("filenewname", filenewname, path);
+                KubekFileManagerUI.renameFile(path, filenewname, () => {
                     KubekFileManagerUI.refreshDir()
-                }
-            },
-            {
-                label: "{{commons.cancel}}",
-                class: "cancel-btn",
-                callback: () => {
-                    editNameModal.hide();
-                }
-            }
+                });
+                editNameModal.hide();
+                KubekFileManagerUI.refreshDir()
+            }),
+            returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
+                editNameModal.hide();
+            })
         ];
         return options;
     }
@@ -1330,42 +1301,8 @@ function sortToDirsAndFiles(data) {
     return datanew;
 }
 
-function saveCaretPosition(context) {
-    let selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-        let range = selection.getRangeAt(0);
-        range.setStart(context, 0);
-        let len = range.toString().length;
 
-        return function restore() {
-            let pos = getTextNodeAtPosition(context, len);
-            selection.removeAllRanges();
-            let range = new Range();
-            range.setStart(pos.node, pos.position);
-            selection.addRange(range);
 
-        }
-    } else {
-        return function restore() {
-        }
-    }
-}
-
-function getTextNodeAtPosition(root, index) {
-    const NODE_TYPE = NodeFilter.SHOW_TEXT;
-    let treeWalker = document.createTreeWalker(root, NODE_TYPE, function next(elem) {
-        if (index > elem.textContent.length) {
-            index -= elem.textContent.length;
-            return NodeFilter.FILTER_REJECT
-        }
-        return NodeFilter.FILTER_ACCEPT;
-    });
-    let c = treeWalker.nextNode();
-    return {
-        node: c ? c : root,
-        position: index
-    };
-}
 function openPopup(element, popupId = "#fm-popup") {
     const popupElement = document.querySelector(popupId);
     if (!popupElement) return;
