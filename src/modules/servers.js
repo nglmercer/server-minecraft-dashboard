@@ -402,7 +402,7 @@ async function generateServerFolderBackup(folderName, outputPath = null) {
     console.error(error);
   }
 } 
-generateServerFolderBackup("test1", "test1.tar.gz");
+//  generateServerFolderBackup("test1", "test1.tar.gz");
 async function uncompressServerFolderBackup(compressedFileName, outputFolderName = null) {
   try {
     const backup = await folderManager.decompressFolder(compressedFileName, outputFolderName);
@@ -561,5 +561,7 @@ export {
   writeFilebyName,
   renamefile,
   deletefile,
-  deleteserver
+  deleteserver,
+  generateServerFolderBackup,
+  uncompressServerFolderBackup
 }

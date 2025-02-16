@@ -1008,7 +1008,7 @@ console.log("[UI] Starting Kubek UI...");
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 let act = urlParams.get("act");
-let selectedServer = window.localStorage.selectedServer || "";
+var selectedServer = window.localStorage.selectedServer || "";
 let consoleRamUsageBar, consoleCpuUsageBar;
 
 document.addEventListener('DOMContentLoaded', function () { 
