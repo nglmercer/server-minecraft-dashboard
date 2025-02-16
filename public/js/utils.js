@@ -293,6 +293,16 @@ function returnDialogOptions(labelName, className, callback) {
       }
     }
   }
+function returnexploreroptions(idName, textName, iconName, callback) {
+  return  {
+    id: idName,
+    text: textName,
+    icon: iconName,
+    callback: () => {
+      callback();
+    }
+  }
+}
 
 class KubekUtils {
   // Convertir tamaño de archivo a un formato legible por humanos
@@ -1001,12 +1011,7 @@ class KubekFileManagerUI {
         explorer.addEventListener('item-contextmenu', (e) => {
             const verifycurrentpath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
             const baseOptions = [
-                {
-                    id: 'delete',
-                    text: '{{commons.delete}}',
-                    icon: 'delete',
-                    callback: (dataTarget) => {
-                        console.log('delete', dataTarget);
+                returnexploreroptions('delete','{{commons.delete}}','delete', () => {
                         const path = verifycurrentpath + e.detail.item.name;
                         KubekNotifyModal.create(
                             "{{commons.delete}}", 
@@ -1032,24 +1037,24 @@ class KubekFileManagerUI {
                         setTimeout(() => {
                             KubekFileManagerUI.refreshDir()
                         }, 1000);
-                    }
-                },
-                {
-                    id: 'rename',
-                    text: '{{commons.rename}}',
-                    icon: 'bookmark_manager',
-                    callback: (dataTarget) => {
+                    }),
+                    returnexploreroptions('rename', '{{commons.rename}}', 'bookmark_manager', () => {
                         const path = verifycurrentpath + e.detail.item.name;
                         console.log("rename", e.detail, path);
                         editNameModal.editFile(e.detail.item.name, path);
-                    }
-                }
+                    })
             ];
-            console.log('Click derecho en:', e.detail.item);
+            const downloadOptions = returnexploreroptions('download', '{{commons.download}}', 'download', () => {
+                    const path = verifycurrentpath + e.detail.item.name;
+                    console.log("download", e.detail, path);
+                //    KubekFileManagerUI.downloadFile(path);
+                })
             if (!e.detail.item) return;
-            console.log('Posición:', e.detail.x, e.detail.y);
+            console.log('Posición y datos:', e.detail.x, e.detail.y, e.detail);
             const options = [...baseOptions];
-
+            if (e.detail.item.type === 'file' || !e.detail.item.isDirectory) {
+                options.push(downloadOptions);
+            }
             const popupOptions = options.map(option => ({
                 html: `${hoverStyles}
                     <div class="dropdown-item">
@@ -1061,7 +1066,7 @@ class KubekFileManagerUI {
             }));
             setPopupOptions(popupOptions);
             openPopup(e.detail.target);
-            console.log("dataTarget", baseOptions, e.target);
+            console.log("dataTarget baseOptions", baseOptions, e.target);
         });
     }
 
@@ -1162,34 +1167,21 @@ class newFileEditor {
     }
     static generateoptions() {
         const options = [
-            {
-                label: 'Guardar',
-                class: "save-btn",
-                callback: async () => {
+            returnDialogOptions('Guardar', 'save-btn', async () => {
                     newFileEditor.hide();
-
                     if (newFileEditor.lasteditfile){
                         const contentTOSAVE =  newFileEditor.lasteditfile.getContent();
                         console.log("contentTOSAVE", contentTOSAVE);
                         const savefetch = await awaitfilemanager.writeFilebyName(window.localStorage.selectedServer, newFileEditor.lastfilenameTOEDIT, contentTOSAVE);
                         console.log("savefetch", savefetch);
                     }
-                }
-            },
-            {
-                label: 'borrar',
-                class: "delete-btn",
-                callback: () => {
-                    newFileEditor.hide();
-                }
-            },
-            {
-                label: 'Cancelar',
-                class: "cancel-btn",
-                callback: () => {
-                    newFileEditor.hide();
-                }
-            }
+                }),
+            returnDialogOptions('borrar', 'delete-btn', () => {
+                newFileEditor.hide();
+            }),
+            returnDialogOptions('Cancelar', 'cancel-btn', () => {
+                newFileEditor.hide();
+            })
         ];
         return options;
     }
