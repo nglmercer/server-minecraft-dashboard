@@ -1,10 +1,41 @@
-const TASK_ITEM_PLACEHOLDER = "<div class='alert' data-id='$0'><div class='$1'>$2</div><div class='content-2'><span class='caption'>$3</span><span class='description'>$4</span></div></div>";
-let alltasks = {
-    "tasks": {},
-    "completedTasks": {}
-}
+
 let isConnectionLost = false;
-class KubekAlerts2 {
+class globalconfirmdialog2 {
+    constructor(dialogID,contentID){
+        this.dialog = document.getElementById(dialogID);
+        this.content = document.getElementById(contentID);
+    }
+    show(){
+        this.dialog.show();
+    }
+    hide(){
+        this.dialog.hide();
+    }
+    setOptions(options){
+        this.content.options = options;
+    }
+    setInfo(config){
+        const {tittle, description} = config;
+        this.content.setAttribute('title', tittle);
+        this.content.setAttribute('description', description);
+    }
+}   
+const globaldialog2 = new globalconfirmdialog2("globaldialog","globalmodal_content");
+function returnDialogOptions(labelName, className, callback) {
+    return  {
+      label: labelName,
+      class: className,
+      callback: () => {
+        callback();
+      }
+    }
+  }
+  const TASK_ITEM_PLACEHOLDER = "<div class='alert' data-id='$0'><div class='$1'>$2</div><div class='content-2'><span class='caption'>$3</span><span class='description'>$4</span></div></div>";
+  let alltasks = {
+      "tasks": {},
+      "completedTasks": {}
+  }
+class AlertsUI {
     static stylesInjected = false;
 
     static injectStyles() {
@@ -197,6 +228,7 @@ class KubekAlerts2 {
     }
 
     static setAutoDismiss(alertElement, duration) {
+        if (!duration || duration == 0 ) duration = 5000;
         setTimeout(() => {
             alertElement.classList.add('animate__fadeOut');
             alertElement.addEventListener('animationend', () => alertElement.remove());
@@ -212,38 +244,6 @@ class KubekAlerts2 {
     }
 }
 class SPredefined {
-    // Права
-    static PERMISSIONS = {
-        DEFAULT: "default",
-        ACCOUNTS: "accounts",
-        FILE_MANAGER: "file_manager",
-        MANAGE_SERVERS: "manage_servers",
-        MAKING_SERVERS: "making_servers",
-        MONITOR_SERVERS: "monitor_servers",
-        MANAGE_JAVA: "manage_java",
-        MANAGE_PLUGINS: "manage_plugins"
-    };
-  
-    // См. название :)
-    static API_ENDPOINT = "/api";
-  
-    // Переводы статусов серверов
-    static SERVER_STATUSES_TRANSLATE = {
-        "stopped": "{{serverStatus.stopped}}",
-        "starting": "{{serverStatus.starting}}",
-        "stopping": "{{serverStatus.stopping}}",
-        "running": "{{serverStatus.running}}"
-    }
-  
-    // Статусы серверов
-    static SERVER_STATUSES = {
-        STOPPED: "stopped",
-        RUNNING: "running",
-        STARTING: "starting",
-        STOPPING: "stopping"
-    }
-  
-    // Базовые типы задач
     static TASKS_TYPES = {
         DOWNLOADING: "downloading",
         INSTALLING: "installing",
@@ -257,7 +257,6 @@ class SPredefined {
         UNKNOWN: "unknown"
     }
   
-    // Шаги создания сервера
     static SERVER_CREATION_STEPS = {
         SEARCHING_CORE: "searchingCore",
         CHECKING_JAVA: "checkingJava",
@@ -270,15 +269,9 @@ class SPredefined {
         FAILED: "failed",
     }
   
-    // REGEX для авторизации
-    static PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,64}$/g;
-    static LOGIN_REGEX = /^[a-zA-Z0-9_.-]{3,16}$/g;
-    static EMAIL_REGEX = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
-  
-    static MODAL_CANCEL_BTN = '<button class="dark-btn" onclick="KubekNotifyModal.destroyAllModals()">{{commons.close}}</button>';
   }
-  class KubekTasksUI {
-    static addTask(id, icon, title, description, append = true, iconType = "symbol", iconBgClasses = "icon-bg colored") {
+function   addTask(config) {
+        const { id, icon, title, description, append = true, iconType = "symbol", iconBgClasses = "icon-bg colored" } = config;
         let iconPrepared = "";
         if (iconType === "symbol") {
             iconPrepared = `<span class='material-symbols-rounded'>${icon}</span>`;
@@ -303,205 +296,206 @@ class SPredefined {
             taskHTML: taskHTML
         };
         console.log("alltasks.completedTasks[id]", alltasks.completedTasks);
-        KubekAlerts2.addTask(parsedAlert);
+        AlertsUI.addTask(parsedAlert);
     }
 
-    static removeTaskByID(id) {
-        document.querySelectorAll(".alert").forEach(element => {
-            if (element.dataset.id === id) element.remove();
-        });
+
+function getTaskConfiguration(id, task) {
+    if (task.type === SPredefined.TASKS_TYPES.CREATING && task.serverName) {
+        return handleCreationTask(id, task);
     }
+    
+    const baseConfig = {
+        icon: "help",
+        title: "{{tasksTypes.unknown}}",
+        description: task.description || "",
+        iconBg: "icon-bg"
+    };
 
-    static removeAllTasks() {
-        KubekAlerts2.removeAllAlerts();
-    }
+    const taskHandlers = {
+        [SPredefined.TASKS_TYPES.DOWNLOADING]: () => ({
+            icon: "deployed_code_update",
+            title: `{{tasksTypes.downloading}} ${task.filename}`,
+            description: buildProgressBar(task.progress),
+            iconBg: "bg-warning icon-bg"
+        }),
+        [SPredefined.TASKS_TYPES.INSTALLING]: () => ({
+            icon: "install_desktop",
+            title: "{{tasksTypes.installing}}",
+            description: task.description
+        }),
+        [SPredefined.TASKS_TYPES.UPDATING]: () => ({
+            icon: "update",
+            title: "{{tasksTypes.updating}}",
+            description: task.description
+        }),
+        [SPredefined.TASKS_TYPES.RESTARTING]: () => ({
+            icon: "restart_alt",
+            title: "{{tasksTypes.restarting}}",
+            description: task.description
+        }),
+        [SPredefined.TASKS_TYPES.UNPACKING]: () => ({
+            icon: "archive",
+            title: "{{tasksTypes.unpacking}}",
+            description: task.description
+        }),
+        [SPredefined.TASKS_TYPES.ZIPPING]: () => ({
+            icon: "archive",
+            title: "{{tasksTypes.zipping}}",
+            description: task.description
+        }),
+        [SPredefined.TASKS_TYPES.DELETION]: () => ({
+            icon: "delete",
+            title: "{{tasksTypes.deletion}}",
+            description: task.server
+        })
+    };
 
-    static refreshTasksList() {
-        fetch(SPredefined.API_ENDPOINT + "/tasks")
-            .then(response => response.json())
-            .then(data => {
-                let tasks = data.data;
-                if (this.shouldClearTasks(tasks)) {
-                    this.removeAllTasks();
-                    return;
-                }
-                console.log("tasks refreshTasksList", tasks);
-                if (isConnectionLost) {
-                    // KubekUI.connectionRestored();
-                    isConnectionLost = false;
-                }
-
-                Object.entries(tasks).forEach(([id, task]) => {
-                    const taskConfig = this.getTaskConfiguration(id, task);
-                    if (taskConfig[3] === SPredefined.SERVER_CREATION_STEPS.COMPLETED) {
-                        if (!alltasks.completedTasks[id]) {
-                            alltasks.completedTasks[id] = task;
-                            // Eliminar después de 5 segundos
-                            setTimeout(() => {
-                                delete alltasks.completedTasks[id];
-                            }, 5000);
-                        }
-                        delete alltasks.tasks[id];
-                    } else {
-                        if (!alltasks.completedTasks[id]) { // Solo agregar si no está completada
-                            alltasks.tasks[id] = task;
-                            this.addTask(...taskConfig);
-                        }
-                    }
-                    if (task.type === SPredefined.TASKS_TYPES.DELETION && 
-                       task.status === SPredefined.SERVER_CREATION_STEPS.COMPLETED) {
-                        window.location = "/";
-                    }
-                });
-            })
-            .catch(() => this.handleConnectionError());
-    }
-
-    // Helpers
-    static shouldClearTasks(tasks) {
-        return !tasks || 
-              Object.keys(tasks).length === 0 ||
-              tasks.currentStep === "{{commons.completed}}" ||
-              tasks.currentStep === "completed";
-    }
-
-    static getTaskConfiguration(id, task) {
-        if (task.type === SPredefined.TASKS_TYPES.CREATING && task.serverName) {
-            return this.handleCreationTask(id, task);
-        }
-        
-        const baseConfig = {
-            icon: "help",
-            title: "{{tasksTypes.unknown}}",
-            description: task.description || "",
-            iconBg: "icon-bg"
-        };
-
-        const taskHandlers = {
-            [SPredefined.TASKS_TYPES.DOWNLOADING]: () => ({
-                icon: "deployed_code_update",
-                title: `{{tasksTypes.downloading}} ${task.filename}`,
-                description: this.buildProgressBar(task.progress),
-                iconBg: "bg-warning icon-bg"
-            }),
-            [SPredefined.TASKS_TYPES.INSTALLING]: () => ({
-                icon: "install_desktop",
-                title: "{{tasksTypes.installing}}",
-                description: task.description
-            }),
-            [SPredefined.TASKS_TYPES.UPDATING]: () => ({
-                icon: "update",
-                title: "{{tasksTypes.updating}}",
-                description: task.description
-            }),
-            [SPredefined.TASKS_TYPES.RESTARTING]: () => ({
-                icon: "restart_alt",
-                title: "{{tasksTypes.restarting}}",
-                description: task.description
-            }),
-            [SPredefined.TASKS_TYPES.UNPACKING]: () => ({
-                icon: "archive",
-                title: "{{tasksTypes.unpacking}}",
-                description: task.description
-            }),
-            [SPredefined.TASKS_TYPES.ZIPPING]: () => ({
-                icon: "archive",
-                title: "{{tasksTypes.zipping}}",
-                description: task.description
-            }),
-            [SPredefined.TASKS_TYPES.DELETION]: () => ({
-                icon: "delete",
-                title: "{{tasksTypes.deletion}}",
-                description: task.server
-            })
-        };
-
-        const config = taskHandlers[task.type]?.() || baseConfig;
-        return [id, config.icon, config.title, config.description, true, "symbol", config.iconBg];
-    }
-
-    static handleCreationTask(id, task) {
-        const creationDetails = this.getCreationStepDetails(task, id); // Pasar ID aquí
-        if (creationDetails.triggerModal) creationDetails.triggerModal();
-        
-        return [
-            id,
-            creationDetails.icon,
-            `{{tasksTypes.creating}} ${task.serverName}`,
-            creationDetails.description,
-            true,
-            "symbol",
-            creationDetails.iconBg
-        ];
-    }
-
-    static getCreationStepDetails(task, id) {
-        const stepHandlers = {
-            [SPredefined.SERVER_CREATION_STEPS.CHECKING_JAVA]: {
-                description: "{{serverCreationSteps.checkingJava}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.CREATING_BAT]: {
-                description: "{{serverCreationSteps.creatingBat}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.COMPLETED]: {
-                description: "{{serverCreationSteps.completed}}",
-                icon: "check_circle",
-                iconBg: "bg-success icon-bg",
-                triggerModal: () => {
-                    if (alltasks.completedTasks[id]) return;
-                    KubekNotifyModal.create(
-                        task.serverName,
-                        "{{newServerWizard.creationCompleted}}",
-                        "{{commons.goto}}",
-                        "check",
-                        () => {
-                            window.localStorage.selectedServer = task.serverName;
-                            window.location = "/";
-                        },
-                        SPredefined.MODAL_CANCEL_BTN
-                    );
-                    alltasks.completedTasks[id] = true; // Marcamos como procesado
-                }
-            },
-            [SPredefined.SERVER_CREATION_STEPS.COMPLETION]: {
-                description: "{{serverCreationSteps.completion}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.FAILED]: {
-                description: "{{serverCreationSteps.failed}}",
-                icon: "deployed_code_alert",
-                iconBg: "bg-error icon-bg"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.DOWNLOADING_CORE]: {
-                description: "{{serverCreationSteps.downloadingCore}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.DOWNLOADING_JAVA]: {
-                description: "{{serverCreationSteps.downloadingJava}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.SEARCHING_CORE]: {
-                description: "{{serverCreationSteps.searchingCore}}"
-            },
-            [SPredefined.SERVER_CREATION_STEPS.UNPACKING_JAVA]: {
-                description: "{{serverCreationSteps.unpackingJava}}"
-            }
-        };
-
-        return {
-            icon: "deployed_code_history",
-            iconBg: "icon-bg",
-            ...(stepHandlers[task.currentStep] || {})
-        };
-    }
-
-    static buildProgressBar(progress) {
-        return `<div style="display: flex; margin: 4px 0; align-items: center">
-            <div style="margin: 2px 1px; height: 4px; width: 100%; background: var(--bg-dark-accent-light)">
-                <div style="width: ${progress}%; height: 100%; background: var(--bg-primary-500)"></div>
-            </div>
-            <span style="margin-left: 4px; font-size: 12pt;">${progress}%</span>
-        </div>`;
-    }
-
-    static handleConnectionError() {
-
-    }
+    const config = taskHandlers[task.type]?.() || baseConfig;
+    const dataconfig = { id, icon:config.icon, title:config.title, description:config.description, append: true, iconType: "symbol", iconBgClasses:baseConfig.iconBg } 
+    return dataconfig;
 }
+function handleCreationTask(id, task) {
+    const creationDetails = getCreationStepDetails(task, id); // Pasar ID aquí
+    if (creationDetails.triggerModal) creationDetails.triggerModal();
+    const dataconfig = { id, icon:creationDetails.icon, title:`{{tasksTypes.creating}} ${task.serverName}`, description:creationDetails.description, append: true,
+     iconType: "symbol", iconBgClasses:creationDetails.iconBg } 
+    return dataconfig;
+}
+function getCreationStepDetails(task, id) {
+    const stepHandlers = {
+        [SPredefined.SERVER_CREATION_STEPS.CHECKING_JAVA]: {
+            description: "{{serverCreationSteps.checkingJava}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.CREATING_BAT]: {
+            description: "{{serverCreationSteps.creatingBat}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.COMPLETED]: {
+            description: "{{serverCreationSteps.completed}}",
+            icon: "check_circle",
+            iconBg: "bg-success icon-bg",
+            triggerModal: () => {
+                if (alltasks.completedTasks[id]) return;
+                globaldialog2.show();
+                globaldialog2.setInfo({tittle: "{{newServerWizard.creationCompleted}}", description: "{{commons.goto}}"});
+                globaldialog2.setOptions([
+                    returnDialogOptions("{{commons.goto}}", "check", () => {    
+                        window.localStorage.selectedServer = task.serverName;
+                        window.location = "/";
+                    }),
+                    returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
+                        globaldialog.hide();
+                    })
+                ]);
+            }
+        },
+        [SPredefined.SERVER_CREATION_STEPS.COMPLETION]: {
+            description: "{{serverCreationSteps.completion}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.FAILED]: {
+            description: "{{serverCreationSteps.failed}}",
+            icon: "deployed_code_alert",
+            iconBg: "bg-error icon-bg"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.DOWNLOADING_CORE]: {
+            description: "{{serverCreationSteps.downloadingCore}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.DOWNLOADING_JAVA]: {
+            description: "{{serverCreationSteps.downloadingJava}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.SEARCHING_CORE]: {
+            description: "{{serverCreationSteps.searchingCore}}"
+        },
+        [SPredefined.SERVER_CREATION_STEPS.UNPACKING_JAVA]: {
+            description: "{{serverCreationSteps.unpackingJava}}"
+        }
+    };
+
+    return {
+        icon: "deployed_code_history",
+        iconBg: "icon-bg",
+        ...(stepHandlers[task.currentStep] || {})
+    };
+}
+function     buildProgressBar(progress) {
+    return `<div style="display: flex; margin: 4px 0; align-items: center">
+        <div style="margin: 2px 1px; height: 4px; width: 100%; background: var(--bg-dark-accent-light)">
+            <div style="width: ${progress}%; height: 100%; background: var(--bg-primary-500)"></div>
+        </div>
+        <span style="margin-left: 4px; font-size: 12pt;">${progress}%</span>
+    </div>`;
+}
+function proccesOBJTASKS(tasks) {
+    Object.entries(tasks).forEach(([id, task]) => {
+        const taskConfig = getTaskConfiguration(id, task);
+        if (taskConfig[3] === SPredefined.SERVER_CREATION_STEPS.COMPLETED) {
+            if (!alltasks.completedTasks[id]) {
+                alltasks.completedTasks[id] = task;
+                // Eliminar después de 5 segundos
+                setTimeout(() => {
+                    delete alltasks.completedTasks[id];
+                }, 5000);
+            }
+            delete alltasks.tasks[id];
+        } else {
+            if (!alltasks.completedTasks[id]) { // Solo agregar si no está completada
+                alltasks.tasks[id] = task;
+                addTask(taskConfig);
+            }
+        }
+        if (task.type === SPredefined.TASKS_TYPES.DELETION && 
+           task.status === SPredefined.SERVER_CREATION_STEPS.COMPLETED) {
+            window.location = "/";
+        }
+    });
+}
+// Valores mínimos y máximos para el intervalo
+const MIN_INTERVAL = 50;   // 100 ms cuando hay tareas
+const MAX_INTERVAL = 2000;  // 2000 ms cuando no hay tareas
+
+// Empezamos con el intervalo máximo
+let currentInterval = MAX_INTERVAL;
+
+function refreshTasksList() {
+  fetch("api/tasks")
+    .then(response => response.json())
+    .then(data => {
+      let tasks = data.data;
+      console.log("tasks refreshTasksList", tasks);
+      
+      // Si se recuperó la conexión perdida
+      if (isConnectionLost) {
+        isConnectionLost = false;
+      }
+      
+      // Verificamos si 'tasks' NO es un objeto vacío
+      if (tasks && Object.keys(tasks).length > 0) {
+        notificationsElement(tasks);
+        // Si hay tareas, se refresca muy frecuentemente (100 ms)
+        currentInterval = MIN_INTERVAL;
+      } else {
+        // Si no hay tareas, incrementamos progresivamente el intervalo hasta 2000 ms
+        currentInterval = Math.min(currentInterval + 100, MAX_INTERVAL);
+      }
+    })
+    .catch((e) => {
+      console.error("Error refreshing tasks:", e);
+      isConnectionLost = true;
+      // En caso de error, podemos aumentar el intervalo también
+      currentInterval = Math.min(currentInterval + 100, MAX_INTERVAL);
+    })
+    .finally(() => {
+      // Reprogramamos la función usando el intervalo actual
+      setTimeout(refreshTasksList, currentInterval);
+    });
+}
+
+function notificationsElement(data) {
+  const notificationsEl = document.getElementById('notificaciones');
+  notificationsEl.updateTasks(data);
+}
+
+// Iniciamos el ciclo
+refreshTasksList();
+
+//refreshTasksList();

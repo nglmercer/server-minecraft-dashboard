@@ -849,15 +849,10 @@ class KubekRefresher {
 
     // Интервал обновления списка задач
     static addRefreshTasksInterval = () => {
-        this.addRefreshInterval(500, () => {
-            KubekTasksUI.refreshTasksList();
-        }, "tasksList");
+
     }
 }
-if (!window.location.href.includes("login")) {
-    KubekRefresher.addRefreshServerHeaderInterval();
-    KubekUI.loadServersList(); 
-}
+
 KubekRefresher.addRefreshTasksInterval(); 
 // Constants
  const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;

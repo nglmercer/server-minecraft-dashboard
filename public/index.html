@@ -32,6 +32,7 @@
     <script src="js/highlight.min.js"></script>
     <script src="js/mineParse.js"></script>
     <script src="js/modalcomponents.js"></script>
+    <script src="js/task.js" type="module"></script>
     <script src="./pages/serverSettings.js" type="module"></script>
     <script src="./pages/serverproperties.js" type="module"></script>
     <script src="./pages/Console.js" type="module"></script>
@@ -42,6 +43,8 @@
 </head>
 
 <body class="scheme-dark-light">
+    <task-notifications id="notificaciones"></task-notifications>
+
     <template id="mod-card-template">
         <div class="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors cursor-pointer">
           <div class="flex items-center gap-4">

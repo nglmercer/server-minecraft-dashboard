@@ -4324,3 +4324,138 @@ function animateCSS(element, animation, prefix = 'animate__') {
 
 // Registrar el componente
 customElements.define('kubek-alerts', KubekAlerts1);
+class TaskNotifications extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open', delegatesFocus: true });
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+          display: block;
+        }
+        @font-face {
+          font-family: 'Material Symbols Outlined';
+          font-style: normal;
+          font-weight: 100 700;
+          src: url(https://fonts.gstatic.com/icon/font?kit=kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsKTAp49f3jnpQ&skey=b8dc2088854b122f&v=v226) format('woff2');
+        }
+        .material-symbols-outlined {
+          font-family: 'Material Symbols Outlined';
+          font-weight: normal;
+          font-style: normal;
+          font-size: 24px;
+          line-height: 1;
+          letter-spacing: normal;
+          text-transform: none;
+          display: inline-block;
+          white-space: nowrap;
+          word-wrap: normal;
+          direction: ltr;
+          -moz-font-feature-settings: 'liga';
+          -moz-osx-font-smoothing: grayscale;
+        }
+        /* Estilos para el contenedor de notificaciones y cada notificación */
+        #notifications-container {
+          display: flex;
+          flex-direction: column;
+        }
+        .notification {
+          border: 1px solid #193455;
+          padding: 10px;
+          margin: 5px;
+          border-radius: 5px;
+          background: #1a1a1a;
+          display: flex;
+          align-items: center;
+        }
+        .icon {
+          margin-right: 10px;
+        }
+        .content {
+          flex: 1;
+        }
+        .progress-bar {
+          background: #e0e0e0;
+          height: 8px;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-top: 4px;
+        }
+        .progress {
+          background: #3f83f8;
+          height: 100%;
+          width: 0%;
+          transition: width 0.3s;
+        }
+      </style>
+      <div id="notifications-container"></div>
+    `;
+  }
+
+  /**
+   * Actualiza o agrega notificaciones a partir de un objeto de tareas.
+   * Cada key del objeto es el id de la tarea.
+   * @param {Object} tasks - Objeto con las tareas.
+   */
+  updateTasks(tasks) {
+    const container = this.shadowRoot.querySelector('#notifications-container');
+    for (const id in tasks) {
+      if (tasks.hasOwnProperty(id)) {
+        const task = tasks[id];
+        let notif = container.querySelector(`.notification[data-id="${id}"]`);
+        if (notif) {
+          // Si la notificación ya existe, se actualiza.
+          this._updateNotification(notif, task);
+        } else {
+          // Si no existe, se crea y se agrega.
+          notif = this._createNotification(id, task);
+          container.appendChild(notif);
+        }
+      }
+    }
+  }
+
+  _createNotification(id, task) {
+    const notif = document.createElement('div');
+    notif.classList.add('notification');
+    notif.setAttribute('data-id', id);
+    notif.innerHTML = this._getNotificationHTML(task);
+    return notif;
+  }
+
+  _updateNotification(notif, task) {
+    notif.innerHTML = this._getNotificationHTML(task);
+  }
+
+  _getNotificationHTML(task, taskicon = "deployed_code_update") {
+    // Seleccionamos el ícono según el tipo o estado de la tarea
+    let icon = taskicon;
+    if (task.type === 'downloading') {
+   // icon = 'cloud_download';
+    }
+    if (task.status === 'completed') {
+      icon = 'check_circle';
+    }
+    
+    // Se arma el HTML de la notificación
+    return `
+      <span class="material-symbols-outlined icon">${icon}</span>
+      <div class="content">
+        <strong>${task.filename}</strong>
+        ${typeof task.progress !== 'undefined' ? `
+          <div class="progress-bar">
+            <div class="progress" style="width: ${task.progress}%"></div>
+          </div>
+          <small>${task.progress}%</small>
+        ` : ''}
+      </div>
+    `;
+  }
+}
+
+// Definimos el custom element
+customElements.define('task-notifications', TaskNotifications);
