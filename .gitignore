@@ -6,3 +6,4 @@ package-lock.json
 /logs
 /binaries
 data/archived_tasks.json
+data/tasks.json
