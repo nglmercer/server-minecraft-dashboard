@@ -72,7 +72,7 @@ class TaskManager {
         }
     
         if (this.tasks[taskID].status === PREDEFINED.TASK_STATUS.COMPLETED) {
-            this.archiveTask(taskID);
+           setTimeout(() => this.archiveTask(taskID), 4000);
         } else {
             this.saveTasks();
         }
@@ -84,23 +84,18 @@ class TaskManager {
         const task = this.tasks[taskID];
         if (!task) return false;
     
-        // Verificar si el archivo realmente existe antes de archivarlo
-        if (fs.existsSync(task.path)) {
-            this.archivedTasks[taskID] = {
-                ...task,
-                archivedAt: Date.now()
-            };
-    
-            delete this.tasks[taskID]; // Elimina la tarea de las activas
-            this.saveTasks();
-            this.saveArchivedTasks();
-    
-            tasklogger.log("{{console.taskArchived}}", colors.green(taskID));
-            return true;
-        } else {
-            tasklogger.warn("Archivo no encontrado, no se archivará:", task.path);
-            return false;
-        }
+        this.archivedTasks[taskID] = {
+            ...task,
+            archivedAt: Date.now()
+        };
+
+        delete this.tasks[taskID]; // Elimina la tarea de las activas
+        this.saveTasks();
+        this.saveArchivedTasks();
+
+        tasklogger.log("{{console.taskArchived}}", colors.green(taskID));
+        return true;
+
     }
 
     getTasksByStatus(status) {
@@ -186,20 +181,46 @@ async function addDownloadTask(downloadURL, filePath) {
 
 
 async function unpackArchive(archivePath, unpackPath, deleteAfterUnpack = false) {
+    // Registrar la tarea de desempaquetado
+    const unpackTaskID = TASK_MANAGER.addNewTask({
+        type: PREDEFINED.TASKS_TYPES.UNPACKING,
+        progress: 0,
+        archivePath,
+        filename: path.basename(archivePath),
+        path: unpackPath,
+        status: PREDEFINED.TASK_STATUS.IN_PROGRESS
+    });
+
     try {
+        // Crear el directorio destino, en caso de que no exista.
         fs.mkdirSync(unpackPath, { recursive: true });
+
+        // Realizar el desempaquetado
         await decompress(archivePath, unpackPath);
-        
+
+        // Si se solicita eliminar el archivo comprimido, se elimina
         if (deleteAfterUnpack) {
             fs.unlinkSync(archivePath);
         }
 
+        // Actualizar la tarea a completada (esto automáticamente archivará la tarea)
+        TASK_MANAGER.updateTask(unpackTaskID, {
+            progress: 100,
+            status: PREDEFINED.TASK_STATUS.COMPLETED
+        });
+
         return true;
     } catch (error) {
         console.error("Unpacking error:", error);
+        // Actualizar la tarea a fallida, registrando el error
+        TASK_MANAGER.updateTask(unpackTaskID, {
+            status: PREDEFINED.TASK_STATUS.FAILED,
+            error: error.message
+        });
         return false;
     }
 }
+
 function getalltasks() {
     try {
         const response = taskStorage.JSONget("tasks");

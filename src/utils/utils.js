@@ -319,7 +319,9 @@ class Logger {
     warning(...text) {
         return this.logMessage("WARN", colors.yellow, ...text);
     }
-
+    warn(...text) {
+        return this.logMessage("WARN", colors.yellow, ...text);
+    }
     // Registrar mensajes de error
     error(...text) {
         return this.logMessage("ERR", colors.red, ...text);
