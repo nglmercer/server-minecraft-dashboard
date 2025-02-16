@@ -1140,10 +1140,10 @@ class KubekFileManagerUI {
     }
     static renameFile(path, newName) {
         console.log("rename", path, newName);
-        return KubekRequests.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
+        return awaitRequests.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
     }
     static deleteFile(path) {
-        return KubekRequests.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
+        return awaitRequests.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
     }
     static editFile(path) {
         const fileExt = KubekUtils.pathExt(path);

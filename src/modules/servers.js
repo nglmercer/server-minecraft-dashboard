@@ -75,7 +75,7 @@ class FileManager {
   readFilebyPath(filePath) {
     const fileInfo = path.join(this.basePath, filePath);
     console.log("readFilebyPath", fileInfo);
-
+    if (!filePath) return false;
     // Check if the path exists
     if (!fs.existsSync(fileInfo)) {
         return false;
@@ -260,24 +260,14 @@ class FolderManager {
     return stats.size;
   }
 
-  // Listar archivos y subcarpetas dentro de una carpeta específica (superficialmente)
-/*   listFilesInFolder(folderPath) {
-    if (!fs.existsSync(folderPath)) {
-      return [];
+  deleteserver(serverName) {
+    const serverPath = path.join(this.basePath, serverName);
+    if (!fs.existsSync(serverPath)) {
+      return false;
     }
-    return fs.readdirSync(folderPath).map((item) => {
-      const itemPath = path.join(folderPath, item);
-      const stats = fs.statSync(itemPath);
-      return {
-        name: item,
-        path: path.relative(process.cwd(), itemPath), // Ruta relativa
-
-        size: stats.size,
-        modified: stats.mtime.toISOString(), // Fecha de la última modificación
-        isDirectory: stats.isDirectory(), // Indicar si es un directorio
-      };
-    });
-  } */
+    fs.rmSync(serverPath, { recursive: true, force: true });
+    return true;
+  }
   listFilesInFolder(folderPath) {
     if (!fs.existsSync(folderPath)) {
       return [];
@@ -445,6 +435,17 @@ function deletefile(server, sourceFile) {
     return false;
   }
 }
+function deleteserver(serverName) {
+  try {
+    console.log("deleteserver", serverName);
+    if (!serverName) return false;
+    let result = folderManager.deleteserver(serverName);
+    return result;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
 /* createserverfolder("nueva_carpeta1");
 createsubfolder("nueva_carpeta1", "subcarpeta");
 getfolderinfo("nueva_carpeta1/subcarpeta");
@@ -459,5 +460,6 @@ export {
   readfilebypath,
   writeFilebyName,
   renamefile,
-  deletefile
+  deletefile,
+  deleteserver
 }

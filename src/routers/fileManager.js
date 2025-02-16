@@ -11,7 +11,8 @@ import {
   readfilebypath,
   writeFilebyName,
   renamefile,
-  deletefile
+  deletefile,
+  deleteserver
 }from '../modules/servers.js';
 import {
   downloadFileFromUrl
@@ -216,6 +217,19 @@ router.get('/filemanager/delete', (req, res) => {
   }
   try {
       const result = deletefile(server, serverPath);
+      return res.status(200).json({ success: true, result });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+});
+router.delete("/filemanager/servers/:serverName", (req, res) => {
+  const { serverName } = req.params;
+  if (!serverName) {
+      return res.status(400).json({ success: false, message: "Faltan parámetros" });
+  }
+  try {
+      const result = deleteserver(serverName);
       return res.status(200).json({ success: true, result });
   } catch (error) {
       console.error(error);

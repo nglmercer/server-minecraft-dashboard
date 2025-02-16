@@ -14,12 +14,9 @@ savePropertiesBtn.addEventListener('click', async () => {
         console.log("saveResult is empty");
         return;
     }
-    if (KubekRequests) {
         // convertir data.result el objeto a un string type server.properties
-        const serverProperties = Object.entries(data.result).map(([key, value]) => `${key}=${value}`).join('\n');
-        console.log("serverProperties", serverProperties);
-        const savefetch = await awaitfilemanager.writeFilebyName(window.localStorage.selectedServer, "server.properties", serverProperties);
-        console.log("savefetch", savefetch);
-
-    }
+    const serverProperties = Object.entries(data.result).map(([key, value]) => `${key}=${value}`).join('\n');
+    console.log("serverProperties", serverProperties);
+    const savefetch = await awaitfilemanager.writeFilebyName(window.localStorage.selectedServer, "server.properties", serverProperties);
+    console.log("savefetch", savefetch);
 });

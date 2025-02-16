@@ -4,14 +4,9 @@
  */
 let loadedSettings = null;
 
-/**
- * Class responsible for managing server settings in the UI
- */
+
 class KubekServerSettingsUI {
-    /**
-     * Loads server settings from the backend and updates the UI
-     * Fetches settings like restart behavior, stop command, and max restart attempts
-     */
+
     static loadSettings = () => {
         let selectedServer = window.localStorage.selectedServer;
         if (!selectedServer) return;
@@ -28,22 +23,22 @@ class KubekServerSettingsUI {
         });
     }
 
-    /**
-     * Loads the server's start script and updates the UI
-     */
     static loadStartScript = () => {
       let selectedServer = window.localStorage.selectedServer;
 
         KubekRequests.get(`/servers/${selectedServer}/start.sh`, (data) => {
             console.log("Loading start script:", data);
+            if (!data || !data.data) return;
             document.querySelector('#start-script').setInputValues(data.data);
         });
+        KubekRequests.get(`/servers/${selectedServer}/start.bat`, (data) => {
+          console.log("Loading start script:", data);
+          if (!data || !data.data) return;
+          document.querySelector('#start-script').setInputValues(data.data);
+      });
     }
 
-    /**
-     * Saves both server settings and start script to the backend
-     * Shows a success message if both operations complete successfully
-     */
+
     static writeSettings = () => {
         // Gather current values from UI
         loadedSettings.maxRestartAttempts = document.querySelector('#restart-attempts').getInputValues();
@@ -60,23 +55,16 @@ class KubekServerSettingsUI {
         }); */
     }
 
-    /**
-     * Shows a confirmation dialog for server deletion
-     * Executes the delete request if confirmed
-     */
-    static deleteServer = () => {
-        console.log("Initiating server deletion for:", selectedServer);
-        KubekNotifyModal.create(
-            selectedServer,
-            "{{serverSettings.deleteServer}}",
-            "{{commons.delete}}",
-            "delete",
-            () => KubekRequests.delete(`/servers/${selectedServer}`, () => {}),
-            KubekPredefined.MODAL_CANCEL_BTN
-        );
-    }
 }
-
+function returnDialogOptions(labelName, className, callback) {
+  return  {
+    label: labelName,
+    class: className,
+    callback: () => {
+      callback();
+    }
+  }
+}
 // Event listener for restart-on-error toggle
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("serverSettingsSaveBtn").addEventListener('click', () => {
@@ -95,34 +83,26 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteServerBtn.addEventListener('click', ()=>{
       deleteServerDialog.show();
     });
-    translatedialog();
-    async function translatedialog(){
-      const dialogcontent = document.querySelector('#deletedialog_content');
-      dialogcontent._title = localStorage.getItem("selectedServer");
-      dialogcontent._description = "{{serverSettings.deleteServer}}";
-      dialogcontent.options = [
-        {
-          label: "{{commons.delete}}",
-          class: "delete-btn",
-          callback: () => {
-            deleteServerDialog.hide();
-            KubekRequests.delete("/servers/" + selectedServer, () => {});
-          }
-        },
-        {
-          label: "{{commons.cancel}}",
-          class: "cancel-btn",
-          callback: () => {
-            deleteServerDialog.hide();
-          }
-        }
-        
-      ];
-    }
+    const dialogcontent = document.querySelector('#deletedialog_content');
+    dialogcontent._title = localStorage.getItem("selectedServer");
+    dialogcontent._description = "{{serverSettings.deleteServer}}";
+    dialogcontent.options = [
+      returnDialogOptions("{{commons.delete}}", "delete-btn",async () => {
+        deleteServerDialog.hide();
+        const response = await awaitRequests.delete("/filemanager/servers/" + selectedServer);
+        console.log("response deleteServer", response);
+      }),
+      returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
+        deleteServerDialog.hide();
+      })
+    ];
+    
+    
     KubekServerSettingsUI.loadSettings();
     KubekServerSettingsUI.loadStartScript();
     
 });
+
 /**
  * Sets values for all custom inputs based on a data object
  * @param {Object} dataObject - Object containing input values keyed by input id/name
@@ -167,24 +147,24 @@ async function getelementStore(element) {
     }
     return JSON.parse(localStorage.getItem(element));
   }
-  async function getTranslatestore(lang = "en") {
-    let objfind = [];
-    const datarray = await getelementStore("rawlanguages");
-    console.log("datarray", datarray, lang);
-    if (!datarray) return [];
-    for (const [key, value] of Object.entries(datarray)) {
-      if (value.translations && value.info){
-        console.log("value.translations", value,lang);
-        if (value.info.code === lang){
-          objfind = value.translations;
-          break;
-        }
+async function getTranslatestore(lang = "en") {
+  let objfind = [];
+  const datarray = await getelementStore("rawlanguages");
+  console.log("datarray", datarray, lang);
+  if (!datarray) return [];
+  for (const [key, value] of Object.entries(datarray)) {
+    if (value.translations && value.info){
+      console.log("value.translations", value,lang);
+      if (value.info.code === lang){
+        objfind = value.translations;
+        break;
       }
     }
-    if (objfind.length <= 0 && datarray.length > 0) {
-      objfind = datarray[0].translations;
-    }
-    return objfind;
   }
+  if (objfind.length <= 0 && datarray.length > 0) {
+    objfind = datarray[0].translations;
+  }
+  return objfind;
+}
 
 
