@@ -512,7 +512,7 @@ class KubekPredefined {
   static MODAL_CANCEL_BTN = '<button class="dark-btn" onclick="KubekNotifyModal.destroyAllModals()">{{commons.close}}</button>';
 }
 let currentServerStatus = KubekPredefined.SERVER_STATUSES.STOPPED;
-selectedServer = window.localStorage.selectedServer || "";
+var selectedServer = window.localStorage.selectedServer || "";
 // init logs
 var uiDebugger = DebuggerGroupManager.create('UI');   
  uiDebugger.registerCallSite('kukeb-ui.js', 0).stack
@@ -600,25 +600,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
   }
 }
 class KubekUI {
-    static loadSelectedServer = () => {
-        if (typeof window.localStorage.selectedServer !== "undefined") {
-            selectedServer = window.localStorage.selectedServer;
-            KubekServerHeaderUI.loadServerByName(selectedServer, (result) => {
-                uiDebugger.log('loadSelectedServer, loadServerByName',selectedServer, result);
-                if (result === false) {
-                    KubekServers.getServersList((list) => {
-                        window.localStorage.selectedServer = list[0];
-                        uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
-                    });
-                }
-            });
-        } else {
-            KubekServers.getServersList((list) => {
-                uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
-                window.localStorage.selectedServer = list[0];
-            });
-        }
-    }
+
 
     static loadServersList() {
             KubekServers.getServersList(data => {
@@ -661,25 +643,9 @@ class KubekUI {
             });
 
     }
-    static setTitle(title) {
-        document.title = title;
-    }
-    static refreshConsoleLog = () => {
-      let consoleTextElem = document.querySelector('game-console');
-      if (consoleTextElem) {
-          //console.log("consoleTextElem", consoleTextElem, typeof consoleTextElem);
-          KubekServers.getServerLog(selectedServer, (data) => {
-              if (!data) return;
-              let log = data.data;
-              //console.log("getServerLog", selectedServer, {data});
-              consoleTextElem.refreshConsoleLog(log);
-          });
-      }
-  }
+
 }
- setInterval(() => {
-  KubekUI.refreshConsoleLog();
-}, 1000); 
+
 class KubekAlerts {
     static stylesInjected = false;
 
@@ -873,43 +839,13 @@ class KubekRefresher {
 
     // Добавить интервал обновления server header (каждые 2 секунды)
     static addRefreshServerHeaderInterval = () => {
-        this.addRefreshInterval(1500, () => {
-            KubekServerHeaderUI.refreshServerHeader(() => {
-            });
-        }, "serverHeader");
-    };
 
-    // Добавить интервал обновления server log (каждые 650 мсек)
-    static addRefreshServerLogInterval = () => {
-        this.addRefreshInterval(650, () => {
-            this.refreshConsoleLog();
-        }, "serverConsole");
     };
 
     // Добавить интервал обновления использования рес-ов (каждые 4 сек)
     static addRefreshUsageInterval = () => {
-        this.addRefreshInterval(5000, () => {
-            if (typeof KubekConsoleUI !== "undefined") {
-                KubekHardware.getUsage((usage) => {
-                    if (!usage) return;
-                    KubekConsoleUI.refreshUsageItems(usage.cpu, usage.ram.percent, usage.ram);
-                });
-            }
-        }, "usage");
     }
 
-    // Обновить текст в консоли
-    static refreshConsoleLog = () => {
-        let consoleTextElem = document.querySelector('game-console');
-        if (consoleTextElem) {
-            //console.log("consoleTextElem", consoleTextElem, typeof consoleTextElem);
-            KubekServers.getServerLog(selectedServer, (data) => {
-                if (!data) return;
-                //console.log("getServerLog", selectedServer, {data});
-                consoleTextElem.refreshConsoleLog(data.serverLog);
-            });
-        }
-    }
 
     // Интервал обновления списка задач
     static addRefreshTasksInterval = () => {
@@ -920,10 +856,8 @@ class KubekRefresher {
 }
 if (!window.location.href.includes("login")) {
     KubekRefresher.addRefreshServerHeaderInterval();
-    KubekRefresher.addRefreshUsageInterval();
     KubekUI.loadServersList(); 
 }
- KubekRefresher.addRefreshServerLogInterval();
 KubekRefresher.addRefreshTasksInterval(); 
 // Constants
  const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;

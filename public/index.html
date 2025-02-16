@@ -34,7 +34,8 @@
     <script src="js/modalcomponents.js"></script>
     <script src="./pages/serverSettings.js" type="module"></script>
     <script src="./pages/serverproperties.js" type="module"></script>
-
+    <script src="./pages/Console.js" type="module"></script>
+    <script type="module" src="./pages/Serversbar.js"></script>
     <!-- Classes -->
     <script type="module" src="/initialize.js"></script>
 
@@ -345,7 +346,6 @@
       </side-bar>
       <main-content>
         <div slot="1-content" class="bg-slate-800 text-white" style="margin-bottom: 32px;">
-            <link rel="stylesheet" href="/pages/console.css"/>
 
         <div class="console-container animate__animated animate__fadeIn animate__fast">
             <!-- Заголовок -->
@@ -389,7 +389,6 @@
 
         </div>
         <div slot="2-content" class="bg-slate-800 text-white">
-        <link rel="stylesheet" href="/pages/fileManager.css"/>
         <dialog-container id="File_editor_dialog" style="border-radius: 16px;">
             <custom-dialog id="File_editor_content" style="background-color: #151e27; border-radius: 16px;"
             title="editor de archivos" 
@@ -515,7 +514,6 @@
         <file-explorer current-path="./"></file-explorer>
         </div>
         <div slot="3-content" class="bg-slate-800 text-white">
-            <link rel="stylesheet" href="/pages/plugins.css"/>
 
             <!-- Формы для отправки файлов -->
             <form id="server-plugin-form" enctype="multipart/form-data">
@@ -1062,45 +1060,6 @@ function uploadServerIcon() {
 
 
 <script>
-function changeProgressvalue(element, value, action = "setvalue") {
-    const cpuElem = document.getElementById("cpu-bar");
-    const ramElem = document.getElementById("ram-bar");
-    const elements = {
-        "cpu": cpuElem,
-        "ram": ramElem
-    };
-    const actions = {
-        "setvalue": "value",
-        "setactivecolor": "active-color"
-    }
-    if (typeof elements[element] !== "undefined") {
-        if (typeof actions[action] !== "undefined") {
-            elements[element].setAttribute(actions[action], value);
-        }
-    }
-}
-KubekConsoleUI = class {
-    // Обновить progress бары использования рес-ов
-    static refreshUsageItems(cpu, ram, ramElem) {
-        changeProgressvalue("cpu", cpu);
-        changeProgressvalue("ram", ram);
-        changeProgressvalue("ram", KubekUtils.getProgressGradientColor(ram), "setactivecolor");
-        changeProgressvalue("cpu", KubekUtils.getProgressGradientColor(cpu), "setactivecolor");
-        const ramusagecontainer = document.querySelector("#ram-usage-text");
-        if (ramusagecontainer) {
-            ramusagecontainer.textContent = KubekUtils.humanizeFileSize(ramElem.used) + " / " + KubekUtils.humanizeFileSize(ramElem.total);
-        }
-    }
-}
-
-
-    var inputCommandelement = document.querySelector('input-command');
-    console.log("inputCommandelement", inputCommandelement);
-    inputCommandelement.addEventListener('command', (e) => {
-        const detail = e.detail;
-        console.log("detail",);
-        KubekServers.sendCommandToServer(selectedServer, detail.command);
-    });
 
     const server_menu = document.querySelector('server-menu');
     server_menu.addEventListener('server-change', (e) => {
