@@ -42,7 +42,6 @@ function refreshTasksList() {
     .then(response => response.json())
     .then(data => {
       let tasks = data.data;
-      console.log("tasks refreshTasksList", tasks);
       
       // Si se recuperó la conexión perdida
       if (isConnectionLost) {
@@ -51,6 +50,7 @@ function refreshTasksList() {
       
       // Verificamos si 'tasks' NO es un objeto vacío
       if (tasks && Object.keys(tasks).length > 0) {
+        console.log("tasks refreshTasksList", tasks);
         notificationsElement(tasks);
         // Si hay tareas, se refresca muy frecuentemente (100 ms)
         currentInterval = MIN_INTERVAL;

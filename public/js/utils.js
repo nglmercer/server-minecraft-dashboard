@@ -512,7 +512,9 @@ class KubekPredefined {
   static MODAL_CANCEL_BTN = '<button class="dark-btn" onclick="KubekNotifyModal.destroyAllModals()">{{commons.close}}</button>';
 }
 let currentServerStatus = KubekPredefined.SERVER_STATUSES.STOPPED;
-var selectedServer = window.localStorage.selectedServer || "";
+function getSelectedServer() {
+    return window.localStorage.selectedServer;
+}
 // init logs
 var uiDebugger = DebuggerGroupManager.create('UI');   
  uiDebugger.registerCallSite('kukeb-ui.js', 0).stack
@@ -598,52 +600,6 @@ var uiDebugger = DebuggerGroupManager.create('UI');
 
       return true;
   }
-}
-class KubekUI {
-
-
-    static loadServersList() {
-            KubekServers.getServersList(data => {
-                let servers = data.data?.files;
-                const allserver = [];
-                if (!servers) return;
-                console.log("servers getServersList", servers);
-                servers.forEach(data => {
-                    let serverItem = data?.name ? data.name : data;
-                    if (serverItem.includes(".json")) return;
-                    console.log("serverItem", serverItem);
-                    const sidebar = document.querySelector('server-menu') || document.getElementById("main-menu-sidebar");
-                    setTimeout(() => {
-                        sidebar.setActiveElement(window.localStorage.selectedServer);
-                    }, 1000);
-                    const parsedserver = {
-                      title: serverItem,
-                    //  icon: `/api/servers/${serverItem}/icon`
-                        icon: `../assets/kubek_icon.png`
-                    }
-                    allserver.push(parsedserver);
-                    sidebar.setServersList(allserver);
-                    console.log("sidebar", sidebar, parsedserver, allserver);
-                    uiDebugger.log('loadServersList, getServersList',serverItem, servers);
-                    const isActive = serverItem === localStorage.selectedServer ? " active" : "";
-                    const serverElement = document.createElement("div");
-                    serverElement.className = `server-item sidebar-item${isActive}`;
-                    serverElement.onclick = () => {
-                        localStorage.selectedServer = serverItem;
-                        location.reload();
-                    };
-                    serverElement.innerHTML = `
-                        <div class="icon-circle-bg">
-                            <img style="width: 24px; height: 24px;" alt="${serverItem}" src="/api/servers/${serverItem}/icon">
-                        </div>
-                        <span>${serverItem}</span>
-                    `;
-                    sidebar.appendChild(serverElement);
-                });
-            });
-
-    }
-
 }
 
 class KubekAlerts {
@@ -910,7 +866,7 @@ class KubekFileManagerUI {
             console.error("Error:", error);
         }
     }
-    static selectedServer = window.localStorage.selectedServer;
+    static selectedServer = window.localStorage.selectedServer || "";
     static initaddeventlisteners() {
         const explorer = document.querySelector('file-explorer');
         explorer.addEventListener('item-dblclick', (e) => {

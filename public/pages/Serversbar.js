@@ -26,8 +26,9 @@ function loadServersList() {
             const serverElement = document.createElement("div");
             serverElement.className = `server-item sidebar-item${isActive}`;
             serverElement.onclick = () => {
-                localStorage.selectedServer = serverItem;
-                location.reload();
+                console.log("serverElement.onclick", serverItem, localStorage.selectedServer);
+            //    localStorage.selectedServer = serverItem;
+            //    location.reload();
             };
             serverElement.innerHTML = `
                 <div class="icon-circle-bg">
@@ -46,16 +47,21 @@ function loadSelectedServer () {
         loadServerByName(selectedServer, (result) => {
             uiDebugger.log('loadSelectedServer, loadServerByName',selectedServer, result);
             if (result === false) {
-                KubekServers.getServersList((list) => {
-                    window.localStorage.selectedServer = list[0];
+                KubekServers.getServersList((data) => {
+                    let list = data.data
+                    console.log("list", list);
+                    if (!list) return;
+            //        window.localStorage.selectedServer = list[0];
                     uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
                 });
             }
         });
     } else {
-        KubekServers.getServersList((list) => {
+        KubekServers.getServersList((data) => {
+            let list = data.data
             uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
-            window.localStorage.selectedServer = list[0];
+            if (!list) return;
+        //    window.localStorage.selectedServer = list[0];
         });
     }
 }

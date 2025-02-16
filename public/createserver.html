@@ -150,6 +150,7 @@ body {
         menusidebar.addEventListener('server-change', (event) => {
             const detail = event.detail;
             console.log('Changing to page:', detail);
+            if(!detail.server) return;
             window.localStorage.selectedServer = detail.server;
             if (window.localStorage.selectedServer && detail.server) {
                 window.location.href = `/`;
