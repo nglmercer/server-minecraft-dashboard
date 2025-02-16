@@ -21,7 +21,7 @@ function loadServersList() {
             allserver.push(parsedserver);
             sidebar.setServersList(allserver);
             console.log("sidebar", sidebar, parsedserver, allserver);
-            uiDebugger.log('loadServersList, getServersList',serverItem, servers);
+            uiDebugger.log(verItem, servers);
             const isActive = serverItem === localStorage.selectedServer ? " active" : "";
             const serverElement = document.createElement("div");
             serverElement.className = `server-item sidebar-item${isActive}`;
@@ -45,23 +45,21 @@ function loadSelectedServer () {
     if (typeof window.localStorage.selectedServer !== "undefined") {
         selectedServer = window.localStorage.selectedServer;
         loadServerByName(selectedServer, (result) => {
-            uiDebugger.log('loadSelectedServer, loadServerByName',selectedServer, result);
+            uiDebugger.log(selectedServer, result);
             if (result === false) {
                 KubekServers.getServersList((data) => {
                     let list = data.data
                     console.log("list", list);
                     if (!list) return;
-            //        window.localStorage.selectedServer = list[0];
-                    uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
+                    uiDebugger.log(selectedServer, list);
                 });
             }
         });
     } else {
         KubekServers.getServersList((data) => {
             let list = data.data
-            uiDebugger.log('loadSelectedServer, getServersList',selectedServer, list);
+            uiDebugger.log(selectedServer, list);
             if (!list) return;
-        //    window.localStorage.selectedServer = list[0];
         });
     }
 }
