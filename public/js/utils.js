@@ -284,22 +284,6 @@ class CodeEditor {
         this.restoreCursorPosition(this.editorElement, cursorPosition);
     }
 }
-class globalconfirmdialog {
-    constructor(dialogID,contentID){
-        this.dialog = document.getElementById(dialogID);
-        this.content = document.getElementById(contentID);
-    }
-    show(){
-        this.dialog.show();
-    }
-    hide(){
-        this.dialog.hide();
-    }
-    setOptions(options){
-        this.content.options = options;
-    }
-}
-const globaldialog = new globalconfirmdialog("globaldialog");
 function returnDialogOptions(labelName, className, callback) {
     return  {
       label: labelName,
@@ -319,6 +303,28 @@ function returnexploreroptions(idName, textName, iconName, callback) {
     }
   }
 }
+class globalconfirmdialog {
+    constructor(dialogID,contentID){
+        this.dialog = document.getElementById(dialogID);
+        this.content = document.getElementById(contentID);
+    }
+    show(){
+        this.dialog.show();
+    }
+    hide(){
+        this.dialog.hide();
+    }
+    setOptions(options){
+        this.content.options = options;
+    }
+    setInfo(config){
+        const {tittle, description} = config;
+        this.content.setAttribute('title', tittle);
+        this.content.setAttribute('description', description);
+    }
+}
+const globaldialog = new globalconfirmdialog("globaldialog","globalmodal_content");
+
 
 class KubekUtils {
   // Convertir tamaño de archivo a un formato legible por humanos
@@ -849,26 +855,6 @@ class KubekAlerts {
     }
 }
 
-const animateCSSJ = (element, animation, fast = true, prefix = "animate__") => {
-    return new Promise((resolve) => {
-        const animationName = `${prefix}${animation}`;
-        const node = document.querySelector(element);
-
-        if (fast) {
-            node.classList.add(`${prefix}animated`, animationName, `${prefix}faster`);
-        } else {
-            node.classList.add(`${prefix}animated`, animationName);
-        }
-
-        function handleAnimationEnd(event) {
-            event.stopPropagation();
-            node.classList.remove(`${prefix}animated`, animationName, `${prefix}faster`);
-            resolve("Animation ended");
-        }
-
-        node.addEventListener("animationend", handleAnimationEnd, { once: true });
-    });
-};
 let refreshIntervals = {};
 let isItFirstLogRefresh = false;
 let previousConsoleUpdateLength = 0;
@@ -1029,30 +1015,29 @@ class KubekFileManagerUI {
             const baseOptions = [
                 returnexploreroptions('delete','{{commons.delete}}','delete', () => {
                         const path = verifycurrentpath + e.detail.item.name;
-                        KubekNotifyModal.create(
-                            "{{commons.delete}}", 
-                            "{{fileManager.areYouWantToDelete}} " + KubekUtils.pathFilename(path),
-                            "{{commons.delete}}", 
-                            "delete",
-                            () => {
-                                KubekFileManagerUI.deleteFile(path, (result) => {
-                                    if (result === false) {
-                                        KubekAlerts.addAlert(
-                                            "{{commons.actionFailed}}", 
-                                            "warning",
-                                            "{{commons.delete}} " + KubekUtils.pathFilename(path),
-                                            4000,
-                                            "colored"
-                                        );
-                                    }
+                        const Deletedialog = new globalconfirmdialog("globaldialog","globalmodal_content");
+                        Deletedialog.setInfo({tittle: "{{commons.delete}}", description: "{{fileManager.areYouWantToDelete}} " + KubekUtils.pathFilename(path)});
+                        Deletedialog.show();
+                        const options = [
+                            returnDialogOptions("{{commons.delete}}", "delete-btn",async () => {
+                                const result = await KubekFileManagerUI.deleteFile(path);
+                                if (result){
+                                    console.log("result", result);
+                                    KubekAlerts.addAlert(
+                                        "{{commons.actionFailed}}", 
+                                        "warning",
+                                        "{{commons.delete}} " + KubekUtils.pathFilename(path),
+                                        4000,
+                                        "colored"
+                                    );
                                     KubekFileManagerUI.refreshDir();
-                                });
-                            },
-                            KubekPredefined.MODAL_CANCEL_BTN
-                        );
-                        setTimeout(() => {
-                            KubekFileManagerUI.refreshDir()
-                        }, 1000);
+                                }
+                            }),
+                            returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
+                                Deletedialog.hide();
+                            })
+                        ];
+                        Deletedialog.setOptions(options);
                     }),
                     returnexploreroptions('rename', '{{commons.rename}}', 'bookmark_manager', () => {
                         const path = verifycurrentpath + e.detail.item.name;
