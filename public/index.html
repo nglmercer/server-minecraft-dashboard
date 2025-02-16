@@ -86,18 +86,25 @@
      id="Eula_dialog_container" 
      required="true"
     >
-        <custom-dialog id="Eula_dialog" 
-        title=""
-        description="{{commons.eula}}"
-        style=" max-width: 500px; color: white;"
-        theme="dark"
-        >
-        </custom-dialog>
+    <custom-dialog id="Eula_dialog" 
+    title=""
+    description="{{commons.eula}}"
+    style=" max-width: 500px; color: white;"
+    theme="dark"
+    >
+    </custom-dialog>
     </dialog-container>
     <dialog-container id="globaldialog" style="border-radius: 16px;">
         <custom-dialog id="globalmodal_content" style="background-color: #151e27; border-radius: 16px;"
         title="nombre del servidor" 
         description="desea borrar este servidor"
+        theme="dark">
+    </custom-dialog>
+    </dialog-container>
+    <dialog-container id="globaldialog" style="border-radius: 16px;">
+        <custom-dialog id="globaldialog_content" style="background-color: #151e27; border-radius: 16px;"
+        title="titulo a editar" 
+        description="description a editar"
         theme="dark">
     </custom-dialog>
     </dialog-container>

@@ -284,6 +284,22 @@ class CodeEditor {
         this.restoreCursorPosition(this.editorElement, cursorPosition);
     }
 }
+class globalconfirmdialog {
+    constructor(dialogID,contentID){
+        this.dialog = document.getElementById(dialogID);
+        this.content = document.getElementById(contentID);
+    }
+    show(){
+        this.dialog.show();
+    }
+    hide(){
+        this.dialog.hide();
+    }
+    setOptions(options){
+        this.content.options = options;
+    }
+}
+const globaldialog = new globalconfirmdialog("globaldialog");
 function returnDialogOptions(labelName, className, callback) {
     return  {
       label: labelName,
@@ -938,7 +954,7 @@ const editableExtensions = [
 ];
 
 // Initialize on DOM load
-    const hoverStyles = `
+const hoverStyles = `
     <style>
         .dropdown-item {
             background: var(--bg-dark-accent);
