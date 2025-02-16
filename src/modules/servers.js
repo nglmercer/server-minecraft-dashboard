@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-
-// import zlib from 'zlib';
+import { createGzip, createGunzip } from 'zlib';
+import tar from 'tar';
 const ALLOWED_EXTENSIONS = 
 ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
@@ -306,12 +306,112 @@ class FolderManager {
       }
     });
   }
+  async compressFolder(folderName, outputFileName = null) {
+    const folderPath = path.join(this.basePath, folderName);
+    if (!fs.existsSync(folderPath)) {
+      throw new Error(`La carpeta ${folderName} no existe.`);
+    }
+    
+    if (!outputFileName) {
+      outputFileName = folderName + '.tar.gz';
+    }
+    
+    // Si se pasa una ruta absoluta, la usamos directamente
+    const outputPath = this.getBackupfolderInfo() + "/" + outputFileName;
+  
+    // (Opcional: Verificar que el directorio de outputPath exista o crearlo)
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+  
+    return new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(outputPath);
+      const gzip = createGzip();
+  
+      tar.c(
+        {
+          cwd: folderPath,
+          portable: true,
+        },
+        ['.']
+      )
+        .pipe(gzip)
+        .pipe(output)
+        .on('finish', () => {
+          console.log(`Carpeta comprimida en: ${outputPath}`);
+          resolve(outputPath);
+        })
+        .on('error', (err) => {
+          reject(err);
+        });
+    });
+  }
+  async decompressFolder(compressedFileName, outputFolderName = null) {
+    const compressedFilePath = path.join(this.basePath, compressedFileName);
+    if (!fs.existsSync(compressedFilePath)) {
+      throw new Error(`El archivo comprimido ${compressedFileName} no existe.`);
+    }
+    
+    // Si no se especifica, usamos el nombre de la carpeta original (quitando la extensión .tar.gz)
+    if (!outputFolderName) {
+      outputFolderName = path.basename(compressedFileName, '.tar.gz');
+    }
+    const outputFolderPath = path.join(this.basePath, outputFolderName);
+    
+    // Crear la carpeta de destino si no existe
+    if (!fs.existsSync(outputFolderPath)) {
+      fs.mkdirSync(outputFolderPath, { recursive: true });
+    }
+    
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(compressedFilePath)
+        .pipe(createGunzip()) // Usamos createGunzip de node:zlib para descomprimir
+        .pipe(
+          tar.x({
+            cwd: outputFolderPath, // Extraer en la carpeta de destino
+          })
+        )
+        .on('finish', () => {
+          console.log(`Archivo descomprimido en: ${outputFolderPath}`);
+          resolve(outputFolderPath);
+        })
+        .on('error', (err) => {
+          reject(err);
+        });
+    });
+  }
+  getBackupfolderInfo() {
+    const backupFolderPath = path.join(process.cwd(), "backups");
+    if (!fs.existsSync(backupFolderPath)) {
+      fs.mkdirSync(backupFolderPath, { recursive: true });
+    }
+    return backupFolderPath;
+  }
 }
 import StorageManager from '../utils.js';
 
 // Configuración inicial
 const storage = new StorageManager('servers.json', './servers');
 const folderManager = new FolderManager('./servers');
+async function generateServerFolderBackup(folderName, outputPath = null) {
+  try {
+    const backup = await folderManager.compressFolder(folderName, outputPath);
+    console.log("backup", backup);
+  } catch (error) {
+    console.error(error);
+  }
+} 
+generateServerFolderBackup("test1", "test1.tar.gz");
+async function uncompressServerFolderBackup(compressedFileName, outputFolderName = null) {
+  try {
+    const backup = await folderManager.decompressFolder(compressedFileName, outputFolderName);
+    console.log("backup", backup);
+  } catch (error) {
+    console.error(error);
+  }
+}// uncompressServerFolderBackup("test1.tar.gz", "test1");
+folderManager.getBackupfolderInfo();
 const fileManager = new FileManager('./servers');
 function createserverfolder(directoryname) {
   try {

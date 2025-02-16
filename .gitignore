@@ -7,3 +7,4 @@ package-lock.json
 /binaries
 data/archived_tasks.json
 data/tasks.json
+/backups
