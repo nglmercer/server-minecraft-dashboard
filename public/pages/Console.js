@@ -13,12 +13,24 @@ class UpdateConsole {
             this.updatelog(data.data);
         });
     }
+    fetchConsoleLogs(server) {
+        let url = `/api/servermanager/${server}/log`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+            //    console.log("data", data);
+                this.updatelog(data.data);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    }
 }
 const updateConsole = new UpdateConsole();
 
 setInterval(() => {
-    updateConsole.getlogs(window.localStorage.selectedServer);
-}, 100);
+    updateConsole.fetchConsoleLogs(window.localStorage.selectedServer);
+}, 500);
 class UsageGraph {
     constructor(element = 'kubek-circle-progress') {
         this.usageElement = document.querySelector(element);
@@ -61,5 +73,6 @@ const inputCommandelement = document.querySelector('input-command');
 inputCommandelement.addEventListener('command', (e) => {
     const detail = e.detail;
     console.log("detail",);
-    KubekServers.sendCommandToServer(selectedServer, detail.command);
+    KubekServers.sendCommandToServer(window.localStorage.selectedServer, detail.command);
 });
+//    "/api/servermanager/test1231/log"
