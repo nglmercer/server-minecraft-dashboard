@@ -99,17 +99,13 @@
     </custom-dialog>
     </dialog-container>
     <dialog-container id="globaldialog" style="border-radius: 16px;">
-        <custom-dialog id="globalmodal_content" style="background-color: #151e27; border-radius: 16px;"
-        title="nombre del servidor" 
-        description="desea borrar este servidor"
-        theme="dark">
-    </custom-dialog>
-    </dialog-container>
-    <dialog-container id="globaldialog" style="border-radius: 16px;">
         <custom-dialog id="globaldialog_content" style="background-color: #151e27; border-radius: 16px;"
         title="titulo a editar" 
         description="description a editar"
         theme="dark">
+        <slot id="name-slot">
+            <input type="text" id="InputEdit" placeholder="nuevo nombre" type="text" style="display: none;">
+        </slot>
     </custom-dialog>
     </dialog-container>
     <sidebar-menu style="font-family: material-symbols-outlined"></sidebar-menu>

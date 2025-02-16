@@ -5,14 +5,6 @@ class UpdateConsole {
     updatelog(log) {
         this.consoleElement.refreshConsoleLog(log);
     }
-    getlogs(server) {
-        if (!server) return [];
-        KubekServers.getServerLog(selectedServer, (data) => {
-            if (!data && !data.data) return;
-            //console.log("getServerLog", selectedServer, {data});
-            this.updatelog(data.data);
-        });
-    }
     fetchConsoleLogs(server) {
         let url = `/api/servermanager/${server}/log`;
         fetch(url)

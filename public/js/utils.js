@@ -305,8 +305,20 @@ function returnexploreroptions(idName, textName, iconName, callback) {
 }
 class globalconfirmdialog {
     constructor(dialogID,contentID){
+        this.dialogID = dialogID;
+        this.contentID = contentID;
         this.dialog = document.getElementById(dialogID);
         this.content = document.getElementById(contentID);
+        this.activeElement = [];
+        setTimeout(() => {
+            this.checkexistelement();
+        }, 1000);
+    }
+    checkexistelement(){
+        if(!this.dialog || !this.content){
+            this.dialog = document.getElementById(this.dialogID);
+            this.content = document.getElementById(this.contentID);
+        }
     }
     show(){
         this.dialog.show();
@@ -323,7 +335,7 @@ class globalconfirmdialog {
         this.content.setAttribute('description', description);
     }
 }
-const globaldialog = new globalconfirmdialog("globaldialog","globalmodal_content");
+const globaldialog = new globalconfirmdialog("globaldialog","globaldialog_content");
 
 
 class KubekUtils {
@@ -508,8 +520,6 @@ class KubekPredefined {
   static PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,64}$/g;
   static LOGIN_REGEX = /^[a-zA-Z0-9_.-]{3,16}$/g;
   static EMAIL_REGEX = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
-
-  static MODAL_CANCEL_BTN = '<button class="dark-btn" onclick="KubekNotifyModal.destroyAllModals()">{{commons.close}}</button>';
 }
 let currentServerStatus = KubekPredefined.SERVER_STATUSES.STOPPED;
 function getSelectedServer() {
@@ -951,7 +961,39 @@ class KubekFileManagerUI {
     }
 
     static newDirectory() {
-        KubekNotifyModal.askForInput(
+        console.log(currentPath)
+        globaldialog.show();
+        const inputElement = document.getElementById("InputEdit");
+        inputElement.addEventListener("input", () => {
+            const regex = /^[^<>:"/\\|?*\x00-\x1F]+$/;
+            if (!regex.test(inputElement.value)) {
+                inputElement.value = inputElement.value.replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
+            }
+            console.log("this.value", inputElement.value);
+        });
+        const parsedcurrentPath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
+        inputElement.style.display = "block";
+        globaldialog.setInfo({tittle: "{{commons.create}}", description: "{{fileManager.newDirectory}} \nen: " + parsedcurrentPath});
+        globaldialog.setOptions([
+            {
+                label: "{{commons.create}}",
+                class: "save-btn",
+                callback: () => {
+                    //                    globaldialog.hide();
+
+                    console.log("inputElement", parsedcurrentPath + inputElement.value);
+                }
+            },
+            {
+                label: "{{commons.cancel}}",
+                class: "cancel-btn",
+                callback: () => {
+                    globaldialog.hide();
+                    inputElement.style.display = "none";
+                }
+            }
+        ]);
+/*         KubekNotifyModal.askForInput(
             "{{fileManager.newDirectory}}",
             "create_new_folder",
             (txt) => {
@@ -963,7 +1005,7 @@ class KubekFileManagerUI {
             "{{commons.input}}",
             "",
             "text"
-        );
+        ); */
     }
 
     static upperDir() {

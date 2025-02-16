@@ -50,7 +50,7 @@ function initializenewServer() {
         });
     });
 
-    document.title = "Kubek | {{commons.create}} {{commons.server.lowerCase}}";
+    document.title = " {{commons.create}} {{commons.server.lowerCase}}";
 
     // Populate server list
     document.querySelectorAll("#servers-list-sidebar .sidebar-item span:last-child").forEach(element => {
