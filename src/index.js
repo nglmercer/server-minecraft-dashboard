@@ -9,6 +9,7 @@ import langRouters from './routers/langRouters.js';
 import coresRouter from './routers/minecraft/cores.js';
 import javaVersionsRouter from './routers/minecraft/javaversions.js';
 import pluginMCRouter from './routers/minecraft/plugins.js';
+import backupsRouter from './routers/backup.js'
 import path from 'path'; // Importa el módulo path para manejar rutas de archivos
 import * as mime from 'mime-types'
 import fs from 'fs/promises';
@@ -83,6 +84,7 @@ app.use('/api', coresRouter);
 app.use('/api', javaVersionsRouter);
 app.use('/api', pluginMCRouter);
 app.use('/api', langRouters);
+app.use('/api', backupsRouter)
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

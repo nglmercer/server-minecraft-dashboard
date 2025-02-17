@@ -411,7 +411,7 @@ async function uncompressServerFolderBackup(compressedFileName, outputFolderName
     console.error(error);
   }
 }
- uncompressServerFolderBackup("test123.tar.gz", "test1234");
+// uncompressServerFolderBackup("test123.tar.gz", "test1234");
 folderManager.getBackupfolderInfo();
 const fileManager = new FileManager('./servers');
 function createserverfolder(directoryname) {
