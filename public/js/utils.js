@@ -336,7 +336,7 @@ class globalconfirmdialog {
     }
 }
 const globaldialog = new globalconfirmdialog("globaldialog","globaldialog_content");
-
+var selectedServer = window.localStorage.selectedServer || "";
 
 class KubekUtils {
   // Convertir tamaño de archivo a un formato legible por humanos
@@ -582,6 +582,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
       }
 
       currentServerStatus = status;
+      console.log("status", status, KubekPredefined.SERVER_STATUSES_TRANSLATE[status]);
       WebDebugger.log("status", status, KubekPredefined.SERVER_STATUSES_TRANSLATE[status]);
       WebDebugger.toggleLogs(false);
       const actionButtons = document.querySelector('action-buttons');
@@ -792,28 +793,11 @@ let isItFirstLogRefresh = false;
 let previousConsoleUpdateLength = 0;
 let timeStampRegexp = /\[[0-9]{2}\:[0-9]{2}\:[0-9]{2}\]/gm;
 
-class KubekRefresher {
-    // Добавить рефреш-интервал
-    static addRefreshInterval = (interval, handler, name) => {
-        refreshIntervals[name] = setInterval(handler, interval);
-    }
-
-    // Удалить рефреш-интервал
-    static removeRefreshInterval = (name) => {
-        clearInterval(refreshIntervals[name]);
-    }
-
-    // Добавить интервал обновления server header (каждые 2 секунды)
-    static addRefreshServerHeaderInterval = () => {
-
-    };
-
-    // Добавить интервал обновления использования рес-ов (каждые 4 сек)
-    static addRefreshUsageInterval = () => {
-    }
-
-}
-
+setInterval(() => {
+    KubekServerHeaderUI.loadServerByName(selectedServer, () => {
+        uiDebugger.log(selectedServer);
+    });
+}, 2000);
 // Constants
  const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;
 

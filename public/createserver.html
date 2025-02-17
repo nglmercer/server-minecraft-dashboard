@@ -28,6 +28,7 @@ body {
 </style>
 <script src="./js/newserver.js"></script>
 <script type="module" src="./pages/Serversbar.js"></script>
+<script type="module" src="./API/feth.js"></script>
 <body>
         <task-notifications id="notificaciones"></task-notifications>
 
@@ -145,6 +146,7 @@ body {
     </div>
 </div>
 <script type="module">
+    var selectedServer = window.localStorage.selectedServer || "";
     document.addEventListener("DOMContentLoaded", () => {
         const menusidebar = document.querySelector('#main-menu-sidebar');
         menusidebar.addEventListener('server-change', (event) => {
