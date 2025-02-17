@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createGzip, createGunzip } from 'zlib';
-import tar from 'tar';
+import * as tar from 'tar';
 const ALLOWED_EXTENSIONS = 
 ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
@@ -171,7 +171,7 @@ class FileManager {
   decompressFile(compressedFileName, outputPath = null) {
     const compressedFilePath = path.join(this.basePath, compressedFileName);
     if (!fs.existsSync(compressedFilePath)) {
-      throw new Error(`El archivo comprimido '${compressedFileName}' no existe.`);
+      throw new Error(`El archivo comprimido '${compressedFileName}' no existe.`,compressedFilePath);
     }
 
     if (!compressedFileName.endsWith('.gz')) {
@@ -348,7 +348,7 @@ class FolderManager {
     });
   }
   async decompressFolder(compressedFileName, outputFolderName = null) {
-    const compressedFilePath = path.join(this.basePath, compressedFileName);
+    const compressedFilePath = path.join(this.getBackupfolderInfo(), compressedFileName);
     if (!fs.existsSync(compressedFilePath)) {
       throw new Error(`El archivo comprimido ${compressedFileName} no existe.`);
     }
@@ -402,7 +402,7 @@ async function generateServerFolderBackup(folderName, outputPath = null) {
     console.error(error);
   }
 } 
-//  generateServerFolderBackup("test1", "test1.tar.gz");
+//  generateServerFolderBackup("test123", "test123.tar.gz");
 async function uncompressServerFolderBackup(compressedFileName, outputFolderName = null) {
   try {
     const backup = await folderManager.decompressFolder(compressedFileName, outputFolderName);
@@ -410,7 +410,8 @@ async function uncompressServerFolderBackup(compressedFileName, outputFolderName
   } catch (error) {
     console.error(error);
   }
-}// uncompressServerFolderBackup("test1.tar.gz", "test1");
+}
+ uncompressServerFolderBackup("test123.tar.gz", "test1234");
 folderManager.getBackupfolderInfo();
 const fileManager = new FileManager('./servers');
 function createserverfolder(directoryname) {
