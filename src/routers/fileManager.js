@@ -40,8 +40,8 @@ router.post('/filemanager/create-folder', (req, res) => {
 router.post('/filemanager/create-file', (req, res) => {
   const { directoryname, filename, content } = req.body;
 
-  if (!directoryname || !filename || !content) {
-    return res.status(400).json({ success: false, error: "Todos los campos son requeridos: directoryname, filename, content." });
+  if (!directoryname || !filename) {
+    return res.status(400).json({ success: false, error: "Todos los campos son requeridos: directoryname, filename, content.", data: { directoryname, filename } });
   }
 
   try {

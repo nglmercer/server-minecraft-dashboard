@@ -314,6 +314,14 @@ function getselectedserver() {
 }
 
 class awaitfilemanager extends awaitBase {
+    static async filepost(url, data) {
+        return fetch("/api" + url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }).then(res => res.json());
+    }
+    
     static readDirectory(path) {
         return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
     }
@@ -328,8 +336,18 @@ class awaitfilemanager extends awaitBase {
         return this.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
     }
     static newDirectory(path, name) {
-        return this.get("/fileManager/newDirectory?server=" + getselectedserver() + "&path=" + path + "&name=" + name);
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
     }
+    
+    static createFile(path, name) {
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
+    }    
     static writeFilebyName(folderName, fileName, content) {
         return this.post("/fileManager/writeFilebyName", { folderName, fileName, content });
     }    

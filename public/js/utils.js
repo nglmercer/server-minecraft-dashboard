@@ -312,7 +312,7 @@ class globalconfirmdialog {
         this.activeElement = [];
         setTimeout(() => {
             this.checkexistelement();
-        }, 1000);
+        }, 500);
     }
     checkexistelement(){
         if(!this.dialog || !this.content){
@@ -904,7 +904,7 @@ class KubekFileManagerUI {
             const baseOptions = [
                 returnexploreroptions('delete','{{commons.delete}}','delete', () => {
                         const path = verifycurrentpath + e.detail.item.name;
-                        const Deletedialog = new globalconfirmdialog("globaldialog","globalmodal_content");
+                        const Deletedialog = new globalconfirmdialog("globaldialog","globaldialog_content");
                         Deletedialog.setInfo({tittle: "{{commons.delete}}", description: "{{fileManager.areYouWantToDelete}} " + KubekUtils.pathFilename(path)});
                         Deletedialog.show();
                         const options = [
@@ -980,7 +980,11 @@ class KubekFileManagerUI {
                 class: "save-btn",
                 callback: () => {
                     //                    globaldialog.hide();
-
+                    KubekFileManagerUI.createFile(currentPath, inputElement.value, () => {
+                        KubekFileManagerUI.refreshDir();
+                        globaldialog.hide();
+                        inputElement.style.display = "none";
+                    });
                     console.log("inputElement", parsedcurrentPath + inputElement.value);
                 }
             },
@@ -1073,6 +1077,11 @@ class KubekFileManagerUI {
         const response = await awaitfilemanager.readFile(path);
         console.log("readFile", path, response);
         cb(response.data);
+    }
+    static async createFile(path,name, cb) {
+        const response = await awaitfilemanager.createFile(path, name);
+        if (cb) cb(response);
+        return response;
     }
 }
 
