@@ -200,6 +200,10 @@ backupselement.addEventListener('backup-action', (event) => {
           deleteBackup(event.detail.id).catch(error => {
              console.error("Error during delete:", error);
           });
+      case 'restore':
+          restoreBackup(event.detail.id, window.localStorage.selectedServer).catch(error => {
+             console.error("Error during restore:", error);
+          });
           break;
       default:
           console.log('No se encontró una acción para el evento:', event.detail);
@@ -233,6 +237,17 @@ async function deleteBackup(filename) {
       return response;
   } catch (error) {
       console.error('Error al borrar backup:', error);
+      throw error;  // Importante re-lanzar el error
+  }
+}
+async function restoreBackup(filename, outputFolderName) {
+  try {
+      const response = await apiClient.post('/restore', { filename: filename, outputFolderName: outputFolderName });
+      console.log('Backup restaurado:', response);
+      await updateBackupsList(); // Espera a que la lista se actualice.
+      return response;
+  } catch (error) {
+      console.error('Error al restaurar backup:', error);
       throw error;  // Importante re-lanzar el error
   }
 }
