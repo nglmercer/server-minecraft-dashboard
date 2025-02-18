@@ -39,11 +39,12 @@ class BackupsList extends HTMLElement {
         options.forEach(option => {
             const item = document.createElement('div');
             item.className = 'grid-item';
+            item.id = option.id;
             item.innerHTML = `
                 <div>Name: ${option.name}</div>
                 <div>Label: ${option.label}</div>
-                <div>ID: ${option.id}</div>
-                <div>Date: ${option.date}</div>
+                <div>Date: ${generateDate(option.date)}</div>
+                <div>size: ${humanizeSize(option.size)}</div>
                 <div class="buttons">
                     <button data-action="delete">Delete</button>
                     <button data-action="restore">Restore</button>
@@ -59,7 +60,26 @@ class BackupsList extends HTMLElement {
         });
     }
 }
-
+function humanizeSize(size) {
+    if (size === 0) {
+      return '0 B'; // o '0.00 B', como prefieras
+    }
+    if (size < 0 || isNaN(size)) {
+      return "Valor invalido"; // o  manejo de error que corresponda
+    }
+    const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    let i = 0;
+    while (size >= 1024 && i < units.length - 1) {
+      size /= 1024;
+      i++;
+    }
+    return `${size.toFixed(2)} ${units[i]}`;
+  }
+function generateDate(date) {
+    const dateObject = new Date(date);
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return dateObject.toLocaleDateString('es-ES', options);
+}
 customElements.define('backups-list', BackupsList);
 class ApiClient {
   constructor(baseURL) {
@@ -105,7 +125,7 @@ class ApiClient {
 }
 
 // Ejemplo de uso:
-const apiClient = new ApiClient('http://localhost:3000/api/backups');
+const apiClient = new ApiClient('/api/backups');
 
 // Crear backup
 /* apiClient.post('/create', { folderName: window.localStorage.selectedServer, outputFilename: `${window.localStorage.selectedServer}_backup.zip` })
@@ -114,6 +134,27 @@ const apiClient = new ApiClient('http://localhost:3000/api/backups');
 
 // Obtener backups
 apiClient.get('/backupsInfo')
-  .then(response => console.log('Lista de backups:', response))
+  .then(response => console.log('Lista de backups:', setOptions(generateOptions(response))))
   .catch(error => console.error('Error al obtener backups:', error));
 //apiClient.post('/restore', { filename: `${window.localStorage.selectedServer}_backup.zip`, outputFolderName: window.localStorage.selectedServer })
+function generateOptions(options) {
+    const optionsArray = [];
+    const BackupFiles = options.data?.files;
+    console.log('options:', options.data?.files);
+    BackupFiles.forEach(file => {
+        optionsArray.push({
+            name: file.name,
+            label: file.name,
+            id: file.name,
+            date: file.modified,
+            size: file.size,
+            action: 'restore'
+        });
+    });
+    return optionsArray;
+}
+function setOptions(options) {
+    const backupselement = document.getElementById('backupsList');
+
+    backupselement.setOptions(options);
+}
