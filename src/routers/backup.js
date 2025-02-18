@@ -1,6 +1,7 @@
 import express from 'express';
 import { createbackup, restorebackup, getbackupsdata, deletebackup } from '../modules/backup.js';
-
+import path from 'path';
+import fs from 'fs';
 const router = express.Router();
 
 // Endpoint para crear backup
@@ -56,5 +57,26 @@ router.post('/delete', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: error.message });
   }
+});
+router.get('/download/:filename', (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(process.cwd(), 'backups', filename); // o la ruta donde guardes los backups
+
+  // Verificar que el archivo exista
+  if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Archivo de backup no encontrado' });
+  }
+
+  // Usar res.download() para enviar el archivo
+  res.download(filePath, (err) => {
+      if (err) {
+          // Manejar errores de envío (opcional)
+          if (res.headersSent) {
+            console.log("se enviaron ya")
+          } else {
+            return res.status(500).send("no se pudo enviar")
+          }
+      }
+  });
 });
 export default router;

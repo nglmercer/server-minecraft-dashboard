@@ -97,21 +97,13 @@ npm run start
 ```
 #### tasks
 - add download file or folder
-- add backup server
-- add restore server
-- compress file and uncompress file
+- compress file and uncompress file // complete
+- add backup server // partial
+- add restore server // partial
+- add delete backup // complete
+- download backup
 
-- add delete server
+
+- add delete server // partial
 - fix reload langs to select
 - add usermanagement
-
-```bash
-	-Xmx16G -XX:+UseG1GC ^
-	-XX:+DisableExplicitGC -XX:+UseStringDeduplication ^
-	-XX:+PerfDisableSharedMem -XX:MaxGCPauseMillis=200 ^
-	-XX:G1HeapRegionSize=8M -XX:InitiatingHeapOccupancyPercent=40 ^
-	-XX:ParallelGCThreads=8 -XX:ConcGCThreads=4 ^
-	-Dpaper.chunkRatio=0.75 -Dpaper.asyncChunkIo=true ^
-	-Djava.util.concurrent.ForkJoinPool.common.parallelism=8 ^
-	-jar "server.jar" nogui
-```

@@ -86,18 +86,20 @@ class ApiClient {
       this.baseURL = baseURL;
   }
 
-  async _request(endpoint, method, data = null) {
+  async _request(endpoint, method, data = null, responseType = 'json') {
       const url = `${this.baseURL}${endpoint}`;
       const config = {
           method,
           headers: {
-              'Content-Type': 'application/json'
+              // 'Content-Type': 'application/json'  // Lo quitamos para el download
           },
       };
 
-      if (data) {
+      if (data && method !== 'GET') { // Incluir datos solo para métodos que no sean GET
+          config.headers['Content-Type'] = 'application/json'; // Content-Type solo cuando hay body
           config.body = JSON.stringify(data);
       }
+
 
       try {
           const response = await fetch(url, config);
@@ -107,7 +109,7 @@ class ApiClient {
               let errorMessage = `Error: ${response.status} ${response.statusText}`;
               try {
                   const errorData = await response.json();
-                  if (errorData && errorData.message) {  //  o errorData.error, depende de tu API
+                  if (errorData && errorData.message) {
                       errorMessage += ` - ${errorData.message}`;
                   }
               } catch (parseError) {
@@ -117,7 +119,14 @@ class ApiClient {
               throw new Error(errorMessage);
           }
 
-          return await response.json();
+          if (responseType === 'json') {
+              return await response.json();
+          } else if (responseType === 'blob') {
+              return await response.blob();
+          } else {
+              return response; // Devuelve la respuesta completa si no se especifica un tipo.
+          }
+
       } catch (error) {
           // Maneja errores de red (por ejemplo, si el servidor está caído).
           if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
@@ -136,7 +145,35 @@ class ApiClient {
   async get(endpoint) {
       return this._request(endpoint, 'GET');
   }
+
+
+  async download(endpoint, filename) {
+    try {
+      const blob = await this._request(endpoint, 'GET', null, 'blob');
+
+      // Crear un URL para el blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Crear un elemento <a> para iniciar la descarga
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename; //  el nombre de archivo que sugieres
+
+      document.body.appendChild(a);
+      a.click();
+
+      // Limpieza
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error("Error during download:", error);
+      throw error; //  importante re-lanzar el error para manejarlo más arriba
+    }
+  }
 }
+
 
 const apiClient = new ApiClient('/api/backups');
 let isUpdating = false; // Controla si ya hay una actualización en curso.
@@ -204,6 +241,10 @@ backupselement.addEventListener('backup-action', (event) => {
           restoreBackup(event.detail.id, window.localStorage.selectedServer).catch(error => {
              console.error("Error during restore:", error);
           });
+      case 'download':
+          downloadBackup(event.detail.id).catch(error => {
+             console.error("Error during download:", error);
+          });
           break;
       default:
           console.log('No se encontró una acción para el evento:', event.detail);
@@ -249,5 +290,22 @@ async function restoreBackup(filename, outputFolderName) {
   } catch (error) {
       console.error('Error al restaurar backup:', error);
       throw error;  // Importante re-lanzar el error
+  }
+}
+async function downloadBackup(filename) {
+  try {
+    const response = await apiClient.download(`/download/${filename}`, filename);
+      console.log(`Descargando ${filename}...`);
+      return response;
+  } catch (error) {
+      console.error(`Error al descargar ${filename}:`, error);
+      //  ... mostrar mensaje de error en la UI
+       if (error.message.includes("404")) {
+          console.error("El archivo no existe") //Ejemplo de como mostrarlo
+      } else {
+         //Otro error
+         console.error("error al hacer la descarga")
+      }
+
   }
 }
