@@ -229,10 +229,13 @@ class BaseAPI {
     static createBackup(server) {
       return api.get(`/servermanager/${server}/backup`);
     }
+    static getbackupservers(){
+      return api.get(`/servermanager/backups`);
+    }
   }
-  
+ //window.localStorage.selectedServer 
   // Ejemplo de uso directo sin callback (retorna promesa):
-  api.get('/servermanager/test1231/log')
+  api.get(`/servermanager/${window.localStorage.selectedServer}/log`)
     .then((data) => console.log(data))
     .catch((error) => console.error(error));
   

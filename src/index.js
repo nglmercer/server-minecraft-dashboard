@@ -84,7 +84,7 @@ app.use('/api', coresRouter);
 app.use('/api', javaVersionsRouter);
 app.use('/api', pluginMCRouter);
 app.use('/api', langRouters);
-app.use('/api', backupsRouter)
+app.use('/api/backups', backupsRouter)
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

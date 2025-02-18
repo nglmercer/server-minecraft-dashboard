@@ -168,7 +168,7 @@ class FolderManager {
   function updatefolderinfo(folderName = "./backups") {
     try {
       const files = getfolderinfo(folderName);
-      backupsdata.JSONset(folderName, files);
+      backupsdata.JSONset("backups", files);
     } catch (error) {
       console.error(error.message);
     }
@@ -192,11 +192,15 @@ async function restorebackup(filename,outputFolderName) {
         console.error(e)
     }
 }
+function getbackupsdata(){
+    return backupsdata.JSONget("backups")
+}
 //createbackup("test123", "test123.tar.gz")
 
 //restorebackup("test123.tar.gz", "test1234")
 // generateServerFolderBackup("test123", "test123.tar.gz");
 export {
     createbackup,
-    restorebackup
+    restorebackup,
+    getbackupsdata
 }

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createbackup, restorebackup } from '../modules/backup.js';
+import { createbackup, restorebackup, getbackupsdata } from '../modules/backup.js';
 
 const router = express.Router();
 
@@ -29,6 +29,15 @@ router.post('/restore', async (req, res) => {
   try {
     const restorePath = await restorebackup(filename, outputFolderName);
     res.status(200).json({ message: 'Backup restaurado correctamente', path: restorePath });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get('/backupsInfo', (req, res) => {
+  try {
+    const backups = getbackupsdata();
+    res.status(200).json({ data: backups });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });

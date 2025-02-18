@@ -61,3 +61,59 @@ class BackupsList extends HTMLElement {
 }
 
 customElements.define('backups-list', BackupsList);
+class ApiClient {
+  constructor(baseURL) {
+    this.baseURL = baseURL;
+  }
+
+  async post(endpoint, data) {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error en la petición POST:', error);
+      throw error;
+    }
+  }
+
+  async get(endpoint) {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error en la petición GET:', error);
+      throw error;
+    }
+  }
+}
+
+// Ejemplo de uso:
+const apiClient = new ApiClient('http://localhost:3000/api/backups');
+
+// Crear backup
+/* apiClient.post('/create', { folderName: window.localStorage.selectedServer, outputFilename: `${window.localStorage.selectedServer}_backup.zip` })
+  .then(response => console.log('Backup creado:', response))
+  .catch(error => console.error('Error al crear backup:', error)); */
+
+// Obtener backups
+apiClient.get('/backupsInfo')
+  .then(response => console.log('Lista de backups:', response))
+  .catch(error => console.error('Error al obtener backups:', error));
+//apiClient.post('/restore', { filename: `${window.localStorage.selectedServer}_backup.zip`, outputFolderName: window.localStorage.selectedServer })
