@@ -1,5 +1,5 @@
 import express from 'express';
-import { createbackup, restorebackup, getbackupsdata } from '../modules/backup.js';
+import { createbackup, restorebackup, getbackupsdata, deletebackup } from '../modules/backup.js';
 
 const router = express.Router();
 
@@ -43,5 +43,18 @@ router.get('/backupsInfo', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
+router.post('/delete', async (req, res) => {
+  // Se espera recibir en el body: { filename }
+  const { filename } = req.body;
+  if (!filename) {
+    return res.status(400).json({ error: 'Faltan parámetros: filename.' });
+  }
+  try {
+    const result = await deletebackup(filename);
+    res.status(200).json({ message: 'Backup borrado correctamente', result: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
 export default router;

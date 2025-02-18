@@ -83,78 +83,156 @@ function generateDate(date) {
 customElements.define('backups-list', BackupsList);
 class ApiClient {
   constructor(baseURL) {
-    this.baseURL = baseURL;
+      this.baseURL = baseURL;
+  }
+
+  async _request(endpoint, method, data = null) {
+      const url = `${this.baseURL}${endpoint}`;
+      const config = {
+          method,
+          headers: {
+              'Content-Type': 'application/json'
+          },
+      };
+
+      if (data) {
+          config.body = JSON.stringify(data);
+      }
+
+      try {
+          const response = await fetch(url, config);
+
+          if (!response.ok) {
+              // Intenta obtener un mensaje de error del cuerpo de la respuesta, si existe.
+              let errorMessage = `Error: ${response.status} ${response.statusText}`;
+              try {
+                  const errorData = await response.json();
+                  if (errorData && errorData.message) {  //  o errorData.error, depende de tu API
+                      errorMessage += ` - ${errorData.message}`;
+                  }
+              } catch (parseError) {
+                  // Si no se puede parsear el JSON, usa el statusText.
+                  console.error("Error parsing error response:", parseError);
+              }
+              throw new Error(errorMessage);
+          }
+
+          return await response.json();
+      } catch (error) {
+          // Maneja errores de red (por ejemplo, si el servidor está caído).
+          if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+              console.error("Network error.  Is the server running?", error);
+              throw new Error("Error de red: No se pudo conectar al servidor.");
+          }
+          // Re-lanza otros errores.
+          throw error;
+      }
   }
 
   async post(endpoint, data) {
-    try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error en la petición POST:', error);
-      throw error;
-    }
+      return this._request(endpoint, 'POST', data);
   }
 
   async get(endpoint) {
-    try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error en la petición GET:', error);
-      throw error;
-    }
+      return this._request(endpoint, 'GET');
   }
 }
 
-// Ejemplo de uso:
 const apiClient = new ApiClient('/api/backups');
-
+let isUpdating = false; // Controla si ya hay una actualización en curso.
 // Crear backup
 /* apiClient.post('/create', { folderName: window.localStorage.selectedServer, outputFilename: `${window.localStorage.selectedServer}_backup.zip` })
   .then(response => console.log('Backup creado:', response))
   .catch(error => console.error('Error al crear backup:', error)); */
 
 // Obtener backups
-apiClient.get('/backupsInfo')
-  .then(response => console.log('Lista de backups:', setOptions(generateOptions(response))))
-  .catch(error => console.error('Error al obtener backups:', error));
 //apiClient.post('/restore', { filename: `${window.localStorage.selectedServer}_backup.zip`, outputFolderName: window.localStorage.selectedServer })
-function generateOptions(options) {
-    const optionsArray = [];
-    const BackupFiles = options.data?.files;
-    console.log('options:', options.data?.files);
-    BackupFiles.forEach(file => {
-        optionsArray.push({
-            name: file.name,
-            label: file.name,
-            id: file.name,
-            date: file.modified,
-            size: file.size,
-            action: 'restore'
-        });
-    });
-    return optionsArray;
-}
-function setOptions(options) {
-    const backupselement = document.getElementById('backupsList');
+async function updateBackupsList() {
+  if (isUpdating) {
+      return; // Sale si ya hay una actualización en curso.
+  }
+  isUpdating = true;
 
-    backupselement.setOptions(options);
+  try {
+      const response = await apiClient.get('/backupsInfo');
+      console.log('Lista de backups:', setOptions(generateOptions(response)));
+      return response; // Retorna la respuesta
+  } catch (error) {
+      console.error('Error al obtener backups:', error);
+      throw error; // Re-lanza el error
+  } finally {
+      isUpdating = false; //  Indica que la actualización ha terminado.
+  }
+}
+updateBackupsList().catch(error => {
+  console.error("Error during initial backup list update:", error);
+});
+function generateOptions(options) {
+  const optionsArray = [];
+  const BackupFiles = options.data?.files;  // Usar optional chaining (?.)
+  if (!BackupFiles) { //verifica si BackupFiles es null o undefined
+      return []; // or handle it appropriately, perhaps throw an error, log a message, etc.
+  }
+  console.log('options:', BackupFiles);
+  BackupFiles.forEach(file => {
+      optionsArray.push({
+          name: file.name,
+          label: file.name,
+          id: file.name,
+          date: file.modified,
+          size: file.size,
+      });
+  });
+  return optionsArray;
+}
+
+const backupselement = document.getElementById('backupsList');
+function setOptions(options) {
+  if (backupselement) {
+      backupselement.setOptions(options);
+
+  }
+}
+backupselement.addEventListener('backup-action', (event) => {
+  console.log('Backup details:', event.detail);
+  switch (event.detail.action) {
+      case 'delete':
+          deleteBackup(event.detail.id).catch(error => {
+             console.error("Error during delete:", error);
+          });
+          break;
+      default:
+          console.log('No se encontró una acción para el evento:', event.detail);
+  }
+});
+document.getElementById('create_backup').addEventListener('click', () => {
+  createBackup().catch(error => {
+     console.error("Error during create backup:", error);
+  });
+});
+async function createBackup() {
+  const uniqueBackupName = `${window.localStorage.selectedServer}_${new Date().toISOString()}_backup.zip`;
+  try {
+      const response = await apiClient.post('/create', { folderName: window.localStorage.selectedServer, outputFilename: uniqueBackupName });
+      console.log('Backup creado:', response);
+      await updateBackupsList(); // Espera a que la lista se actualice.
+      return response;
+  } catch (error) {
+      console.error('Error al crear backup:', error);
+      throw error; // Importante re-lanzar el error para que sea capturado por el .catch() del evento click.
+  }
+}
+
+
+// Eliminar backup (ahora es async)
+async function deleteBackup(filename) {
+  try {
+      const response = await apiClient.post('/delete', { filename: filename });
+      console.log('Backup borrado:', response);
+      await updateBackupsList(); // Espera a que la lista se actualice.
+      return response;
+  } catch (error) {
+      console.error('Error al borrar backup:', error);
+      throw error;  // Importante re-lanzar el error
+  }
 }

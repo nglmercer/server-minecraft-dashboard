@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="./components.js/backups.js"></script>
+    <style>
+        button {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 12px;
+            background-color: #0e9f6e;
+        }
+        button:hover {
+            background-color: #2e3e53;
+        }
+        </style>
 </head>
 <body>
-        <backups-list id="backupsList"></backups-list>
-        <script>
-            const backupsList = document.getElementById('backupsList');
-            backupsList.setOptions([
-                { name: 'backup1', label: 'Backup 1', id: '1', date: '2025-02-18' },
-                { name: 'backup2', label: 'Backup 2', id: '2', date: '2025-02-17' }
-            ]);
-        
-            backupsList.addEventListener('backup-action', (event) => {
-                console.log('Action:', event.detail.action);
-                console.log('Backup details:', event.detail);
-            });
-        </script>
+    <button id="create_backup">Create backup</button>
+    <backups-list id="backupsList"></backups-list>
+    <script src="./components.js/backups.js"></script>
 </body>
 </html>

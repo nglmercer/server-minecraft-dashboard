@@ -151,7 +151,31 @@ class FolderManager {
           });
       });
     }
-
+    async deleteFile(filename) {
+      const filePath = path.join(this.basePath, filename);
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`El archivo ${filename} no existe.`);
+      }
+      
+      // Si se pasa una ruta absoluta, la usamos directamente
+      const outputPath = this.basePath + "/" + filename;
+    
+      // (Opcional: Verificar que el directorio de outputPath exista o crearlo)
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+    
+      return new Promise((resolve, reject) => {
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(true);
+          }
+        });
+      });
+    }
   }
   import StorageManager from '../utils.js';
   const backupsdata = new StorageManager("backups.js","./data")
@@ -195,6 +219,15 @@ async function restorebackup(filename,outputFolderName) {
 function getbackupsdata(){
     return backupsdata.JSONget("backups")
 }
+async function deletebackup(filename){
+    try {
+        const result = await folderManager.deleteFile("./backups/"+filename)
+        updatefolderinfo()
+        return result;
+    } catch(e) {
+        console.error(e)
+    }
+}
 //createbackup("test123", "test123.tar.gz")
 
 //restorebackup("test123.tar.gz", "test1234")
@@ -202,5 +235,6 @@ function getbackupsdata(){
 export {
     createbackup,
     restorebackup,
-    getbackupsdata
+    getbackupsdata,
+    deletebackup
 }
