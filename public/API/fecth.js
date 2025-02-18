@@ -226,6 +226,9 @@ class BaseAPI {
         return api.get(`/servermanager/${server}/stop`);
       }
     }
+    static createBackup(server) {
+      return api.get(`/servermanager/${server}/backup`);
+    }
   }
   
   // Ejemplo de uso directo sin callback (retorna promesa):
@@ -237,4 +240,3 @@ class BaseAPI {
   ServerManager.getServersList((servers) => {
     console.log('Lista de servidores:', servers);
   });
-  
