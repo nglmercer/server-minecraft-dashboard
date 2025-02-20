@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
+    <title>{{commons.pluginsmodstore}}</title>
     <!-- Tailwind CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- DaisyUI CDN -->
@@ -14,16 +14,16 @@
         <div class="card-body">
             <h2 class="card-title text-2xl font-bold text-center mb-4">Iniciar Sesión</h2>
             <form id="loginForm">
-                <!-- Campo de login (username o email) -->
+                <!-- Campo de correo electrónico -->
                 <div class="form-control">
-                    <label class="label" for="login">
-                        <span class="label-text">Usuario o Correo Electrónico</span>
+                    <label class="label" for="email">
+                        <span class="label-text">Correo Electrónico</span>
                     </label>
                     <input
-                        type="text"
-                        id="login"
-                        name="login"
-                        placeholder="Ingresa tu usuario o correo"
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Ingresa tu correo"
                         class="input input-bordered"
                         required
                     />
@@ -49,37 +49,41 @@
             </form>
             <!-- Enlace para recuperar contraseña -->
             <div class="text-center mt-4">
-                <a href="register.html" class="text-sm text-primary hover:underline">Regístrate</a>
+                <a href="#" class="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
     </div>
+
     <!-- Script para manejar el envío del formulario -->
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+        document.getElementById('loginForm').addEventListener('submit',async function (event) {
             event.preventDefault(); // Evita que el formulario se envíe
+
             // Obtener los valores del formulario
-            const login = document.getElementById('login').value; // Usuario o correo
+            const login = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+
             try {
                 // Enviar los datos al servidor usando Fetch API
-                const response = await fetch('/auth/login', {
+                const response = await fetch('/auth/login',{
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ login, password }),
                 });
+
                 const result = await response.json();
+
                 if (response.ok) {
-                    console.log('Login exitoso. Redirigiendo...', result);
-                    localStorage.setItem('token', result.token); // Guardar el token en localStorage
-                    window.location.href = '/index.html'; // Redirigir al usuario a la página principal
+                    alert('login aa exitoso. Redirigiendo...');
+                    // Redirigir al usuario a la página de inicio de sesión
                 } else {
-                    alert(result.error || 'Credenciales incorrectas');
+                    alert(result.message || 'Error al registrar el usuario.');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Ocurrió un error al intentar iniciar sesión.');
+                alert('Ocurrió un error al intentar registrar el usuario.');
             }
         });
     </script>

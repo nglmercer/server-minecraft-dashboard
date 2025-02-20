@@ -1,10 +1,6 @@
-
-package-lock.json
-/node_modules
-/servers
-/binaries
-/logs
-/binaries
-data/archived_tasks.json
-data/tasks.json
-/backups
+node_modules
+build
+.DS_Store
+lib/*
+node_modules/.bin/asar
+bun.lockb

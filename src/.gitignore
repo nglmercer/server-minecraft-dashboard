@@ -1,0 +1,10 @@
+
+package-lock.json
+/node_modules
+/servers
+/binaries
+/logs
+/binaries
+data/archived_tasks.json
+data/tasks.json
+/backups

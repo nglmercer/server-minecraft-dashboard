@@ -27,17 +27,6 @@
                         class="input input-bordered"
                         required
                     />
-                    <label class="label" for="username">
-                        <span class="label-text">Nombre de Usuario</span>
-                    </label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        placeholder="Ingresa tu nombre de usuario"
-                        class="input input-bordered"
-                        required
-                    />
                 </div>
                 <!-- Campo de contraseña -->
                 <div class="form-control mt-4">
@@ -60,7 +49,7 @@
             </form>
             <!-- Enlace para iniciar sesión -->
             <div class="text-center mt-4">
-                <a href="/login.html" class="text-sm text-primary hover:underline">¿Ya tienes una cuenta? Inicia sesión aquí</a>
+                <a href="/login" class="text-sm text-primary hover:underline">¿Ya tienes una cuenta? Inicia sesión aquí</a>
             </div>
         </div>
     </div>
@@ -72,7 +61,7 @@
             // Obtener los valores del formulario
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('email').value;
             try {
                 // Enviar los datos al servidor usando Fetch API
                 const response = await fetch('/auth/register',{

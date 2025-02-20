@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro - Sistema de Asistencia</title>
+    <title>Iniciar Sesión</title>
     <!-- Tailwind CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- DaisyUI CDN -->
@@ -12,18 +12,18 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="card w-96 bg-base-100 shadow-xl">
         <div class="card-body">
-            <h2 class="card-title text-2xl font-bold text-center mb-4">Registro</h2>
-            <form id="registerForm">
-                <!-- Campo de correo electrónico -->
+            <h2 class="card-title text-2xl font-bold text-center mb-4">Iniciar Sesión</h2>
+            <form id="loginForm">
+                <!-- Campo de login (username o email) -->
                 <div class="form-control">
-                    <label class="label" for="email">
-                        <span class="label-text">Correo Electrónico</span>
+                    <label class="label" for="login">
+                        <span class="label-text">Usuario o Correo Electrónico</span>
                     </label>
                     <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="Ingresa tu correo"
+                        type="text"
+                        id="login"
+                        name="login"
+                        placeholder="Ingresa tu usuario o correo"
                         class="input input-bordered"
                         required
                     />
@@ -44,45 +44,42 @@
                 </div>
                 <!-- Botón de envío -->
                 <div class="form-control mt-6">
-                    <button type="submit" class="btn btn-primary">Registrarse</button>
+                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
                 </div>
             </form>
-            <!-- Enlace para iniciar sesión -->
+            <!-- Enlace para recuperar contraseña -->
             <div class="text-center mt-4">
-                <a href="/login" class="text-sm text-primary hover:underline">¿Ya tienes una cuenta? Inicia sesión aquí</a>
+                <a href="register.html" class="text-sm text-primary hover:underline">Regístrate</a>
             </div>
         </div>
     </div>
     <!-- Script para manejar el envío del formulario -->
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async function (event) {
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault(); // Evita que el formulario se envíe
-
             // Obtener los valores del formulario
-            const email = document.getElementById('email').value;
+            const login = document.getElementById('login').value; // Usuario o correo
             const password = document.getElementById('password').value;
-            const username = document.getElementById('email').value;
             try {
                 // Enviar los datos al servidor usando Fetch API
-                const response = await fetch('/auth/register',{
+                const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({username, email, password }),
+                    body: JSON.stringify({ login, password }),
                 });
-
                 const result = await response.json();
-
                 if (response.ok) {
-                    alert('Registro exitoso. Redirigiendo...');
-                    // Redirigir al usuario a la página de inicio de sesión
+                    console.log('Login exitoso. Redirigiendo...', result);
+                    localStorage.setItem('token', result.token); // Guardar el token en localStorage
+                    window.location.href = '/index.html'; // Redirigir al usuario a la página principal
                 } else {
-                    alert(result.message || 'Error al registrar el usuario.');
+                    alert(result.error || 'Credenciales incorrectas');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Ocurrió un error al intentar registrar el usuario.');
+                alert('Ocurrió un error al intentar iniciar sesión.');
             }
         });
     </script>

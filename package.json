@@ -1,32 +1,23 @@
 {
-  "name": "auth-api-project",
-  "version": "1.0.0",
-  "description": "Authentication API with Express and JWT",
-  "type": "module",
-  "main": "src/index.js",
+  "name": "electron-bootstrap",
+  "productName": "electron-bootstrap",
+  "description": "The electronjs application launcher",
+  "keywords": [],
+  "main": "./main.js",
+  "version": "1.4.2",
+  "author": "melser",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "electron ./src",
+    "dev": "electron --no-sandbox ./src",
+    "build": "rimraf build && electron-builder --config electron-builder.yml",
+    "build:windows": "rimraf build && electron-builder --win --config electron-builder.yml",
+    "build:linux": "rimraf build && electron-builder --linux --config electron-builder.yml",
+    "postinstall": "cd src && npm install"
   },
-  "dependencies": {
-    "axios": "^1.4.0",
-    "cheerio": "^1.0.0-rc.12",
-    "colors": "^1.4.0",
-    "decompress": "^4.2.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "mime-types": "^2.1.35",
-    "minecraft-server-properties": "^1.0.0",
-    "multer": "^1.4.5-lts.1",
-    "node-mcstatus": "^1.2.1",
-    "strip-ansi": "^7.1.0",
-    "systeminformation": "^5.25.11",
-    "tar": "^7.4.3",
-    "tree-kill": "^1.2.2",
-    "uuid": "^11.0.5"
-  },
+  
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.9"
+    "electron": "31.4.0",
+    "electron-builder": "24.13.3",
+    "rimraf": "6.0.1"
   }
 }
