@@ -4,12 +4,17 @@ function loadServersList() {
         let servers = data.data?.files;
         const allserver = [];
         if (!servers) return;
-        console.log("servers getServersList", servers);
+        console.log("servers getServersList", servers, "rawdata",data);
+        const mapservers = getParsedServerItem(servers);
+        const sidebar = document.querySelector('server-menu') || document.getElementById("main-menu-sidebar");
+
+        sidebar.setServersList(mapservers);
+        console.log("mapservers", mapservers);
+        sidebar.setActiveElement(window.localStorage.selectedServer);
         servers.forEach(data => {
+            console.log(" getServersList serverItem", serverItem);
             let serverItem = data?.name ? data.name : data;
             if (serverItem.includes(".json")) return;
-            console.log("serverItem", serverItem);
-            const sidebar = document.querySelector('server-menu') || document.getElementById("main-menu-sidebar");
             setTimeout(() => {
                 sidebar.setActiveElement(window.localStorage.selectedServer);
             }, 1000);
@@ -39,8 +44,22 @@ function loadServersList() {
             sidebar.appendChild(serverElement);
         });
     });
-
 }
+function getParsedServerItem(servers) {
+    return servers
+        .map(data => {
+            let serverItem = data?.name ? data.name : data;
+            if (!serverItem.includes(".json")) {
+                return {
+                    title: serverItem,
+                    icon: `../assets/kubek_icon.png`
+                };
+            }
+            return null; // Devolvemos null para filtrar después
+        })
+        .filter(Boolean); // Eliminamos los elementos nulos
+}
+
 function loadSelectedServer () {
     if (typeof window.localStorage.selectedServer !== "undefined") {
         selectedServer = window.localStorage.selectedServer;

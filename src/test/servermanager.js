@@ -149,7 +149,7 @@ export class ServerManager {
   // Agrega un nuevo servidor al manager
   addServer(serverName, serverFolderPath, config = {}) {
     if (this.servers.has(serverName)) {
-      console.error(`El servidor ${serverName} ya existe.`);
+    //  console.error(`El servidor ${serverName} ya existe.`);
       return;
     }
     const server = new MinecraftServer(serverName, serverFolderPath, config);

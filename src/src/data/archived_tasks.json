@@ -206,6 +206,20 @@
       "createdAt": 1739703801754,
       "updatedAt": 1739703804172,
       "archivedAt": 1739703808181
+    },
+    "e048f2ee-8d57-48ea-83ad-cfb00b759035": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\servers\\test123\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740110841162,
+      "updatedAt": 1740110852960,
+      "archivedAt": 1740110855992
     }
   }
 }

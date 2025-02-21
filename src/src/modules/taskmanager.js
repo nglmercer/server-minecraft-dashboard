@@ -7,7 +7,7 @@ import colors from "colors";
 import { v4 as uuidv4 } from 'uuid';
 import { logger, Logger, StorageManager } from "../utils/utils.js";
 const tasklogger = new Logger();
-const taskStorage = new StorageManager('tasks.json', './data');
+const taskStorage = new StorageManager('tasks.json', './data', true);
 const PREDEFINED = {
     TASK_STATUS: {
         IN_PROGRESS: 'in_progress',
@@ -23,7 +23,7 @@ const PREDEFINED = {
     }
 };
 
-const archivedTaskStorage = new StorageManager('archived_tasks.json', './data');
+const archivedTaskStorage = new StorageManager('archived_tasks.json', './data', true);
 
 class TaskManager {
     constructor() {

@@ -3,8 +3,8 @@ import {
   comparePassword,
   hashPassword
 } from './utils/jcrypt.js'
-import StorageManager from './utils.js';
-const configStorage = new StorageManager('access-config.json', './data');
+import {StorageManager} from './utils/utils.js';
+const configStorage = new StorageManager('access-config.json', '../data');
 const saveAccessControl = configStorage.JSONget('accessControl');
 let accessControl = isEmptyObject(saveAccessControl) 
     ? {
@@ -34,7 +34,7 @@ const TOKEN_EXPIRATION = '1h'; // Tiempo de expiración del token
 
 class UserManager {
   constructor() {
-    this.storage = new StorageManager('usuarios.json', './data');
+    this.storage = new StorageManager('usuarios.json', '../data');
     this.users = this.storage.JSONget('users') || {};
     this.sessions = {}; // Almacenar sesiones activas
   }

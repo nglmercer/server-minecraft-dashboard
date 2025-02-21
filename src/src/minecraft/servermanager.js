@@ -2,15 +2,14 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import treekill from 'tree-kill';
-
+const processdirname = process.cwd();
 class MinecraftServer {
   constructor(serverName, serverFolderPath, config = {}) {
     this.serverName = serverName;
     // Convertimos la ruta a absoluta para evitar problemas
-    this.serverFolderPath = path.resolve(__dirname,"../" + serverFolderPath);
+    this.serverFolderPath = path.resolve(processdirname, serverFolderPath);
+    console.debug(`[DEBUG] Ruta absoluta del servidor ${this.serverName}: ${this.serverFolderPath}`);
     // Configuración opcional (por ejemplo, comando de apagado, máximo de reinicios, etc.)
     this.config = config;
     // Log acumulado de la salida del servidor
@@ -29,7 +28,9 @@ class MinecraftServer {
   getStartFilePath() {
     const platform = process.platform;
     const startFile = platform === 'win32' ? 'start.bat' : 'start.sh';
-    return path.join(this.serverFolderPath, startFile);
+    const startFilePath = path.join(this.serverFolderPath, startFile);
+    console.debug(`[DEBUG] Archivo de inicio para ${this.serverName}: ${startFilePath}`);
+    return startFilePath;
   }
 
   // Inicia el servidor
@@ -59,6 +60,7 @@ class MinecraftServer {
     }
 
     // Se inicia el proceso
+    console.debug(`[DEBUG] Ejecutando comando: ${command} con argumentos: ${args.join(' ')}`);
     this.process = spawn(command, args, {
       cwd: this.serverFolderPath,
       shell: true
@@ -66,22 +68,27 @@ class MinecraftServer {
 
     // Una vez iniciado, se asume que pasará a 'running' al recibir la salida adecuada
     this.status = 'running';
+    console.log(`Proceso de servidor ${this.serverName} iniciado con PID ${this.process.pid}`);
     this.attachProcessListeners();
   }
 
   // Asocia los eventos al proceso para capturar la salida y detectar cuando se cierra
   attachProcessListeners() {
     if (!this.process) return;
+    console.debug(`[DEBUG] Asociando listeners al proceso ${this.process.pid}`);
 
     this.process.stdout.on('data', (data) => {
+      console.debug(`[DEBUG stdout ${this.serverName}]: ${data.toString()}`);
       this.handleOutput(data.toString());
     });
 
     this.process.stderr.on('data', (data) => {
+      console.debug(`[DEBUG stderr ${this.serverName}]: ${data.toString()}`);
       this.handleOutput(data.toString());
     });
 
     this.process.on('close', (code) => {
+      console.debug(`[DEBUG] Proceso ${this.process.pid} cerrado con código ${code}`);
       this.status = 'stopped';
       this.log += `\nProceso cerrado con código ${code}`;
       console.log(`Servidor ${this.serverName} detenido con código ${code}\n`);
@@ -91,6 +98,7 @@ class MinecraftServer {
 
   // Maneja la salida (stdout y stderr) del proceso
   handleOutput(data) {
+    console.debug(`[DEBUG] Output recibido en ${this.serverName}: ${data}`);
     // Agrega la salida al log interno
     this.log += data;
     // Se puede implementar lógica para analizar mensajes y cambiar el estado (por ejemplo, detectar "Server started")
@@ -99,6 +107,7 @@ class MinecraftServer {
 
   // Envía un comando al proceso a través de su entrada estándar
   sendCommand(command) {
+    console.debug(`[DEBUG] Enviando comando al servidor ${this.serverName}: ${command}`);
     if (this.process && this.process.stdin.writable) {
       this.process.stdin.write(command + "\n");
       this.log += `Comando enviado: ${command}\n`;
@@ -110,6 +119,7 @@ class MinecraftServer {
 
   // Devuelve los últimos N renglones del log
   getLogs(linesCount = 150) {
+  //  console.debug(`[DEBUG] Obteniendo últimos ${linesCount} renglones del log del servidor ${this.serverName}`);
     const logLines = this.log.split('\n');
     return logLines.slice(-linesCount).join('\n');
   }
@@ -129,6 +139,7 @@ class MinecraftServer {
   // Mata el proceso de forma forzosa usando "tree-kill"
   kill() {
     if (this.process && this.process.pid) {
+      console.debug(`[DEBUG] Matando proceso ${this.process.pid} del servidor ${this.serverName}`);
       treekill(this.process.pid, (err) => {
         if (err) {
           console.error(`Error al matar el proceso ${this.process.pid}: ${err}`);
@@ -143,6 +154,7 @@ class MinecraftServer {
 
   // Función para obtener el estado actual del servidor
   getStatus() {
+    console.debug(`[DEBUG] Estado actual del servidor ${this.serverName}: ${this.status}`);
     return this.status;
   }
 }
@@ -151,12 +163,13 @@ class ServerManager {
   constructor() {
     // Usamos un Map para almacenar los servidores por nombre
     this.servers = new Map();
+    console.debug(`[DEBUG] ServerManager inicializado`);
   }
 
   // Agrega un nuevo servidor al manager
   addServer(serverName, serverFolderPath, config = {}) {
     if (this.servers.has(serverName)) {
-      //console.error(`El servidor ${serverName} ya existe.`);
+    //  console.warn(`El servidor ${serverName} ya existe.`);
       return;
     }
     const server = new MinecraftServer(serverName, serverFolderPath, config);
@@ -169,6 +182,7 @@ class ServerManager {
     if (this.servers.has(serverName)) {
       const server = this.servers.get(serverName);
       if (server.status !== 'stopped') {
+        console.debug(`[DEBUG] Removiendo servidor ${serverName} en ejecución, matando proceso...`);
         server.kill();
       }
       this.servers.delete(serverName);
@@ -182,6 +196,7 @@ class ServerManager {
   startServer(serverName) {
     const server = this.servers.get(serverName);
     if (server) {
+      console.debug(`[DEBUG] Iniciando servidor ${serverName} a través del manager.`);
       server.start();
     } else {
       console.error(`Servidor ${serverName} no registrado.`);
@@ -192,6 +207,7 @@ class ServerManager {
   stopServer(serverName) {
     const server = this.servers.get(serverName);
     if (server) {
+      console.debug(`[DEBUG] Deteniendo servidor ${serverName} a través del manager.`);
       server.stop();
     } else {
       console.error(`Servidor ${serverName} no registrado.`);
@@ -202,6 +218,7 @@ class ServerManager {
   sendCommand(serverName, command) {
     const server = this.servers.get(serverName);
     if (server) {
+      console.debug(`[DEBUG] Enviando comando a servidor ${serverName} a través del manager: ${command}`);
       server.sendCommand(command);
     } else {
       console.error(`Servidor ${serverName} no registrado.`);
@@ -212,6 +229,7 @@ class ServerManager {
   getServerLogs(serverName, linesCount = 100) {
     const server = this.servers.get(serverName);
     if (server) {
+    //  console.debug(`[DEBUG] Obteniendo logs del servidor ${serverName}`);
       return server.getLogs(linesCount);
     }
     console.error(`Servidor ${serverName} no registrado.`);
@@ -222,6 +240,7 @@ class ServerManager {
   getServerStatus(serverName) {
     const server = this.servers.get(serverName);
     if (server) {
+      console.debug(`[DEBUG] Consultando estado del servidor ${serverName}`);
       return server.getStatus();
     }
     console.error(`Servidor ${serverName} no registrado.`);

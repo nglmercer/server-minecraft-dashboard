@@ -230,6 +230,7 @@ function setOptions(options) {
 
   }
 }
+if (backupselement) {
 backupselement.addEventListener('backup-action', (event) => {
   console.log('Backup details:', event.detail);
   switch (event.detail.action) {
@@ -250,11 +251,15 @@ backupselement.addEventListener('backup-action', (event) => {
           console.log('No se encontró una acción para el evento:', event.detail);
   }
 });
-document.getElementById('create_backup').addEventListener('click', () => {
-  createBackup().catch(error => {
-     console.error("Error during create backup:", error);
-  });
-});
+}
+const create_backup = document.getElementById('create_backup');
+if (create_backup) {
+    create_backup.addEventListener('click', () => {
+    createBackup().catch(error => {
+        console.error("Error during create backup:", error);
+    });
+    });
+}
 async function createBackup() {
   const uniqueBackupName = `${window.localStorage.selectedServer}_${new Date().toISOString()}_backup.zip`;
   try {

@@ -205,8 +205,8 @@ class FolderManager {
       });
     }
   }
-  import StorageManager from '../utils.js';
-  const backupsdata = new StorageManager("backups.js","./data")
+  import {StorageManager} from '../utils/utils.js';
+  const backupsdata = new StorageManager("backups.js","../data")
   const folderManager = new FolderManager("./")
   function getfolderinfo(folderName) {
     try {

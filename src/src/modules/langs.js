@@ -13,7 +13,7 @@ async function initializeLangs() {
 
     allLangs.push(...supportLangs);
     supportLangs.forEach(lang => {
-        const langManager = new StorageManager(`languages/${lang}`, "./data");
+        const langManager = new StorageManager(`languages/${lang}`, "../data");
         langIntances[lang] = langManager;
     });
 

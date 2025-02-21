@@ -5,3 +5,5 @@ lib/*
 node_modules/.bin/asar
 bun.lockb
 binaries/
+/src/src/servers
+/logs

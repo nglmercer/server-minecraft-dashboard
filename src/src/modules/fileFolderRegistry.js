@@ -1,9 +1,11 @@
 // fileFolderRegistry.js
 import fs from 'fs';
 import path from 'path';
-import StorageManager from '../utils.js'; // Asegúrate de que este módulo esté correctamente implementado
+import {StorageManager} from '../utils/utils.js';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const processdirname = process.cwd();
+
 const ALLOWED_EXTENSIONS = 
 ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
@@ -11,7 +13,7 @@ class FileManager {
   constructor(basePath = '.') {
     this.basePath = path.isAbsolute(basePath)
       ? basePath
-      : path.join(__dirname, basePath);
+      : path.join(processdirname, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -87,7 +89,7 @@ class FolderManager {
   constructor(basePath = '.') {
     this.basePath = path.isAbsolute(basePath)
       ? basePath
-      : path.join(__dirname, basePath);
+      : path.join(processdirname, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -159,9 +161,9 @@ class FolderManager {
   }
 }
 
-const storage = new StorageManager('servers.json', '../servers');
-const folderManager = new FolderManager('../servers');
-const fileManager = new FileManager('../servers');
+const storage = new StorageManager('servers.json', './servers', true);
+const folderManager = new FolderManager('./servers');
+const fileManager = new FileManager('./servers');
 
 function createserverfolder(directoryname) {
   try {

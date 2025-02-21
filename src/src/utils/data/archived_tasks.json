@@ -94,6 +94,59 @@
       "createdAt": 1740098706955,
       "updatedAt": 1740098712072,
       "archivedAt": 1740098716072
+    },
+    "0255634b-581f-464b-8078-479e404adc26": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 204643847
+      },
+      "url": "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\binaries\\java\\Java-21-x64.zip",
+      "filename": "Java-21-x64.zip",
+      "status": "completed",
+      "createdAt": 1740100166303,
+      "updatedAt": 1740100270794,
+      "archivedAt": 1740100274411
+    },
+    "ecd01a5d-9810-4ebf-aceb-2992ef58d999": {
+      "type": "unpacking",
+      "progress": 100,
+      "archivePath": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\binaries\\java\\Java-21-x64.zip",
+      "filename": "Java-21-x64.zip",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\binaries\\java\\21",
+      "status": "completed",
+      "createdAt": 1740100270794,
+      "updatedAt": 1740100275559,
+      "archivedAt": 1740100279566
+    },
+    "9774252a-ae86-4e6d-8b52-b510fafde386": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\servers\\holape\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740100276629,
+      "updatedAt": 1740100283685,
+      "archivedAt": 1740100287685
+    },
+    "901c9aaf-fe46-40fd-8543-6b76a14d3585": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\servers\\test1232222222222222222224\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740100372285,
+      "updatedAt": 1740100377806,
+      "archivedAt": 1740100381794
     }
   }
 }

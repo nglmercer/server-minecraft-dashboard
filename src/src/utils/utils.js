@@ -5,22 +5,20 @@ import axios from "axios";
 import colors from "colors";
 import stripAnsi from "strip-ansi";
 import { fileURLToPath } from "url";
-import { createRequire } from 'module';
 import { readdir } from "fs/promises";
-const require = createRequire(import.meta.url);
-const packageJSON = require("../../package.json");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const processdirname = process.cwd();
 class StorageManager {
   /**
    * Crea una instancia del StorageManager.
    * @param {string} fileName - El nombre del archivo donde se almacenarán los datos (por ejemplo, 'store.json').
    * @param {string} basePath - La ruta donde se creará o buscará el archivo. Si es relativa se usa process.cwd().
    */
-  constructor(fileName, basePath = '.') {
+  constructor(fileName, basePath = '.', isRelative = false) {
+    const initBasepath = isRelative ? processdirname : __dirname;
     // Resuelve la ruta absoluta del directorio base.
-    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
+    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(initBasepath, basePath);
 
     // Si el directorio no existe, se crea (incluyendo subdirectorios necesarios).
     if (!fs.existsSync(this.storePath)) {
@@ -126,7 +124,7 @@ class StorageManager {
 }
 
 // Ejemplo de uso:e
-const storage = new StorageManager('store.json', './data');
+const storage = new StorageManager('store.json', '../data');
 class LanguageManager {
     static availableLanguages = {};
     static rawDataLanguages = [];
@@ -332,8 +330,6 @@ class Logger {
         console.log("");
         console.log(colors.cyan("your logo ASCII art here"));
         console.log("");
-        console.log(colors.inverse(`${packageJSON.name} ${packageJSON.version}`));
-        console.log(colors.inverse(packageJSON.repository.url.split("+")[1]));
         console.log("");
     }
 }

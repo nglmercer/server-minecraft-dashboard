@@ -7,7 +7,7 @@ const ALLOWED_EXTENSIONS =
 
 class FileManager {
   constructor(basePath = '.') {
-    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
+    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }

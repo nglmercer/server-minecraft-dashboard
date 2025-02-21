@@ -1,15 +1,20 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createGzip, createGunzip } from 'zlib';
 import * as tar from 'tar';
+import {StorageManager} from '../utils/utils.js';
+
 const ALLOWED_EXTENSIONS = 
 ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
-import { fileURLToPath } from 'url';
+const processdirname = process.cwd();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+
 class FileManager {
-  constructor(basePath = '.') {
-    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
+  constructor(basePath = '.', isRelative = false) {
+    const initBasepath = isRelative ? processdirname : __dirname;
+    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(initBasepath, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -201,8 +206,9 @@ class FileManager {
 }
 
 class FolderManager {
-  constructor(basePath = '.') {
-    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
+  constructor(basePath = '.', isRelative = false) {
+    const initBasepath = isRelative ? processdirname : __dirname;
+    this.basePath = path.isAbsolute(basePath) ? basePath : path.join(initBasepath, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -220,7 +226,7 @@ class FolderManager {
     if (isSubFolder) {
       return {
         name: folderName,
-        path: path.relative(__dirname, folderPath),
+        path: path.relative(this.basePath, folderPath),
         size: 0,
         modified: new Date().toISOString(),
         isDirectory: true
@@ -240,7 +246,7 @@ class FolderManager {
     const stats = fs.statSync(folderPath);
     return {
       name: folderName,
-      path: path.relative(__dirname, folderPath), // Ruta relativa
+      path: path.relative(this.basePath, folderPath), // Ruta relativa
       size: this.getFolderSize(folderPath),
       modified: stats.mtime.toISOString(), // Fecha de la última modificación
       files: this.listFilesInFolder(folderPath), // Listar archivos y subcarpetas
@@ -280,13 +286,13 @@ class FolderManager {
       
       // Construimos una base que está 2 niveles más profunda que la raíz actual
       // Asumiendo que itemPath ya está dentro de esa estructura
-      const relativePath = path.relative(__dirname, itemPath);
+      const relativePath = path.relative(process.cwd(), itemPath);
       const pathParts = relativePath.split(path.sep);
       
       if (pathParts.length >= 2) {
         // Tomamos los dos primeros segmentos del path relativo
         const baseSegments = pathParts.slice(0, 2);
-        const basePath = path.join(__dirname, ...baseSegments);
+        const basePath = path.join(this.basePath, ...baseSegments);
         
         return {
           name: item,
@@ -383,18 +389,17 @@ class FolderManager {
     });
   }
   getBackupfolderInfo() {
-    const backupFolderPath = path.join(__dirname, "../../backups");
+    const backupFolderPath = path.join(process.cwd(), "backups");
     if (!fs.existsSync(backupFolderPath)) {
       fs.mkdirSync(backupFolderPath, { recursive: true });
     }
     return backupFolderPath;
   }
 }
-import StorageManager from '../utils.js';
 
 // Configuración inicial
-const storage = new StorageManager('servers.json', '../servers');
-const folderManager = new FolderManager('../servers');
+const storage = new StorageManager('servers.json', './servers');
+const folderManager = new FolderManager('./servers', true);
 async function generateServerFolderBackup(folderName, outputPath = null) {
   try {
     const backup = await folderManager.compressFolder(folderName, outputPath);
@@ -414,7 +419,7 @@ async function uncompressServerFolderBackup(compressedFileName, outputFolderName
 }
 // uncompressServerFolderBackup("test123.tar.gz", "test1234");
 folderManager.getBackupfolderInfo();
-const fileManager = new FileManager('../servers');
+const fileManager = new FileManager('./servers', true);
 function createserverfolder(directoryname) {
   try {
     const folderDetails = folderManager.createFolder(directoryname);
