@@ -127,7 +127,7 @@ const getLocalJavaVersions = () => {
         }
     }
 
-    const startPath = "../binaries/java";
+    const startPath = "./binaries/java";
     if (!fs.existsSync(startPath)) return [];
     return fs.readdirSync(startPath)
         .filter(entry => fs.lstatSync(path.join(processdirname, startPath, entry)).isDirectory());
@@ -169,25 +169,25 @@ const getJavaInfoByVersion = (javaVersion) => {
     const resultURL = `https://api.adoptium.net/v3/binary/latest/${javaVersion}/ga/${platform.name}/${arch}/jdk/hotspot/normal/eclipse?project=jdk`;
     const filename = `Java-${javaVersion}-${arch}${platform.ext}`;
     
-    const relativeDownloadPath = path.join(processdirname, '../binaries/java', filename);
-    const relativeUnpackPath = path.join(processdirname, '../binaries/java', javaVersion);
+    const relativeDownloadPath = path.join(processdirname, './binaries/java', filename);
+    const relativeUnpackPath = path.join(processdirname, './binaries/java', javaVersion);
 
     const absoluteDownloadPath = path.resolve(relativeDownloadPath);
     const absoluteUnpackPath = path.resolve(relativeUnpackPath);
 
     // Asegurar que los directorios existan antes de leerlos
-    const javaDir = path.resolve(processdirname, '../binaries/java');
+    const javaDir = path.resolve(processdirname, './binaries/java');
     if (!fs.existsSync(javaDir)) {
         fs.mkdirSync(javaDir, { recursive: true });
     }
 
     // Verificar la estructura de carpetas después de la descompresión
-    let javaBinPath = path.join(processdirname, '../binaries/java', javaVersion, 'bin');
+    let javaBinPath = path.join(processdirname, './binaries/java', javaVersion, 'bin');
     if (!fs.existsSync(javaBinPath) && fs.existsSync(absoluteUnpackPath)) {
         const files = fs.readdirSync(absoluteUnpackPath);
         const jdkFolder = files.find(file => file.startsWith('jdk-'));
         if (jdkFolder) {
-            javaBinPath = path.join(processdirname, '../binaries/java', javaVersion, jdkFolder, 'bin');
+            javaBinPath = path.join(processdirname, './binaries/java', javaVersion, jdkFolder, 'bin');
         }
         console.log("javaBinPath", javaBinPath);
     }
@@ -224,7 +224,7 @@ const getJavaPath = (javaVersion) => {
         }
         return false;
     }
-    const javaDirPath = path.join(processdirname, '../binaries/java', javaVersion);
+    const javaDirPath = path.join(processdirname, './binaries/java', javaVersion);
     const javaSearchPath = path.join(javaDirPath, 'bin', 'java') + (process.platform === 'win32' ? '.exe' : '');
 
     if (fs.existsSync(javaDirPath) && fs.lstatSync(javaDirPath).isDirectory()) {

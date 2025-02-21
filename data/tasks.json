@@ -1,32 +1,4 @@
 {
   "tasks": {
-    "9e240b4d-1d17-4ebb-8919-e7b1553fdc5c": {
-      "type": "downloading",
-      "progress": 9,
-      "size": {
-        "total": 204643847,
-        "current": 17741350
-      },
-      "url": "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk",
-      "path": "C:\\Users\\Admin\\Documents\\projects\\binaries\\java\\Java-21-x64.zip",
-      "filename": "Java-21-x64.zip",
-      "status": "in_progress",
-      "createdAt": 1740115133768,
-      "updatedAt": 1740115291796
-    },
-    "f382d4a1-dae6-400d-aa47-332a9d23ef89": {
-      "type": "downloading",
-      "progress": 1,
-      "size": {
-        "total": 204643847,
-        "current": 2389542
-      },
-      "url": "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk",
-      "path": "C:\\Users\\Admin\\Documents\\projects\\binaries\\java\\Java-21-x64.zip",
-      "filename": "Java-21-x64.zip",
-      "status": "in_progress",
-      "createdAt": 1740115308038,
-      "updatedAt": 1740115331786
-    }
   }
 }

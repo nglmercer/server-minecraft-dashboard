@@ -7,3 +7,4 @@ bun.lockb
 binaries/
 /src/src/servers
 /logs
+/servers

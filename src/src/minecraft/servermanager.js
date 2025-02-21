@@ -240,7 +240,7 @@ class ServerManager {
   getServerStatus(serverName) {
     const server = this.servers.get(serverName);
     if (server) {
-      console.debug(`[DEBUG] Consultando estado del servidor ${serverName}`);
+    //  console.debug(`[DEBUG] Consultando estado del servidor ${serverName}`);
       return server.getStatus();
     }
     console.error(`Servidor ${serverName} no registrado.`);

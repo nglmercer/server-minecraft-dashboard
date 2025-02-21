@@ -1,1 +1,38 @@
-{}
+{
+  "test123123": {
+    "name": "test123123",
+    "path": "..\\..\\..\\servers\\test123123",
+    "size": 51386998,
+    "modified": "2025-02-21T05:26:05.645Z",
+    "files": [
+      {
+        "name": "eula.txt",
+        "path": "..\\..\\..\\servers\\test123123\\eula.txt",
+        "size": 9,
+        "modified": "2025-02-21T05:26:05.642Z",
+        "isDirectory": false
+      },
+      {
+        "name": "paper-1.21.4.jar",
+        "path": "..\\..\\..\\servers\\test123123\\paper-1.21.4.jar",
+        "size": 51386510,
+        "modified": "2025-02-21T05:26:05.638Z",
+        "isDirectory": false
+      },
+      {
+        "name": "server.properties",
+        "path": "..\\..\\..\\servers\\test123123\\server.properties",
+        "size": 132,
+        "modified": "2025-02-21T05:26:05.645Z",
+        "isDirectory": false
+      },
+      {
+        "name": "start.bat",
+        "path": "..\\..\\..\\servers\\test123123\\start.bat",
+        "size": 347,
+        "modified": "2025-02-21T05:26:05.644Z",
+        "isDirectory": false
+      }
+    ]
+  }
+}
