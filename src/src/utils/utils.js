@@ -20,7 +20,7 @@ class StorageManager {
    */
   constructor(fileName, basePath = '.') {
     // Resuelve la ruta absoluta del directorio base.
-    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
+    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
 
     // Si el directorio no existe, se crea (incluyendo subdirectorios necesarios).
     if (!fs.existsSync(this.storePath)) {
@@ -134,7 +134,7 @@ class LanguageManager {
   
     // Cargar los lenguajes disponibles desde la carpeta /languages
     static loadAvailableLanguages() {
-      const languagesPath = path.join(__dirname, "../data/languages");
+      const languagesPath = path.join(__dirname, "./data/languages");
   
       if (fs.existsSync(languagesPath)) {
         fs.readdirSync(languagesPath).forEach(file => {
@@ -172,7 +172,7 @@ class LanguageManager {
       text = text.toString();
   
       if (Object.keys(this.availableLanguages).includes(language)) {
-        const languagePath = path.join(__dirname, "../data/languages", language + ".json");
+        const languagePath = path.join(__dirname, "./data/languages", language + ".json");
         let translationFile = JSON.parse(fs.readFileSync(languagePath, "utf-8"));
   
         // Buscar marcadores de traducción usando expresión regular

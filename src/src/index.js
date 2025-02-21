@@ -11,6 +11,7 @@ import javaVersionsRouter from './routers/minecraft/javaversions.js';
 import pluginMCRouter from './routers/minecraft/plugins.js';
 import backupsRouter from './routers/backup.js'
 import path from 'path'; // Importa el módulo path para manejar rutas de archivos
+import { fileURLToPath } from 'url';
 import * as mime from 'mime-types'
 import fs from 'fs/promises';
 import {
@@ -24,10 +25,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware para parsear JSON
 app.use(express.json());
-
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Servir archivos estáticos desde la carpeta 'public'
 // Asegúrate de que la carpeta 'public' exista en el mismo directorio que este archivo
-const publicPath = path.join(process.cwd(), "public");
+// para evitar problemas de ruta es mejor hacer un path join al directorio actual de este script envez de usar process.cwd()
+const publicPath = path.join(__dirname, "../public");
 
 
 app.use(async (req, res, next) => {
@@ -89,3 +91,4 @@ app.use('/api/backups', backupsRouter)
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+export default app;

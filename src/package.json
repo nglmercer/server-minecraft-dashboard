@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Authentication API with Express and JWT",
   "type": "module",
-  "main": "src/index.js",
+  "main": "main.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
-  },
+    "start": "electron .",
+    "dev": "nodemon src/index.js",
+    "electron-dev": "electron ."
+  }
+  ,
   "dependencies": {
     "axios": "^1.4.0",
     "cheerio": "^1.0.0-rc.12",
@@ -27,6 +29,8 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "electron": "latest"  
+
   }
 }

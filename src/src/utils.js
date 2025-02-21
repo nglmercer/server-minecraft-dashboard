@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-
+import { fileURLToPath } from 'url';
+//replace process.cwd() with path.join(__dirname, '..')
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default class StorageManager {
   constructor(fileName, basePath = '.') {
-    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
+    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
 
     if (!fs.existsSync(this.storePath)) {
       fs.mkdirSync(this.storePath, { recursive: true });

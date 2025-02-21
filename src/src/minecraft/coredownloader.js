@@ -3,7 +3,8 @@ import path from "path";
 import * as cheerio from "cheerio";
 import { readCoresFile, writeCoresFile, isDataRecent, fetchData, logger } from "../utils/utils.js";
 import CORES_URL_GEN from "./coresURLGenerator.js";
-
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const URLS = {
     SPIGOT: "https://getbukkit.org/download/spigot",
     MANIFEST: "https://piston-meta.mojang.com/mc/game/version_manifest.json",
@@ -11,7 +12,7 @@ const URLS = {
     MAGMA: "https://api.magmafoundation.org/api/v2/allVersions"
 };
 
-const coresFilePath = path.join(process.cwd(), "cores.json");
+const coresFilePath = path.join(__dirname, "cores.json");
 
 const PREDEFINED = {
     SERVER_CORES: {

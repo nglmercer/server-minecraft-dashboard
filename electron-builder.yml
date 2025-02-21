@@ -1,5 +1,5 @@
-appId: com.melser.multiztream
-productName: multiztream
+appId: com.melser.minecraft-dashboard
+productName: Minecraft Dashboard
 directories:
   output: build
   app: src
@@ -11,7 +11,6 @@ extraResources:
     to: ""
 win:
   target:
-    - msi
     - zip
   icon: "./images/logo.png"
 linux:

@@ -2,10 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { createGzip, createGunzip } from 'zlib';
 import * as tar from 'tar';
-
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 class FolderManager {
     constructor(basePath = '.') {
-      this.basePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
+      this.basePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
       if (!fs.existsSync(this.basePath)) {
         fs.mkdirSync(this.basePath, { recursive: true });
       }
@@ -31,7 +32,7 @@ class FolderManager {
       const stats = fs.statSync(folderPath);
       return {
         name: folderName,
-        path: path.relative(process.cwd(), folderPath), // Ruta relativa
+        path: path.relative(__dirname, folderPath), // Ruta relativa
         size: this.getFolderSize(folderPath),
         modified: stats.mtime.toISOString(), // Fecha de la última modificación
         files: this.listFilesInFolder(folderPath), // Listar archivos y subcarpetas
@@ -49,13 +50,13 @@ class FolderManager {
         
         // Construimos una base que está 2 niveles más profunda que la raíz actual
         // Asumiendo que itemPath ya está dentro de esa estructura
-        const relativePath = path.relative(process.cwd(), itemPath);
+        const relativePath = path.relative(__dirname, itemPath);
         const pathParts = relativePath.split(path.sep);
         
         if (pathParts.length >= 2) {
           // Tomamos los dos primeros segmentos del path relativo
           const baseSegments = pathParts.slice(0, 2);
-          const basePath = path.join(process.cwd(), ...baseSegments);
+          const basePath = path.join(__dirname, ...baseSegments);
           
           return {
             name: item,

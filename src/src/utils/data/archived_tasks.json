@@ -1,0 +1,99 @@
+{
+  "archived_tasks": {
+    "77c5fcec-0407-4624-bf91-03365bb10941": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 204643847
+      },
+      "url": "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk",
+      "path": "binaries\\java\\Java-21-x64.zip",
+      "filename": "Java-21-x64.zip",
+      "status": "completed",
+      "createdAt": 1740096834562,
+      "updatedAt": 1740096864097,
+      "archivedAt": 1740096867989
+    },
+    "ef5c2f0f-7dab-449b-9bfb-0e1d17566842": {
+      "type": "unpacking",
+      "progress": 100,
+      "archivePath": "binaries\\java\\Java-21-x64.zip",
+      "filename": "Java-21-x64.zip",
+      "path": "binaries\\java\\21",
+      "status": "completed",
+      "createdAt": 1740096864097,
+      "updatedAt": 1740096868026,
+      "archivedAt": 1740096872026
+    },
+    "fe22de58-63c9-4047-ad8b-bbc47b8cfc62": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51389064
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar",
+      "path": "servers\\test123\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740096869798,
+      "updatedAt": 1740096874814,
+      "archivedAt": 1740096878798
+    },
+    "42ce413c-5dc6-4def-b1aa-ef1422e367df": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51389064
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar",
+      "path": "servers\\test1234\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740097804637,
+      "updatedAt": 1740097809542,
+      "archivedAt": 1740097813534
+    },
+    "cca18018-b456-410e-a4e6-6f27bfdf4040": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "servers\\test12314\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740098529021,
+      "updatedAt": 1740098534515,
+      "archivedAt": 1740098538504
+    },
+    "99a97cdd-dd69-4696-bcfa-efdda16749d7": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\minecraft\\servers\\hola123\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740098654836,
+      "updatedAt": 1740098659884,
+      "archivedAt": 1740098663885
+    },
+    "cd4debb0-a0aa-4d2f-a533-ba26f06003ab": {
+      "type": "downloading",
+      "progress": 100,
+      "size": {
+        "current": 51386510
+      },
+      "url": "https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar",
+      "path": "C:\\Users\\Admin\\Documents\\projects\\kubek-minecraft-dashboard\\src\\src\\servers\\hola123\\paper-1.21.4.jar",
+      "filename": "paper-1.21.4.jar",
+      "status": "completed",
+      "createdAt": 1740098706955,
+      "updatedAt": 1740098712072,
+      "archivedAt": 1740098716072
+    }
+  }
+}

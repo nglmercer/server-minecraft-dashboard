@@ -1,6 +1,8 @@
 
 import fs from "fs";
-import path from "path";
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import {
   createserverfolder,
   createserverfile,
@@ -131,7 +133,7 @@ export async function startJavaServerGeneration(params, cb) {
   }
   
   const coreFileName = `${core}-${coreVersion}.jar`;
-  const serverDirectoryPath = `./servers/${serverName}`;
+  const serverDirectoryPath = `../servers/${serverName}`;
   fs.mkdirSync(serverDirectoryPath, { recursive: true });
   
   try {
@@ -142,7 +144,7 @@ export async function startJavaServerGeneration(params, cb) {
       return;
     }
 
-    const coreFilePath = path.join(serverDirectoryPath, coreFileName);
+    const coreFilePath = path.join(__dirname, serverDirectoryPath, coreFileName);
    // console.log("coreFilePath",coreFilePath,serverDirectoryPath,coreFileName) works
     await addDownloadTask(coreDownloadURL, coreFilePath);
 

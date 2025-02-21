@@ -1,5 +1,7 @@
 import { logger, Logger, StorageManager, getFileNames } from "../utils/utils.js";
-
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const langIntances = {};
 const allLangs = [];
 const allStores = [];
@@ -7,7 +9,7 @@ const allStores = [];
 async function initializeLangs() {
     if (allLangs.length > 0) return; // Evita inicialización repetida
 
-    const supportLangs = await getFileNames("./data/languages");
+    const supportLangs = await getFileNames(path.join(__dirname, "../data/languages"));
 
     allLangs.push(...supportLangs);
     supportLangs.forEach(lang => {

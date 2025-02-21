@@ -2,13 +2,15 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import treekill from 'tree-kill';
 
 class MinecraftServer {
   constructor(serverName, serverFolderPath, config = {}) {
     this.serverName = serverName;
     // Convertimos la ruta a absoluta para evitar problemas
-    this.serverFolderPath = path.resolve(serverFolderPath);
+    this.serverFolderPath = path.resolve(__dirname,"../" + serverFolderPath);
     // Configuración opcional (por ejemplo, comando de apagado, máximo de reinicios, etc.)
     this.config = config;
     // Log acumulado de la salida del servidor

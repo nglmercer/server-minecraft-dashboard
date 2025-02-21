@@ -1,0 +1,62 @@
+[18:20:02.512] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:20:02.866] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:21:12.337] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:21:12.693] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:21:53.051] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:21:53.410] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:22:16.409] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:22:16.769] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:22:36.283] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:22:36.641] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:23:07.435] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:23:07.806] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:23:59.660] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:24:00.018] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:24:19.988] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[18:24:20.341] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:13:44.677] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:13:45.050] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:13:52.792] Descargando archivo desde https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk a binaries\java\Java-21-x64.zip
+[19:13:54.562] {{console.taskAdded}} 77c5fcec-0407-4624-bf91-03365bb10941 downloading
+[19:14:24.097] {{console.taskAdded}} ef5c2f0f-7dab-449b-9bfb-0e1d17566842 unpacking
+[19:14:27.990] {{console.taskArchived}} 77c5fcec-0407-4624-bf91-03365bb10941
+[19:14:28.027] [INFO] PaperCore First Step URL https://api.papermc.io/v2/projects/paper/versions/1.21.4
+[19:14:29.684] [INFO] PaperMC Download URL: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar
+[19:14:29.684] Descargando archivo desde https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar a servers\test123\paper-1.21.4.jar
+[19:14:29.799] {{console.taskAdded}} fe22de58-63c9-4047-ad8b-bbc47b8cfc62 downloading
+[19:14:32.026] {{console.taskArchived}} ef5c2f0f-7dab-449b-9bfb-0e1d17566842
+[19:14:38.799] {{console.taskArchived}} fe22de58-63c9-4047-ad8b-bbc47b8cfc62
+[19:18:32.710] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:18:33.073] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:29:57.473] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:29:57.846] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:30:02.915] [INFO] PaperCore First Step URL https://api.papermc.io/v2/projects/paper/versions/1.21.4
+[19:30:04.517] [INFO] PaperMC Download URL: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar
+[19:30:04.518] Descargando archivo desde https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/174/downloads/paper-1.21.4-174.jar a servers\test1234\paper-1.21.4.jar
+[19:30:04.638] {{console.taskAdded}} 42ce413c-5dc6-4def-b1aa-ef1422e367df downloading
+[19:30:13.535] {{console.taskArchived}} 42ce413c-5dc6-4def-b1aa-ef1422e367df
+[19:30:19.163] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:30:19.518] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:42:01.653] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:42:01.996] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:42:07.927] [INFO] PaperCore First Step URL https://api.papermc.io/v2/projects/paper/versions/1.21.4
+[19:42:08.900] [INFO] PaperMC Download URL: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar
+[19:42:08.900] Descargando archivo desde https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar a servers\test12314\paper-1.21.4.jar
+[19:42:09.022] {{console.taskAdded}} cca18018-b456-410e-a4e6-6f27bfdf4040 downloading
+[19:42:18.505] {{console.taskArchived}} cca18018-b456-410e-a4e6-6f27bfdf4040
+[19:44:06.824] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:44:07.176] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:44:13.751] [INFO] PaperCore First Step URL https://api.papermc.io/v2/projects/paper/versions/1.21.4
+[19:44:14.703] [INFO] PaperMC Download URL: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar
+[19:44:14.703] Descargando archivo desde https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar a C:\Users\Admin\Documents\projects\kubek-minecraft-dashboard\src\src\minecraft\servers\hola123\paper-1.21.4.jar
+[19:44:14.836] {{console.taskAdded}} 99a97cdd-dd69-4696-bcfa-efdda16749d7 downloading
+[19:44:23.886] {{console.taskArchived}} 99a97cdd-dd69-4696-bcfa-efdda16749d7
+[19:45:01.277] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:45:01.642] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:45:06.090] [INFO] PaperCore First Step URL https://api.papermc.io/v2/projects/paper/versions/1.21.4
+[19:45:06.839] [INFO] PaperMC Download URL: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar
+[19:45:06.840] Descargando archivo desde https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/175/downloads/paper-1.21.4-175.jar a C:\Users\Admin\Documents\projects\kubek-minecraft-dashboard\src\src\servers\hola123\paper-1.21.4.jar
+[19:45:06.956] {{console.taskAdded}} cd4debb0-a0aa-4d2f-a533-ba26f06003ab downloading
+[19:45:16.073] {{console.taskArchived}} cd4debb0-a0aa-4d2f-a533-ba26f06003ab
+[19:45:23.468] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper
+[19:45:23.828] PaperCore Version Data [object Object] paper https://api.papermc.io/v2/projects/paper

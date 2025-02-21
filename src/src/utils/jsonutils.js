@@ -2,9 +2,9 @@ import fs from "fs";
 import path from "path";
 import colors from "colors";
 import stripAnsi from "strip-ansi";
-import { fileURLToPath } from "url";
 import { createRequire } from 'module';
-
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const packageJSON = require("../../package.json");
 class Logger {
@@ -88,7 +88,7 @@ class StorageManager {
    */
   constructor(fileName, basePath = '.') {
     // Resuelve la ruta absoluta del directorio base.
-    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
+    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(__dirname, basePath);
 
     // Si el directorio no existe, se crea (incluyendo subdirectorios necesarios).
     if (!fs.existsSync(this.storePath)) {

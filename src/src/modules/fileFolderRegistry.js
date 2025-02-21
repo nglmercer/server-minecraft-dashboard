@@ -2,7 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 import StorageManager from '../utils.js'; // Asegúrate de que este módulo esté correctamente implementado
-
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ALLOWED_EXTENSIONS = 
 ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png','jar','.gz'];
 
@@ -10,7 +11,7 @@ class FileManager {
   constructor(basePath = '.') {
     this.basePath = path.isAbsolute(basePath)
       ? basePath
-      : path.join(process.cwd(), basePath);
+      : path.join(__dirname, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -86,7 +87,7 @@ class FolderManager {
   constructor(basePath = '.') {
     this.basePath = path.isAbsolute(basePath)
       ? basePath
-      : path.join(process.cwd(), basePath);
+      : path.join(__dirname, basePath);
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
     }
@@ -102,7 +103,7 @@ class FolderManager {
     if (isSubFolder) {
       return {
         name: folderName,
-        path: path.relative(process.cwd(), folderPath),
+        path: path.relative(__dirname, folderPath),
         size: 0,
         modified: new Date().toISOString(),
         isDirectory: true
@@ -120,7 +121,7 @@ class FolderManager {
     const stats = fs.statSync(folderPath);
     return {
       name: folderName,
-      path: path.relative(process.cwd(), folderPath),
+      path: path.relative(__dirname, folderPath),
       size: this.getFolderSize(folderPath),
       modified: stats.mtime.toISOString(),
       files: this.listFilesInFolder(folderPath),
@@ -149,7 +150,7 @@ class FolderManager {
       const stats = fs.statSync(itemPath);
       return {
         name: item,
-        path: path.relative(process.cwd(), itemPath),
+        path: path.relative(__dirname, itemPath),
         size: stats.size,
         modified: stats.mtime.toISOString(),
         isDirectory: stats.isDirectory(),
@@ -158,9 +159,9 @@ class FolderManager {
   }
 }
 
-const storage = new StorageManager('servers.json', './servers');
-const folderManager = new FolderManager('./servers');
-const fileManager = new FileManager('./servers');
+const storage = new StorageManager('servers.json', '../servers');
+const folderManager = new FolderManager('../servers');
+const fileManager = new FileManager('../servers');
 
 function createserverfolder(directoryname) {
   try {
