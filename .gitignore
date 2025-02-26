@@ -8,3 +8,5 @@ package-lock.json
 data/archived_tasks.json
 data/tasks.json
 /backups
+/build
+/src/node_modules
