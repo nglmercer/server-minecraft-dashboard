@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homepage - Administrador de Servidores</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <script src="./utils/logger.js"></script>
+  <script type="module" src="./pages/servermenu.js"></script>
+  <script src="./js/webcomponents.js"></script>
+    <style>
+    :root {
+      --primary-color: #5865F2;
+      --bg-color: #f9f9f9;
+      --text-color: #333;
+      --header-height: 60px;
+      --sidebar-width: 250px;
+      --card-bg: white;
+      --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: grid;
+      grid-template-areas:
+        "header header"
+        "sidebar main";
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-rows: var(--header-height) 1fr;
+      height: 100vh;
+    }
+
+    header {
+      grid-area: header;
+      background-color: white;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: var(--primary-color);
+    }
+
+    .header-left,
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .login-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+
+    .login-btn:hover {
+      background-color: #4752c4;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #4CAF50;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      transition: background-color 0.2s;
+    }
+
+    .icon-btn:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary-color);
+    }
+
+    aside {
+      grid-area: sidebar;
+      border-right: 1px solid rgba(0, 0, 0, 0.1);
+      background-color: white;
+      overflow-y: auto;
+    }
+
+    main {
+      grid-area: main;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: var(--card-shadow);
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+
+    .welcome-banner {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .welcome-banner h1 {
+      margin-top: 0;
+      font-size: 1.8rem;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        grid-template-areas:
+          "header"
+          "main";
+        grid-template-columns: 1fr;
+        grid-template-rows: var(--header-height) 1fr;
+      }
+
+      aside {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <button class="login-btn">Iniciar Sesión</button>
+      <div class="logo">ServerManager</div>
+    </div>
+    <div class="header-right">
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span>Online</span>
+      </div>
+      <button class="icon-btn" title="Configuración">
+        <i class="fas fa-cog"></i>
+      </button>
+      <button class="icon-btn" title="Calificar aplicación">
+        <i class="fas fa-star"></i>
+      </button>
+    </div>
+  </header>
+
+  <aside>
+    <server-menu id="serverMenu"></server-menu>
+  </aside>
+
+  <main>
+    <div class="welcome-banner">
+      <h1>Bienvenido a ServerManager</h1>
+      <p>Administra tus servidores de forma sencilla y centralizada.</p>
+    </div>
+
+    <div class="dashboard-cards">
+      <div class="card">
+        <h3>Resumen</h3>
+        <p>Servidores activos: <strong id="activeServers">0</strong></p>
+        <p>Estado general: <strong>Óptimo</strong></p>
+      </div>
+      <div class="card">
+        <h3>Actividad Reciente</h3>
+        <p>Sin actividad reciente</p>
+      </div>
+      <div class="card">
+        <h3>Recursos</h3>
+        <p>CPU: <strong>23%</strong></p>
+        <p>Memoria: <strong>45%</strong></p>
+      </div>
+      <div class="card">
+        <h3>Comenzar</h3>
+        <p>Crea un nuevo servidor para comenzar</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Código para el componente CreateServer ya incluido en el documento paste.txt
+    
+    // Inicializar con algunos servidores de ejemplo
+    document.addEventListener('DOMContentLoaded', () => {
+      const serverMenu = document.getElementById('serverMenu');
+      
+      // Actualizar contador
+      document.getElementById('activeServers').textContent = 0
+    
+      // Evento para crear un nuevo servidor
+      document.addEventListener('new-server', () => {
+      });
+      
+
+      
+      // Configuración de botones del encabezado
+      document.querySelector('.login-btn').addEventListener('click', () => {
+      });
+      
+      document.querySelectorAll('.icon-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('title');
+          alert(`Acción: ${action}`);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
