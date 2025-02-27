@@ -392,7 +392,7 @@ class FolderManager {
 import StorageManager from '../utils.js';
 
 // Configuración inicial
-const storage = new StorageManager('servers.json', './servers');
+const storage = new StorageManager('servers.json', './data');
 const folderManager = new FolderManager('./servers');
 async function generateServerFolderBackup(folderName, outputPath = null) {
   try {

@@ -3376,7 +3376,8 @@ class SidebarComponent extends HTMLElement {
   }
 }
 customElements.define('sidebar-menu', SidebarComponent);
-class CreateServer extends HTMLElement {
+// El componente principal del menú
+class ServerMenu extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open', delegatesFocus: true });
@@ -3391,7 +3392,6 @@ class CreateServer extends HTMLElement {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
           --primary-color: #5865F2;
           --active-bg: #5865F2;
-          --hover-bg: inherit;
           --hover-bg: rgba(88, 101, 242, 0.1);
           --text-color: inherit;
         }
@@ -3413,7 +3413,7 @@ class CreateServer extends HTMLElement {
           border-radius: 3px;
         }
 
-        .sidebar-item, .server-item {
+        .sidebar-item {
           display: flex;
           align-items: center;
           padding: 0.5rem;
@@ -3425,16 +3425,217 @@ class CreateServer extends HTMLElement {
           user-select: none;
         }
 
-        .sidebar-item:hover:not(.selected),
-        .server-item:hover:not(.selected) {
+        .sidebar-item:hover:not(.selected) {
           background: var(--hover-bg);
         }
 
-        .selected, .active {
+        .selected {
           background: var(--active-bg) !important;
           color: white !important;
         }
 
+        #new-server-btn {
+          margin-bottom: 1rem;
+        }
+      </style>
+    `;
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+  
+  render() {
+    this.shadowRoot.innerHTML = `
+      ${this.getStyles()}
+      <div class="sidebar-box" id="servers-list-sidebar">
+      </div>
+      <slot name="custom-elements"></slot>
+      `;
+  }
+  
+  setActiveElement(activeElementId) {
+    // Desmarcar todos los elementos activos
+    this.shadowRoot.querySelectorAll('.selected').forEach(item => {
+      item.classList.remove('selected');
+    });
+    
+    if (!activeElementId) return;
+    
+    const newServerBtn = this.shadowRoot.querySelector('#new-server-btn');
+    if (activeElementId.includes("newServer") && newServerBtn) {
+      newServerBtn.classList.add('selected');
+      return;
+    }
+    
+    // Buscar y marcar el elemento activo en los server-items
+    const serverItems = this.shadowRoot.querySelectorAll('server-item');
+    serverItems.forEach(item => {
+      if (item.getAttribute('data-server') === activeElementId) {
+        item.setActive(true);
+      } else {
+        item.setActive(false);
+      }
+    });
+  }
+  
+  setServersList(servers) {
+    this.serverlist = servers;
+    this.loadServersList();
+  }
+  
+  loadServersList() {
+    const container = this.shadowRoot.getElementById('servers-list-sidebar');
+    // Limpiar el contenedor primero
+    container.innerHTML = '';
+    
+    // Crear y agregar cada elemento server-item
+    this.serverlist.forEach(server => {
+      // Generar un ID único para este servidor basado en su título
+      const serverId = server.title.replace(/\s+/g, '-').toLowerCase();
+      
+      // Crear el server-item como un contenedor básico
+      const serverWrapper = document.createElement('div');
+      serverWrapper.id = `server-wrapper-${serverId}`;
+      serverWrapper.classList.add('server-wrapper');
+      
+      // Crear el elemento server-item
+      const serverItem = document.createElement('server-item');
+      serverItem.setAttribute('data-server', server.title);
+      serverItem.setAttribute('data-size', server.size || 0);
+      serverItem.setAttribute('data-version', server.version !== undefined ? server.version : 'Unknown');
+      serverItem.setAttribute('data-modified', server.modified || '');
+      serverItem.setAttribute('data-status', server.status || '');
+      serverItem.setAttribute('icon', server.icon);
+      serverItem.setAttribute('title', server.title);
+      
+      // Crear un slot para este servidor específico que podrá ser ocupado desde el exterior
+      const slotName = `server-content-${serverId}`;
+      serverItem.innerHTML = `<slot name="${slotName}"></slot>`;
+      
+      // Escuchar el evento de clic en el server-item
+      serverItem.addEventListener('server-selected', (e) => {
+        this.handleServerItemClick(e.detail);
+      });
+      
+      serverWrapper.appendChild(serverItem);
+      container.appendChild(serverWrapper);
+      
+      // Notificar que se ha creado un slot para este servidor
+      this.dispatchEvent(new CustomEvent('server-slot-created', {
+        detail: { 
+          server: server.title,
+          serverId: serverId,
+          slotName: slotName
+        },
+        bubbles: true,
+        composed: true
+      }));
+    });
+    
+    // Disparar evento de que los servidores están listos
+    this.dispatchEvent(new CustomEvent('servers-loaded', {
+      detail: { 
+        serverCount: this.serverlist.length,
+        servers: this.serverlist.map(server => {
+          const serverId = server.title.replace(/\s+/g, '-').toLowerCase();
+          return {
+            title: server.title,
+            serverId: serverId,
+            slotName: `server-content-${serverId}`
+          };
+        })
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
+  
+  handleServerItemClick(detail) {
+    // Desmarcar todos los elementos previamente seleccionados
+    this.shadowRoot.querySelectorAll('server-item').forEach(item => {
+      if (item.getAttribute('data-server') !== detail.server) {
+        item.setActive(false);
+      }
+    });
+    
+    // Propagar el evento hacia arriba
+    this.dispatchEvent(new CustomEvent('server-change', {
+      detail: detail,
+      bubbles: true,
+      composed: true
+    }));
+  }
+  
+  // Método para obtener una referencia al servidor por su título
+  getServerItemByTitle(title) {
+    return this.shadowRoot.querySelector(`server-item[data-server="${title}"]`);
+  }
+  
+  // Método auxiliar para crear y añadir contenido personalizado a un servidor
+  addServerContent(serverTitle, content) {
+    const serverId = serverTitle.replace(/\s+/g, '-').toLowerCase();
+    const slotName = `server-content-${serverId}`;
+    
+    // Crear un contenedor para el contenido que irá en el slot
+    const contentContainer = document.createElement('div');
+    contentContainer.slot = slotName;
+    
+    // Si el contenido es un string, lo establecemos como innerHTML
+    if (typeof content === 'string') {
+      contentContainer.innerHTML = content;
+    } 
+    // Si es un elemento DOM, lo agregamos como hijo
+    else if (content instanceof Element) {
+      contentContainer.appendChild(content);
+    }
+    
+    // Añadir al documento principal
+    this.appendChild(contentContainer);
+    
+    return contentContainer;
+  }
+}
+
+class ServerItem extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._active = false;
+  }
+  
+  getStyles() {
+    return `
+      <style>
+        :host {
+          display: block;
+          --primary-color: #5865F2;
+          --active-bg: #5865F2;
+          --hover-bg: rgba(88, 101, 242, 0.1);
+          --text-color: inherit;
+        }
+        
+        .server-item {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem;
+          margin-bottom: 0.5rem;
+          border-radius: 8px;
+          color: var(--text-color);
+          transition: all 0.2s ease;
+          cursor: pointer;
+          user-select: none;
+        }
+        
+        .server-item:hover:not(.active) {
+          background: var(--hover-bg);
+        }
+        
+        .active {
+          background: var(--active-bg) !important;
+          color: white !important;
+        }
+        
         .icon-circle-bg {
           display: flex;
           align-items: center;
@@ -3447,143 +3648,157 @@ class CreateServer extends HTMLElement {
           flex-shrink: 0;
           transition: background-color 0.2s ease;
         }
-
+        
         .icon-circle-bg img {
           width: 20px;
           height: 20px;
           object-fit: contain;
           filter: brightness(0) invert(1);
         }
-
-        .sidebar-item span.material-symbols-rounded {
-          color: white;
-          font-size: 1.25rem;
+        
+        .server-details {
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+          overflow: hidden;
         }
-
-        button.dark-btn {
-          background: none;
-          border: none;
-          color: inherit;
-          cursor: pointer;
-          padding: 0.5rem;
-        }
-
-        .server-item span {
+        
+        .server-title {
+          font-weight: 500;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-
-        #new-server-btn {
-          margin-bottom: 1rem;
+        
+        .server-meta {
+          font-size: 0.75rem;
+          opacity: 0.7;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .server-actions {
+          margin-left: auto;
+          display: flex;
+          align-items: center;
+        }
+        
+        .server-custom-slot {
+          width: 100%;
         }
       </style>
     `;
   }
-
+  
+  static get observedAttributes() {
+    return ['data-server', 'data-size', 'data-version', 'data-modified', 'data-status', 'icon', 'title', 'active'];
+  }
+  
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      this.render();
+    }
+  }
+  
   connectedCallback() {
     this.render();
     this.setupEventListeners();
   }
-  setActiveElement(activeElement) {
-    // Desmarcar todos los elementos activos
-    this.shadowRoot.querySelectorAll('.selected').forEach(item => {
-      item.classList.remove('selected');
-    });
-    if (!activeElement) return;
-    const newServerBtn = this.shadowRoot.querySelector('#new-server-btn');
-    if (activeElement.includes("newServer")) {
-      newServerBtn.classList.add('selected');
-      return;
-    }
-    // Buscar y marcar el elemento activo en la lista de servidores
-    const serverItem = this.shadowRoot.querySelector(`.server-item[data-server="${activeElement}"]`);
+  
+  formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const bytes_num = parseInt(bytes);
+    if (isNaN(bytes_num)) return '0 B';
     
-    if (serverItem) {
-      console.log("activeElement", activeElement, "serverItem", serverItem);
-      serverItem.classList.add('active');
-      serverItem.classList.add('selected');
-    }
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes_num) / Math.log(1024));
+    return `${(bytes_num / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
   }
+  
+  formatDate(dateString) {
+    if (!dateString) return '';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+      } catch {
+        return '';
+      }
+  }
+  
   render() {
+    const title = this.getAttribute('title') || '';
+    const icon = this.getAttribute('icon') || '';
+    const size = this.getAttribute('data-size') || 0;
+    const version = this.getAttribute('data-version') || 'Unknown';
+    const modified = this.getAttribute('data-modified') || '';
+    const status = this.getAttribute('data-status') || '';
+    
+    const formattedSize = this.formatFileSize(size);
+    const formattedDate = this.formatDate(modified);
+    const serverClass = this._active ? 'server-item active' : 'server-item';
+    const serverId = title.replace(/\s+/g, '-').toLowerCase();
+    
     this.shadowRoot.innerHTML = `
       ${this.getStyles()}
-      <div class="sidebar-box" id="servers-list-sidebar">
-        ${this.createServerList()}
-      </div>`;
-  }
-
-  createServerList() {
-    return `
-      <div class="sidebar-item" id="new-server-btn">
+      <div class="${serverClass}" id="server-${serverId}">
         <div class="icon-circle-bg">
-          <span class="material-symbols-rounded">+</span>
+          <img src="${icon}" alt="${title}">
         </div>
-        <span>Create server</span>
-      </div>
-      ${this.serverlist.map(server => this.createServerItem(server)).join('')}
-    `;
-  }
-
-  createServerItem(server) {
-    return `
-      <div class="server-item" data-server="${server.title}">
-        <div class="icon-circle-bg">
-          <img src="${server.icon}" alt="${server.title}">
+        <div class="server-details">
+          <span class="server-title">${title}</span>
+          <span class="server-meta">Size: ${formattedSize} | Modified: ${formattedDate} | v${version}</span>
         </div>
-        <span>${server.title}</span>
+        <div class="server-actions" id="server-actions-${serverId}">
+          <div class="server-custom-slot">
+            <slot></slot>
+          </div>
+        </div>
       </div>
     `;
   }
-
+  
   setupEventListeners() {
-    this.shadowRoot.addEventListener('click', e => {
-      const item = e.target.closest('.sidebar-item, .server-item');
-      if (!item) return;
-
-      // Remove previous selections
-      this.shadowRoot.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-
-      if (item.id === 'new-server-btn') {
-        this.dispatchNewServerEvent();
+    const serverItem = this.shadowRoot.querySelector('.server-item');
+    
+    serverItem.addEventListener('click', (e) => {
+      // Si el clic fue en server-actions o sus elementos hijos, no seleccionar el servidor
+      if (e.target.closest('.server-actions')) {
         return;
       }
-
-      if (item.classList.contains('server-item')) {
-        item.classList.add('selected');
-        this.handleServerItemClick(item);
-      }
-    });
-  }
-  setServersList(servers) {
-    this.serverlist = servers;
-    this.loadServersList();
-  }
-  handleServerItemClick(item) {
-    const server = item.dataset.server;
-    if (server) {
-      this.dispatchEvent(new CustomEvent('server-change', {
-        detail: { server },
+      
+      this.setActive(true);
+      
+      // Dispatch custom event with server data
+      this.dispatchEvent(new CustomEvent('server-selected', {
+        detail: {
+          server: this.getAttribute('data-server'),
+          size: parseInt(this.getAttribute('data-size')) || 0,
+          modified: this.getAttribute('data-modified') || '',
+          version: this.getAttribute('data-version') || 'Unknown',
+          status: this.getAttribute('data-status') || ''
+        },
         bubbles: true,
         composed: true
       }));
+    });
+  }
+  
+  setActive(active) {
+    this._active = active;
+    const serverItem = this.shadowRoot.querySelector('.server-item');
+    
+    if (active) {
+      serverItem.classList.add('active');
+    } else {
+      serverItem.classList.remove('active');
     }
-  }
-
-  dispatchNewServerEvent() {
-    this.dispatchEvent(new CustomEvent('new-server', {
-      bubbles: true,
-      composed: true
-    }));
-  }
-
-  loadServersList() {
-    const container = this.shadowRoot.getElementById('servers-list-sidebar');
-    container.innerHTML = this.createServerList();
   }
 }
 
-customElements.define('server-menu', CreateServer);
+// Definir los componentes web personalizados
+customElements.define('server-menu', ServerMenu);
+customElements.define('server-item', ServerItem);
 
 class GridSelector extends HTMLElement {
   constructor() {

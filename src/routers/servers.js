@@ -7,7 +7,8 @@ import {
     updatefolderinfo,
     getallfolderinfo,
     existsfolder,
-    getFileInfo
+    getFileInfo,
+    ServerStore
   } from '../modules/fileFolderRegistry.js';
   import {
     manager,
@@ -18,7 +19,13 @@ import {
   const router = express.Router();
   router.get('/servers', (req, res) => {
     const servers = getallfolderinfo();
-    res.status(200).json({ success: true, data: servers });
+//    console.log("servers", servers);
+    if (servers.files){
+      servers.files.forEach(server => {
+        updatefolderinfo(server.name);
+      });
+    }
+    res.status(200).json({ success: true, data: servers, message: ServerStore.store });
   });
   router.get('/servers/:serverName', (req, res) => {
     const { serverName } = req.params;

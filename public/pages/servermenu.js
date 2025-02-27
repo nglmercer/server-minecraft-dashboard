@@ -8,48 +8,41 @@ var selectedServer = window.localStorage.selectedServer || "";
 
 function loadServersList() {
     ServerManager.getServersList(data => {
-        let servers = data.data?.files;
-        const allserver = [];
-        if (!servers) return;
-        console.log("servers getServersList", servers);
-        servers.forEach(data => {
-            let serverItem = data?.name ? data.name : data;
-            if (serverItem.includes(".json")) return;
-            console.log("serverItem", serverItem);
-            const sidebar = document.querySelector('#serverMenu') || document.getElementById("main-menu-sidebar");
-            console.log("sidebar", sidebar);
-            setTimeout(() => {
-                sidebar.setActiveElement(window.localStorage.selectedServer);
-            }, 1000);
-            const parsedserver = {
-              title: serverItem,
-            //  icon: `/api/servers/${serverItem}/icon`
-                icon: `../assets/kubek_icon.png`
-            }
-            allserver.push(parsedserver);
-            sidebar.setServersList(allserver);
-            console.log("sidebar", sidebar, parsedserver, allserver);
-            uiDebugger.log(serverItem, parsedserver);
-            const isActive = serverItem === localStorage.selectedServer ? " active" : "";
-            const serverElement = document.createElement("div");
-            serverElement.className = `server-item sidebar-item${isActive}`;
-            serverElement.onclick = () => {
-                console.log("serverElement.onclick", serverItem, localStorage.selectedServer);
-            //    localStorage.selectedServer = serverItem;
-            //    location.reload();
-            };
-            serverElement.innerHTML = `
-                <div class="icon-circle-bg">
-                    <img style="width: 24px; height: 24px;" alt="${serverItem}" src="/api/servers/${serverItem}/icon">
-                </div>
-                <span>${serverItem}</span>
-            `;
-            sidebar.appendChild(serverElement);
-        });
+        if (!data.data) return;
+        console.log("servers getServersList", data.data);
+        setServertoselect(data.message);
     });
 
 }
+function setServertoselect(servers) {
+    const allserver = [];
+    const sidebar = document.querySelector('#serverMenu') || document.querySelector('server-menu');
+    const serversarray = Object.keys(servers).map(key => ( servers[key] ));
+    console.log("serversArray", serversarray);
+    serversarray.forEach(data => {
+        let key = data?.name ? data.name : data;
+        const serverInfo = {
+            title: key,
+            icon: `../assets/kubek_icon.png`,
+            version: getServerFile(data.files).name,
+            status: 'running',
+            ...data
+        }
+        allserver.push(serverInfo);
+        sidebar.addServerContent(key, `<status-element status="STOPPED" id="${key}_status"></status-element>`);
+    });
+    sidebar.setServersList(allserver);
+    sidebar.addEventListener('server-change', (event) => {
+        window.localStorage.selectedServer = event.detail.server;
+    });
+    sidebar.setActiveElement(window.localStorage.selectedServer);
+}
 
+// crear una function para obtener el archivo que termina en .jar de un array de archivos
+function getServerFile(files) {
+    let serverFile = files.find(file => file.name.endsWith('.jar'));
+    return serverFile;
+}
 function loadSelectedServer () {
     if (typeof window.localStorage.selectedServer !== "undefined") {
         selectedServer = window.localStorage.selectedServer;
