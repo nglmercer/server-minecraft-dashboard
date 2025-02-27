@@ -3517,7 +3517,9 @@ class ServerMenu extends HTMLElement {
       serverItem.addEventListener('server-selected', (e) => {
         this.handleServerItemClick(e.detail);
       });
-      
+      serverItem.addEventListener('server-contextmenu', (e) => {
+        this.handleServerItemContextMenu(e.detail);
+      });
       serverWrapper.appendChild(serverItem);
       container.appendChild(serverWrapper);
       
@@ -3566,7 +3568,9 @@ class ServerMenu extends HTMLElement {
       composed: true
     }));
   }
-  
+  handleServerItemContextMenu(detail) {
+
+  }
   // Método para obtener una referencia al servidor por su título
   getServerItemByTitle(title) {
     return this.shadowRoot.querySelector(`server-item[data-server="${title}"]`);
@@ -3771,17 +3775,28 @@ class ServerItem extends HTMLElement {
       
       // Dispatch custom event with server data
       this.dispatchEvent(new CustomEvent('server-selected', {
-        detail: {
-          server: this.getAttribute('data-server'),
-          size: parseInt(this.getAttribute('data-size')) || 0,
-          modified: this.getAttribute('data-modified') || '',
-          version: this.getAttribute('data-version') || 'Unknown',
-          status: this.getAttribute('data-status') || ''
-        },
+        detail: this.getDetails(),
         bubbles: true,
         composed: true
       }));
     });
+    serverItem.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.dispatchEvent(new CustomEvent('server-contextmenu', {
+        detail: this.getDetails(),
+        bubbles: true,
+        composed: true
+      }));
+    });
+  }
+  getDetails(){
+    return {
+      server: this.getAttribute('data-server'),
+      size: parseInt(this.getAttribute('data-size')) || 0,
+      modified: this.getAttribute('data-modified') || '',
+      version: this.getAttribute('data-version') || 'Unknown',
+      status: this.getAttribute('data-status') || ''
+    };
   }
   
   setActive(active) {

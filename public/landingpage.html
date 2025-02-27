@@ -6,9 +6,10 @@
   <title>ServerManager - Administrador de Servidores</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="./assets/materialSymbols.css" rel="stylesheet" />
   <script src="./utils/logger.js"></script>
-  <script type="module" src="./pages/servermenu.js"></script>
   <script src="./js/webcomponents.js"></script>
+  <script type="module" src="./pages/servermenu.js"></script>
   <style>
     :root {
       /* Light theme variables */
@@ -384,6 +385,8 @@
   </style>
 </head>
 <body>
+  <custom-popup id="server-options" class="material-symbols-rounded">
+  </custom-popup>
   <header>
     <div class="header-left">
       <div class="logo">
@@ -483,10 +486,7 @@
       document.querySelector('.promo-banner .btn-primary').addEventListener('click', () => {
         alert('Obteniendo RAM adicional...');
       });
-      serverMenu.addEventListener('server-change', (event) => {
-        window.localStorage.selectedServer = event.detail.server;
-        location.href = 'index.html';
-      });
+
     });
   </script>
 </body>

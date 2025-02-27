@@ -2,8 +2,33 @@ import {
     BaseAPI,
     MiAPI,
     api,
-    ServerManager
+    ServerManager,
   } from '../API/fetch.js';
+  function openPopup(element, popupId = "custom-popup") {
+    const popupElement = document.querySelector(popupId);
+    if (!popupElement) return;
+    if (typeof element === "string") {
+        const buttonElement  = document.querySelector(element);
+            popupElement.showAtElement(buttonElement);
+    } else {
+        const buttonElement = element;
+        popupElement.showAtElement(buttonElement);
+    }
+}
+function returnexploreroptions(idName, textName, iconName, callback) {
+    return  {
+      id: idName,
+      text: textName,
+      icon: iconName,
+      callback: () => {
+        callback();
+      }
+    }
+  }
+function setPopupOptions(popupOptions, popupId = "custom-popup"){
+    const popupElement = document.querySelector(popupId);
+    popupElement.options = popupOptions;
+}
 var selectedServer = window.localStorage.selectedServer || "";
 
 function loadServersList() {
@@ -17,7 +42,25 @@ function loadServersList() {
 ServerManager.getServersList((servers) => {
     console.log('Lista de servidores:', servers);
   });
-
+  const hoverStyles = `
+  <style>
+      .dropdown-item {
+          background: #222c3a;
+          border-radius: 8px;
+          padding: 4px 8px;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          cursor: pointer;
+          height: 48px;
+          font-size: 12pt;
+          width: 100%;
+      }
+      .dropdown-item:hover {
+          background: #2e3e53;
+      }
+  </style>
+  `;
 function setServertoselect(servers) {
     const allserver = [];
     const sidebar = document.querySelector('#serverMenu') || document.querySelector('server-menu');
@@ -52,6 +95,49 @@ function setServertoselect(servers) {
         window.localStorage.selectedServer = event.detail.server;
     });
     sidebar.setActiveElement(window.localStorage.selectedServer);
+
+    serverMenu.addEventListener('server-change', (e) => {
+        window.localStorage.selectedServer = e.detail.server;
+        location.href = 'index.html';
+      });
+      serverMenu.addEventListener('server-contextmenu', (e) => {
+        console.log("server-contextmenu", e);
+        openPopup(e.originalTarget  || e.target);
+        console.log(e.detail);
+        const baseOptions = [
+            // CREATEBACKUP
+            returnexploreroptions('create-backup', '{{commons.create}} {{commons.backup}}', 'backup', () => {
+                const path = e.detail;
+                console.log("create-backup", e.detail, path);
+            //    createBackup(e.detail);
+            }),
+            returnexploreroptions('restore-backup', '{{commons.restore}} {{commons.backup}}', 'restore', () => {
+                const path = e.detail;
+                console.log("restore-backup", e.detail, path);
+            //    restoreBackup(e.detail, window.localStorage.selectedServer);
+            }),
+            returnexploreroptions('delete-backup', '{{commons.delete}} {{commons.backup}}', 'delete', () => {
+                const path = e.detail;
+                console.log("delete-backup", e.detail, path);
+            //    deleteBackup(e.detail);
+            }),
+            returnexploreroptions('download-backup', '{{commons.download}} {{commons.backup}}', 'download', () => {
+                const path = e.detail;
+                console.log("download-backup", e.detail, path);
+            //    downloadBackup(e.detail);
+            }),
+        ];
+        const popupOptions = baseOptions.map(option => ({
+            html: `${hoverStyles}
+                <div class="dropdown-item">
+                    <span class="material-symbols-rounded">${option.icon}</span>
+                    <span class="default-font">${option.text}</span>
+                </div>
+            `,
+            callback: (e) => option.callback(e)
+        }));
+        setPopupOptions(popupOptions);
+      });
 }
 
 // crear una function para obtener el archivo que termina en .jar de un array de archivos
