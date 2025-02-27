@@ -88,7 +88,7 @@ async function updateBackupsList() {
 
   try {
       const response = await apiClient.get('/backupsInfo');
-      console.log('Lista de backups:', setOptions(generateOptions(response)));
+      console.log('Lista de backups:',response, setOptions(generateOptions(response)));
       return response; // Retorna la respuesta
   } catch (error) {
       console.error('Error al obtener backups:', error);

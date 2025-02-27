@@ -157,15 +157,55 @@ class BaseAPI {
       return response.json().catch(() => ({}));
     }
   }
-  
+  // Extiende la clase BaseAPI para centralizar las operaciones de backups.
+  class BackupAPI extends BaseAPI {
+    constructor(baseURL) {
+      // Asumimos que los endpoints de backup están bajo '/api/backups'
+      super(`${baseURL}/api/backups`);
+    }
+
+    // Crea un backup utilizando POST.
+    async createBackup(foldername) {
+      const uniqueBackupName = `${foldername}_${new Date().toISOString()}_backup.zip`;
+      return this.post('/create', { folderName: foldername, outputFilename: uniqueBackupName });
+    }
+
+    // Elimina un backup utilizando POST.
+    async deleteBackup(filename) {
+      return this.post('/delete', { filename });
+    }
+
+    // Restaura un backup utilizando POST.
+    async restoreBackup(filename, outputFolderName) {
+      return this.post('/restore', { filename, outputFolderName });
+    }
+
+    // Descarga un backup. Aquí, como BaseAPI no contempla blobs,
+    // se usa fetch directamente para obtener el archivo.
+    async downloadBackup(filename) {
+      const url = `${this.baseURL}/download/${filename}`;
+      try {
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Error ${response.status}: ${response.statusText} - ${errorData.message || ''}`);
+        }
+        // Retornamos el blob para que luego puedas manipular la descarga.
+        return response.blob();
+      } catch (error) {
+        console.error("Error durante la descarga:", error);
+        throw error;
+      }
+    }
+  }
+
   class MiAPI extends BaseAPI {
     constructor(baseURL) {
       // Se agrega '/api' al final de la URL base.
       super(`${baseURL}/api`);
     }
   }
-  
-  // Instanciación correcta de la API
+  const backupAPI = new BackupAPI(''); 
   const api = new MiAPI('');
   
   // Ejemplo de uso en una clase que administra el servidor:
@@ -258,9 +298,25 @@ class BaseAPI {
   ServerManager.getServerPlayers(window.localStorage.selectedServer, (players) => {
     console.log('Jugadores del servidor:', players);
   });
+  function createBackup(servername) {
+    return backupAPI.createBackup(servername);
+  }
+  function deleteBackup(filename) {
+    return backupAPI.deleteBackup(filename);
+  }
+  function restoreBackup(filename, outputFolderName) {
+    return backupAPI.restoreBackup(filename, outputFolderName);
+  }
+  function downloadBackup(filename) {
+    return backupAPI.downloadBackup(filename);
+  } 
 export {
   BaseAPI,
   MiAPI,
   api,
-  ServerManager
+  ServerManager,
+  createBackup,
+  deleteBackup,
+  restoreBackup,
+  downloadBackup
 }

@@ -3,6 +3,10 @@ import {
     MiAPI,
     api,
     ServerManager,
+    createBackup,
+    deleteBackup,
+    restoreBackup,
+    downloadBackup
   } from '../API/fetch.js';
   function openPopup(element, popupId = "custom-popup") {
     const popupElement = document.querySelector(popupId);
@@ -107,22 +111,38 @@ function setServertoselect(servers) {
         const baseOptions = [
             // CREATEBACKUP
             returnexploreroptions('create-backup', '{{commons.create}} {{commons.backup}}', 'backup', () => {
-                const path = e.detail;
+                const path = e.detail.server;
                 console.log("create-backup", e.detail, path);
+                createBackup(path).then(response => {
+                    console.log('Backup creado:', response);
+                })
+                .catch(error => console.error('Error al crear backup:', error));
             //    createBackup(e.detail);
             }),
             returnexploreroptions('restore-backup', '{{commons.restore}} {{commons.backup}}', 'restore', () => {
-                const path = e.detail;
+                const path = e.detail.server;
                 console.log("restore-backup", e.detail, path);
             //    restoreBackup(e.detail, window.localStorage.selectedServer);
             }),
             returnexploreroptions('delete-backup', '{{commons.delete}} {{commons.backup}}', 'delete', () => {
-                const path = e.detail;
+                const path = e.detail.server;
                 console.log("delete-backup", e.detail, path);
             //    deleteBackup(e.detail);
             }),
             returnexploreroptions('download-backup', '{{commons.download}} {{commons.backup}}', 'download', () => {
-                const path = e.detail;
+                const path = e.detail.server;
+                downloadBackup(path).then(blob => {
+                    // Crea un URL para el blob y lanza la descarga
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'miBackup.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  })
+                  .catch(error => console.error('Error al descargar backup:', error));
                 console.log("download-backup", e.detail, path);
             //    downloadBackup(e.detail);
             }),

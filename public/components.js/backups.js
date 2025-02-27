@@ -192,7 +192,7 @@ async function updateBackupsList() {
 
   try {
       const response = await apiClient.get('/backupsInfo');
-      console.log('Lista de backups:', setOptions(generateOptions(response)));
+      console.log('Lista de backups:',response, setOptions(generateOptions(response)));
       return response; // Retorna la respuesta
   } catch (error) {
       console.error('Error al obtener backups:', error);
@@ -256,7 +256,7 @@ document.getElementById('create_backup').addEventListener('click', () => {
   });
 });
 async function createBackup() {
-  const uniqueBackupName = `${window.localStorage.selectedServer}_${new Date().toISOString()}_backup.zip`;
+  const uniqueBackupName = `${window.localStorage.selectedServer}_${new Date().toISOString()}_backup.tar.gz`;
   try {
       const response = await apiClient.post('/create', { folderName: window.localStorage.selectedServer, outputFilename: uniqueBackupName });
       console.log('Backup creado:', response);

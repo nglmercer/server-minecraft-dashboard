@@ -1,0 +1,24 @@
+{
+  "backups": {
+    "name": "./backups",
+    "path": "backups",
+    "size": 457185018,
+    "modified": "2025-02-27T12:17:08.362Z",
+    "files": [
+      {
+        "name": "test1_2025-02-27T12_17_08.347Z_backup.tar.gz",
+        "path": "",
+        "size": 228592509,
+        "modified": "2025-02-27T12:17:14.651Z",
+        "isDirectory": false
+      },
+      {
+        "name": "test1_backup.tar.gz",
+        "path": "",
+        "size": 228592509,
+        "modified": "2025-02-27T12:09:07.231Z",
+        "isDirectory": false
+      }
+    ]
+  }
+}

@@ -13,7 +13,8 @@ router.post('/create', async (req, res) => {
   }
   try {
     const backupPath = await createbackup(folderName, outputFilename);
-    res.status(200).json({ message: 'Backup creado correctamente', path: backupPath });
+    console.log("path", backupPath, folderName, outputFilename)
+    res.status(200).json({ message: 'Backup creado correctamente', path: backupPath, folderName, outputFilename });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
