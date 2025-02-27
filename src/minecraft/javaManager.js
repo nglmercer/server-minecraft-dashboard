@@ -315,7 +315,7 @@ async function generateserverrequirements(params){
         //manejar instalacion de java
         return;
     }
-
+    
     const javaVersionRequired = gameVersionToJava(coreVersion);
     const localJavaVersions = getLocalJavaVersions();
     const closestVersion = getClosestJavaVersion(javaVersionRequired, localJavaVersions);
@@ -344,15 +344,6 @@ export {
     isJavaVersionCompatible,
     generateserverrequirements
 }
-const configserver = {
-    serverName: "MyMinecraftServer",  // Nombre del servidor
-    core: "paper",              // Core (tipo de servidor)
-    coreVersion: "1.5",             // Versión del core
-    startParameters: "-Xms2G -Xmx4G",      // Parámetros de inicio
-    javaExecutablePath: getJavaInfoByVersion(getLocalJavaVersions()[1]).javaBinPath,  // Ruta de ejecución de Java
-    serverPort: 25565,                // Puerto del servidor
-  };
-
 
 
 
@@ -387,7 +378,6 @@ const configserver = {
     }
 } */
 
-console.log("generateserverrequirements",generateserverrequirements(configserver,(data)=>{console.log("Callback executed", data)}));
 /* const assert = require('assert');
 
 // Pruebas para la función gameVersionToJava

@@ -981,19 +981,6 @@ class KubekFileManagerUI {
                 }
             }
         ]);
-/*         KubekNotifyModal.askForInput(
-            "{{fileManager.newDirectory}}",
-            "create_new_folder",
-            (txt) => {
-                KubekFileManagerUI.newDirectory(currentPath, txt, () => {
-                    KubekFileManagerUI.refreshDir();
-                });
-            },
-            "",
-            "{{commons.input}}",
-            "",
-            "text"
-        ); */
     }
 
     static upperDir() {

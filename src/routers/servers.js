@@ -15,7 +15,17 @@ import {
     MinecraftServer,
     ServerManager
   } from "../minecraft/servermanager.js";
-  import { startJavaServerGeneration } from "../minecraft/createserver.js";
+  import { startJavaServerGeneration,startJavaServerbyFile } from "../minecraft/createserver.js";
+function getRequestData(req, keys) {
+  const data = {};
+  
+  keys.forEach(key => {
+    data[key] = req.body?.[key] || req.params?.[key] || req.query?.[key] || null;
+  });
+
+  return data;
+}
+
   const router = express.Router();
   router.get('/servers', (req, res) => {
     const servers = getallfolderinfo();
@@ -64,26 +74,26 @@ import {
       res.status(500).json({ success: false, error: JSON.stringify(error) });
     }
   });
-  router.get('/createserver', (req, res) => {
-    const { serverName, core, coreVersion, startParameters, javaVersion, port, fileName } = req.query;
-    const configserver = {
-      serverName: serverName,
-      core: core,
-      coreVersion: coreVersion,
-      startParameters: startParameters,
-      javaVersion: javaVersion,
-      port: port,
-      fileName: fileName
-    };
-    console.log("configserver", configserver);
-    // verificar si el serverName existe y los datos son correctos y enviamos la respuesta de la validacion
-    if (!serverName || !core || !coreVersion || !startParameters || !javaVersion || !port || !fileName) {
-      return res.status(400).json({ success: false, error: "Todos los campos son requeridos: serverName, core, coreVersion, startParameters, javaVersion, port, fileName." });
+
+  router.post('/createserver', (req, res) => {
+    const keys = ["serverName", "core", "coreVersion", "startParameters", "javaVersion", "port", "fileName", "formData"];
+  
+    // Obtener los datos de la petición
+    const requestData = getRequestData(req, keys);
+    const { serverName, core, coreVersion, startParameters, javaVersion, port, formData } = requestData;
+    // Validación de campos obligatorios
+    if (!serverName || !core || !startParameters || !javaVersion || !port) {
+      console.log("Error en la validación de campos", serverName, core, coreVersion, startParameters, javaVersion, port);
+      return res.status(400).json({
+        success: false,
+        error: "Todos los campos son requeridos: serverName, core, coreVersion, startParameters, javaVersion, port."
+      });
     }
+    
+    // Preparar información mapeada
     const mapedServerInfo = {
       existsfolder: existsfolder(serverName),
-      existsfile: existsfolder(serverName),
-      fileName: fileName,
+      fileName: formData ? formData.fileName : `${core}-${coreVersion}.jar`,
       core: core,
       coreVersion: coreVersion,
       startParameters: startParameters,
@@ -93,31 +103,49 @@ import {
       serverName: serverName
     };
     
-    // verificar si el folderName existe y si tambien existe tanto el archivo core como el startScript
-    if (!mapedServerInfo.existsfolder) {
+    if (formData) {
+      console.log("Usando core subido:", formData);
+      let serverResult = {};
+      startJavaServerbyFile(mapedServerInfo, (result) => {
+        if (result) {
+          serverResult = result;
+        } else {
+          serverResult.success = false;
+          serverResult.error = "Error al crear el servidor.";
+        }
+        return res.status(200).json({
+          success: true,
+          data: mapedServerInfo,
+          message: serverResult
+        });
+      });
+    } else  if (!mapedServerInfo.existsfolder) {
       try {
-        const serverInfo = startJavaServerGeneration(mapedServerInfo, result => {
+        startJavaServerGeneration(mapedServerInfo, result => {
           if (result) {
-            console.log({ success: true, data: serverInfo, ServerInfo: mapedServerInfo });
+            console.log({ success: true, data: mapedServerInfo });
           } else {
-            console.log({ success: false, error: "Error al crear el servidor.", ServerInfo: mapedServerInfo  });
+            console.log({ success: false, error: "Error al crear el servidor.", ServerInfo: mapedServerInfo });
           }
         });
-        res.status(200).json({ success: true, data: serverInfo });
+        return res.status(200).json({
+          success: true,
+          data: mapedServerInfo,
+          message: "Servidor creado y core descargado."
+        });
       } catch (error) {
-        res.status(500).json({ success: false, error: JSON.stringify(error) });
+        return res.status(500).json({ success: false, error: JSON.stringify(error) });
       }
     } else {
-      return res.status(200).json({ success: true, data: mapedServerInfo, message: "El servidor ya existe." });
-      // return res.status(400).json({ success: false, error: "El servidor ya existe." });
+      return res.status(200).json({
+        success: true,
+        data: mapedServerInfo,
+        message: "El servidor ya existe."
+      });
     }
-/*     try {
-      const serverInfo = prepareServerCreation(serverName, core, coreVersion, startParameters, javaVersion, port, fileName);
-      res.status(200).json({ success: true, data: serverInfo });
-    } catch (error) {
-      res.status(500).json({ success: false, error: JSON.stringify(error) });
-    } */
   });
+  
+  
   router.get('/servermanager/:serverName/:action', (req, res) => {
     const { serverName, action } = req.params;
     if (!serverName || !action) {

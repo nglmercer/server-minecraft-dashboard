@@ -36,6 +36,7 @@ import {
   FileManager,
   FolderManager
 } from "../modules/FileManager.js";
+import exp from "constants";
 export const getPlatformInfo = () => {
   const isTermux = process.platform === "android" || fs.existsSync("/data/data/com.termux");
   const isWindows = process.platform === "win32";
@@ -54,13 +55,12 @@ export class ServerManager {
   }
 
   writeStartFiles(config) {
-    let { serverName, coreFileName, startParameters = "-Xms1G -Xmx2G", serverPort,coreVersion } = config;
+    let { serverName, coreFileName, startParameters = "-Xms1G -Xmx2G", serverPort,coreVersion,javaExecutablePath } = config;
       try {
           if (!serverName || !coreFileName || !serverPort) {
-              throw new Error("Parámetros inválidos.");
+              throw new Error("Parámetros inválidos.",serverName,coreFileName,serverPort);
           }
-          const javaExecutablePath = getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaBinPath || getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaPath;
-          console.log("javaExecutablePath",javaExecutablePath,getJavaInfoByVersion(gameVersionToJava(coreVersion)))
+          console.log("javaExecutablePath",javaExecutablePath)
           // Crear carpeta del servidor si no existe
           createserverfolder(serverName);
 
@@ -122,12 +122,12 @@ export class ServerManager {
 const newServerManager = new ServerManager();
 
 export async function startJavaServerGeneration(params, cb) {
-  let { serverName, core, coreVersion, startParameters, serverPort } = params;
+  let { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = params;
   const javaRequirements = await generateserverrequirements(params);
   //console.log("javaRequirements",javaRequirements) works
   if (!javaRequirements || !javaRequirements.installed) {
     console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements.javaVersionRequired);
-    await prepareJavaForServer(javaRequirements.javaVersionRequired);
+    await prepareJavaForServer( javaRequirements.javaVersionRequired || javaVersion);
   }
   
   const coreFileName = `${core}-${coreVersion}.jar`;
@@ -145,8 +145,9 @@ export async function startJavaServerGeneration(params, cb) {
     const coreFilePath = path.join(serverDirectoryPath, coreFileName);
    // console.log("coreFilePath",coreFilePath,serverDirectoryPath,coreFileName) works
     await addDownloadTask(coreDownloadURL, coreFilePath);
+    const javaExecutablePath = getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaBinPath || getJavaInfoByVersion(gameVersionToJava(coreVersion)).javaPath;
 
-    newServerManager.writeStartFiles({ serverName, coreFileName, startParameters, serverPort,coreVersion });
+    newServerManager.writeStartFiles({ serverName, coreFileName, startParameters, serverPort,coreVersion,javaExecutablePath });
 
     console.log(`✅ Core descargado exitosamente: ${coreFilePath}`);
     cb(true);
@@ -155,7 +156,27 @@ export async function startJavaServerGeneration(params, cb) {
     cb(false);
   }
 }
-
+export async function startJavaServerbyFile(params, cb) {
+  let { serverName, startParameters, serverPort, fileName,javaVersion } = params;
+  const serverFolderPath = path.join("./servers", serverName);
+  const existFile = fs.existsSync(serverFolderPath + "/" + fileName);
+  if (!existFile) {
+    console.log("El archivo no existe en el servidor", serverFolderPath + "/" + fileName);
+    return cb(false);
+  }
+  const javaRequirements = await verifyJavaInstallation(javaVersion);
+  //console.log("javaRequirements",javaRequirements) works
+  if (!javaRequirements) {
+    console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements, javaVersion);
+    await prepareJavaForServer(javaVersion);
+  }
+  const coreFileName = fileName;
+  const coreFilePath = path.join(serverFolderPath, fileName);
+  const javaExecutablePath = getJavaInfoByVersion(javaVersion).javaBinPath || getJavaInfoByVersion(javaVersion).javaPath;
+  newServerManager.writeStartFiles({ serverName, coreFilePath,coreFileName, startParameters, serverPort,javaExecutablePath });
+  console.log(`✅ Core descargado exitosamente: ${coreFilePath}`);
+  cb(true);
+}
 // Ejemplo de uso:
 /* const configserver = {
   serverName: "melserver",  // Nombre del servidor

@@ -8,7 +8,7 @@ var selectedServer = window.localStorage.selectedServer || "";
 
 function loadServersList() {
     ServerManager.getServersList(data => {
-        if (!data.data) return;
+        if (!data.data && !data.data.message) return;
         console.log("servers getServersList", data.data);
         setServertoselect(data.message);
     });
@@ -23,12 +23,12 @@ function setServertoselect(servers) {
     const sidebar = document.querySelector('#serverMenu') || document.querySelector('server-menu');
     const serversarray = Object.keys(servers).map(key => ( servers[key] ));
     console.log("serversArray", serversarray);
-    serversarray.forEach(data => {
+    serversarray.forEach( data => {
         let key = data?.name ? data.name : data;
         const serverInfo = {
             title: key,
             icon: `../assets/kubek_icon.png`,
-            version: getServerFile(data.files).name,
+            version: getServerFile(data.files)?.name,
             status: 'running',
             ...data
         }
@@ -56,8 +56,13 @@ function setServertoselect(servers) {
 
 // crear una function para obtener el archivo que termina en .jar de un array de archivos
 function getServerFile(files) {
-    let serverFile = files.find(file => file.name.endsWith('.jar'));
-    return serverFile;
+    try {
+        let serverFile = files.find(file => file.name.endsWith('.jar'));
+        return serverFile;
+    } catch (error) {
+        console.error("Error al obtener el archivo del servidor:", error);
+        return false;
+    }
 }
 function loadSelectedServer () {
     if (typeof window.localStorage.selectedServer !== "undefined") {

@@ -194,7 +194,7 @@ function prepareServerCreation() {
     btn.querySelector(".text").textContent = "{{newServerWizard.creationStartedShort}}";
     btn.querySelector(".material-symbols-rounded:not(.spinning)").style.display = "none";
     btn.querySelector(".material-symbols-rounded.spinning").style.display = "block";
-
+    
     const serverData = {
         serverName: cleanFolderName(
         document.querySelector('#server_name_input').getInputValues()),
@@ -203,75 +203,101 @@ function prepareServerCreation() {
         core: globalvars.currentSelectedCore,
         version: document.querySelector('#customselect_versions').getValue(),
         java: document.querySelector('#javas_list').getValue(),
+        javaVersion: document.querySelector('#javas_list').getValue(),
         startScript: generateNewServerStart(),
-        formData: document.querySelector('#core_upload').getSelectfile()
+        formData: document.querySelector('#core_upload').getSelectfile(),
+        startParameters: generateNewServerStart(),
+
     };
-    console.log("serverData prepareServerCreation", serverData);
     const validation = validateNewServerInputs();
+    console.log("serverData prepareServerCreation", serverData, validation);
+    
     if (validation === true) {
         startServerCreation(serverData);
-    } else if (validation === "uploadfile") {
-        const fileData = serverData.formData;
-        sendServerData(serverData.serverName, fileData.formData, fileData.fileName, serverData);
+    } else if (validation === "uploadfile" || !validation) {
+        startServerCreation(serverData, serverData.formData);
     }
 }
-
-// Start server creation process
-function startServerCreation({ serverName, core, version, startScript, java, port }, fileData) {
-    const serverData = new URLSearchParams({
-        serverName: serverName,
-        core: core,
-        coreVersion: version,
-        startParameters: startScript,
-        javaVersion: java,
-        port: port,
-        fileName: fileData?.name || core
-    });
-
-    fetch(`/api/createserver?${serverData.toString()}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.querySelector(".new-server-container #after-creation-text").textContent = 
-                    "{{newServerWizard.creationCompleted}}";
-            } else {
-                console.error("Error:", data.error);
-            }
-        })
-        .catch(error => console.error("Fetch error:", error));
-}
-
-// Send server data to backend
-function sendServerData(serverName, fileData, fileName, serverData) {
-    const formData = new FormData();
+function uploadFile(servername) {
+    const inputElement = document.getElementById("g-file-input");
     
-    if (fileData instanceof FormData) {
-        const file = [...fileData.entries()][0][1];
-        formData.append('server-core-input', file, fileName || file.name);
-    } else if (fileData instanceof File) {
-        formData.append('server-core-input', fileData, fileName || fileData.name);
+    // Remove old listener and add new one
+    const oldListener = inputElement.onchange;
+    if (oldListener) {
+        inputElement.removeEventListener('change', oldListener);
     }
+    inputElement.addEventListener("change", () => {
+        const formData = new FormData(document.getElementById("g-file-form"));
 
-    if (serverData) {
-        Object.entries(serverData).forEach(([key, value]) => {
-            if (key !== 'formData') formData.append(key, value);
-        });
-    }
+        console.log("Archivo a enviar:", formData.get("file")); // Asegúrate de que se captura correctamente
 
-    KubekRequests.post("/cores/" + serverName, response => {
-        if (serverData) startServerCreation(serverData, response.sourceFile);
-    }, formData);
+    
+        const server = servername || window.localStorage.selectedServer; // Define el nombre del servidor
+    
+        fetch(`/api/filemanager/upload?server=${server}&path=./`, {
+            method: "POST",
+            body: formData,
+        })
+        .then((response) => response.json())
+        .then((data) => console.log("Archivo subido:", data))
+        .catch((error) => console.error("Error al subir archivo:", error));
+    });
+    
 }
+// Start server creation process
+function startServerCreation(serverData, fileData) {
+    const formData = new FormData();
+  
+    // Verificar si serverData no está vacío antes de iterar
+    if (serverData && typeof serverData === "object") {
+      Object.entries(serverData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+    }
+  
+    // Si fileData es un archivo, lo agregamos al FormData
+    if (fileData instanceof File) {
+      formData.append("server-core-input", fileData, fileData.name);
+    }
+  
+    // Depuración: Ver qué datos están en el FormData antes de enviarlo
+    console.log("Datos enviados en FormData:");
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+  
+    // Enviar la petición POST con FormData
+    fetch("/api/createserver", {
+      method: "POST",
+      body: JSON.stringify(serverData),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Respuesta del servidor:", data);
+        if (data.success) {
+          console.log("✅ Servidor creado exitosamente:", data);
+        } else {
+          console.error("❌ Error en la respuesta:", data.error);
+        }
+      })
+      .catch(error => console.error("❌ Error en la petición:", error));
+  }
+  
+  
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelector("#server-port").value = 25565;
     document.querySelector('#core_upload').addEventListener('file-upload', e => {
         const { formData, fileName } = e.detail;
-        sendServerData(
-            document.querySelector('#server_name_input').getInputValues(),
-            formData,
-            fileName,
-            null
-        );
+        const file = [...formData.entries()][0][1];
+        formData.append("g-file-form", file);
+        const serverName = document.querySelector('#server_name_input').getInputValues();
+        uploadFile(serverName);
     });
     if (!globalvars.initialized) initializenewServer();
 

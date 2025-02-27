@@ -42,7 +42,7 @@ class MinecraftServer {
         this.cpuUsage = stats.cpu; // CPU en porcentaje
         this.memoryUsage = stats.memory || stats.memRss; // Memoria en MB
 
-        console.log(`[${this.serverName}] CPU: ${this.cpuUsage}% | Memoria: ${this.memoryUsage} MB`,stats);
+      //  console.log(`[${this.serverName}] CPU: ${this.cpuUsage}% | Memoria: ${this.memoryUsage} MB`,stats);
       } catch (error) {
         console.error(`Error al obtener métricas del proceso: ${error.message}`);
       }
@@ -73,7 +73,7 @@ class MinecraftServer {
     }
 
     this.status = 'starting';
-    this.log += `\nIniciando servidor ${this.serverName}...`;
+    this.log += `\nIniciando servidor ${this.serverName}...\n`;
     console.log(`Iniciando servidor ${this.serverName}...`);
     this._startTime = Date.now();
     // Configuración de la ejecución según el sistema operativo

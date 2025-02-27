@@ -4644,6 +4644,9 @@ class TaskNotifications extends HTMLElement {
 
   _updateNotification(notif, task) {
     notif.innerHTML = this._getNotificationHTML(task);
+    if (task.status === 'completed') {
+      notif.remove();
+    }
   }
 
   _getNotificationHTML(task, taskicon = "deployed_code_update") {
