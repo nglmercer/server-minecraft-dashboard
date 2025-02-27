@@ -45,7 +45,7 @@ export class MinecraftServer {
 
     this.status = 'starting';
     console.log(`Iniciando servidor ${this.serverName}...`);
-    this.log += `\nIniciando servidor ${this.serverName}...\n`;
+    this.log += `\nIniciando servidor ${this.serverName}...\n \n`;
     // Configuración de la ejecución según el sistema operativo
     let command, args;
     if (process.platform === 'win32') {

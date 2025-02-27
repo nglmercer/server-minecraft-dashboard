@@ -14,6 +14,10 @@ function loadServersList() {
     });
 
 }
+ServerManager.getServersList((servers) => {
+    console.log('Lista de servidores:', servers);
+  });
+
 function setServertoselect(servers) {
     const allserver = [];
     const sidebar = document.querySelector('#serverMenu') || document.querySelector('server-menu');
@@ -30,6 +34,18 @@ function setServertoselect(servers) {
         }
         allserver.push(serverInfo);
         sidebar.addServerContent(key, `<status-element status="STOPPED" id="${key}_status"></status-element>`);
+        ServerManager.getServerMetrics(key, (data) => {
+            const metrics = data.data;
+            console.log('Métricas del servidor:', metrics);
+            const statusElement = document.querySelector(`#${key}_status`);
+            if (statusElement) {
+                statusElement.updateStatus(metrics.status);
+            }
+        });
+        ServerManager.getServerPlayers(key, (data) => {
+            const players = data.data;
+            console.log('Jugadores del servidor:', players);
+        });
     });
     sidebar.setServersList(allserver);
     sidebar.addEventListener('server-change', (event) => {

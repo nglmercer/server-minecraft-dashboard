@@ -150,7 +150,7 @@ class BaseAPI {
     async handleResponse(response) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Error ${response.status}: ${response.statusText}`, {
+        console.error(`Error ${response.status}: ${response.statusText}`, {
           cause: errorData,
         });
       }
@@ -193,7 +193,16 @@ class BaseAPI {
         cb(log === false ? '' : log);
       });
     }
-  
+    static getServerPlayers(server, cb) {
+      return api.get(`/servermanager/${server}/players`, (players) => {
+        cb(players === false ? '' : players);
+      });
+    }
+    static getServerMetrics(server, cb) {
+      return api.get(`/servermanager/${server}/metrics`, (metrics) => {
+        cb(metrics === false ? '' : metrics);
+      });
+    }
     // Enviar comando al servidor (sin callback, se usa la promesa)
     static sendCommandToServer(server, cmd) {
       return api.get(`/servermanager/${server}/send?cmd=${cmd}`);
@@ -242,6 +251,12 @@ class BaseAPI {
   // Ejemplo de uso con callback:
   ServerManager.getServersList((servers) => {
     console.log('Lista de servidores:', servers);
+  });
+  ServerManager.getServerMetrics(window.localStorage.selectedServer, (metrics) => {
+    console.log('Métricas del servidor:', metrics);
+  });
+  ServerManager.getServerPlayers(window.localStorage.selectedServer, (players) => {
+    console.log('Jugadores del servidor:', players);
   });
 export {
   BaseAPI,

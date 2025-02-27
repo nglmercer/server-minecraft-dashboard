@@ -2,14 +2,49 @@
   "test123123": {
     "name": "test123123",
     "path": "servers\\test123123",
-    "size": 51386998,
-    "modified": "2025-02-21T05:26:48.037Z",
+    "size": 51394418,
+    "modified": "2025-02-27T04:05:19.026Z",
     "files": [
+      {
+        "name": "banned-ips.json",
+        "path": "banned-ips.json",
+        "size": 2,
+        "modified": "2025-02-27T05:42:03.503Z",
+        "isDirectory": false
+      },
+      {
+        "name": "banned-players.json",
+        "path": "banned-players.json",
+        "size": 2,
+        "modified": "2025-02-27T05:42:03.503Z",
+        "isDirectory": false
+      },
+      {
+        "name": "bukkit.yml",
+        "path": "bukkit.yml",
+        "size": 697,
+        "modified": "2025-02-27T05:42:02.276Z",
+        "isDirectory": false
+      },
       {
         "name": "cache",
         "path": "cache",
         "size": 0,
-        "modified": "2025-02-21T05:26:52.131Z",
+        "modified": "2025-02-27T04:04:53.169Z",
+        "isDirectory": true
+      },
+      {
+        "name": "commands.yml",
+        "path": "commands.yml",
+        "size": 104,
+        "modified": "2025-02-27T05:42:02.281Z",
+        "isDirectory": false
+      },
+      {
+        "name": "config",
+        "path": "config",
+        "size": 0,
+        "modified": "2025-02-27T05:42:03.498Z",
         "isDirectory": true
       },
       {
@@ -20,6 +55,34 @@
         "isDirectory": false
       },
       {
+        "name": "help.yml",
+        "path": "help.yml",
+        "size": 0,
+        "modified": "2025-02-27T04:05:13.313Z",
+        "isDirectory": false
+      },
+      {
+        "name": "libraries",
+        "path": "libraries",
+        "size": 0,
+        "modified": "2025-02-27T04:04:59.983Z",
+        "isDirectory": true
+      },
+      {
+        "name": "logs",
+        "path": "logs",
+        "size": 0,
+        "modified": "2025-02-27T05:41:50.457Z",
+        "isDirectory": true
+      },
+      {
+        "name": "ops.json",
+        "path": "ops.json",
+        "size": 136,
+        "modified": "2025-02-27T05:42:03.504Z",
+        "isDirectory": false
+      },
+      {
         "name": "paper-1.21.4.jar",
         "path": "paper-1.21.4.jar",
         "size": 51386510,
@@ -27,10 +90,31 @@
         "isDirectory": false
       },
       {
+        "name": "permissions.yml",
+        "path": "permissions.yml",
+        "size": 0,
+        "modified": "2025-02-27T04:05:14.713Z",
+        "isDirectory": false
+      },
+      {
+        "name": "plugins",
+        "path": "plugins",
+        "size": 0,
+        "modified": "2025-02-27T04:05:14.501Z",
+        "isDirectory": true
+      },
+      {
         "name": "server.properties",
         "path": "server.properties",
-        "size": 132,
-        "modified": "2025-02-21T05:26:05.645Z",
+        "size": 1530,
+        "modified": "2025-02-27T05:41:59.748Z",
+        "isDirectory": false
+      },
+      {
+        "name": "spigot.yml",
+        "path": "spigot.yml",
+        "size": 4920,
+        "modified": "2025-02-27T05:42:04.116Z",
         "isDirectory": false
       },
       {
@@ -39,6 +123,55 @@
         "size": 347,
         "modified": "2025-02-21T05:26:05.644Z",
         "isDirectory": false
+      },
+      {
+        "name": "usercache.json",
+        "path": "usercache.json",
+        "size": 107,
+        "modified": "2025-02-27T05:42:03.501Z",
+        "isDirectory": false
+      },
+      {
+        "name": "versions",
+        "path": "versions",
+        "size": 0,
+        "modified": "2025-02-27T04:05:00.656Z",
+        "isDirectory": true
+      },
+      {
+        "name": "version_history.json",
+        "path": "version_history.json",
+        "size": 52,
+        "modified": "2025-02-27T04:05:14.507Z",
+        "isDirectory": false
+      },
+      {
+        "name": "whitelist.json",
+        "path": "whitelist.json",
+        "size": 2,
+        "modified": "2025-02-27T04:05:14.482Z",
+        "isDirectory": false
+      },
+      {
+        "name": "world",
+        "path": "world",
+        "size": 0,
+        "modified": "2025-02-27T05:57:43.490Z",
+        "isDirectory": true
+      },
+      {
+        "name": "world_nether",
+        "path": "world_nether",
+        "size": 0,
+        "modified": "2025-02-27T05:57:43.559Z",
+        "isDirectory": true
+      },
+      {
+        "name": "world_the_end",
+        "path": "world_the_end",
+        "size": 0,
+        "modified": "2025-02-27T05:57:43.657Z",
+        "isDirectory": true
       }
     ]
   }

@@ -147,6 +147,14 @@ import {
         const info = manager.getServerStatus(serverName);
         res.status(200).json({ success: true, data: info });
         break;
+      case 'players':
+        const players = manager.getServerPlayers(serverName);
+        res.status(200).json({ success: true, data: players });
+        break;
+      case 'metrics':
+        const metrics = manager.getServerMetrics(serverName);
+        res.status(200).json({ success: true, data: metrics });
+        break;
       default:
         res.status(400).json({ success: false, error: "La acción no es válida." });
     }
