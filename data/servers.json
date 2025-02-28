@@ -350,5 +350,77 @@
         "isDirectory": true
       }
     ]
+  },
+  "hola123": {
+    "name": "hola123",
+    "path": "servers\\hola123",
+    "size": 51408653,
+    "modified": "2025-02-28T03:33:59.577Z",
+    "files": [
+      {
+        "name": "eula.txt",
+        "path": "eula.txt",
+        "size": 9,
+        "modified": "2025-02-28T03:33:59.572Z",
+        "isDirectory": false
+      },
+      {
+        "name": "paper-1.21.4.jar",
+        "path": "paper-1.21.4.jar",
+        "size": 51408156,
+        "modified": "2025-02-28T03:33:59.568Z",
+        "isDirectory": false
+      },
+      {
+        "name": "server.properties",
+        "path": "server.properties",
+        "size": 126,
+        "modified": "2025-02-28T03:33:59.577Z",
+        "isDirectory": false
+      },
+      {
+        "name": "start.bat",
+        "path": "start.bat",
+        "size": 362,
+        "modified": "2025-02-28T03:33:59.576Z",
+        "isDirectory": false
+      }
+    ]
+  },
+  "hola12": {
+    "name": "hola12",
+    "path": "servers\\hola12",
+    "size": 51408651,
+    "modified": "2025-02-28T03:35:52.692Z",
+    "files": [
+      {
+        "name": "eula.txt",
+        "path": "eula.txt",
+        "size": 9,
+        "modified": "2025-02-28T03:35:52.690Z",
+        "isDirectory": false
+      },
+      {
+        "name": "paper-1.21.4.jar",
+        "path": "paper-1.21.4.jar",
+        "size": 51408156,
+        "modified": "2025-02-28T03:35:52.688Z",
+        "isDirectory": false
+      },
+      {
+        "name": "server.properties",
+        "path": "server.properties",
+        "size": 124,
+        "modified": "2025-02-28T03:35:52.692Z",
+        "isDirectory": false
+      },
+      {
+        "name": "start.bat",
+        "path": "start.bat",
+        "size": 362,
+        "modified": "2025-02-28T03:35:52.691Z",
+        "isDirectory": false
+      }
+    ]
   }
 }

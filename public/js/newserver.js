@@ -213,6 +213,7 @@ function prepareServerCreation() {
     console.log("serverData prepareServerCreation", serverData, validation);
     
     if (validation === true) {
+        if (!serverData.version) return false;
         startServerCreation(serverData);
     } else if (validation === "uploadfile" || !validation) {
         startServerCreation(serverData, serverData.formData);

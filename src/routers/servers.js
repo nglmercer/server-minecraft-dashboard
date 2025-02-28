@@ -76,11 +76,11 @@ function getRequestData(req, keys) {
   });
 
   router.post('/createserver', (req, res) => {
-    const keys = ["serverName", "core", "coreVersion", "startParameters", "javaVersion", "port", "fileName", "formData"];
+    const keys = ["serverName", "core", "coreVersion", "startParameters", "javaVersion", "port", "fileName", "formData", "version"];
   
     // Obtener los datos de la petición
     const requestData = getRequestData(req, keys);
-    const { serverName, core, coreVersion, startParameters, javaVersion, port, formData } = requestData;
+    const { serverName, core, coreVersion, startParameters, javaVersion, port, formData, version } = requestData;
     // Validación de campos obligatorios
     if (!serverName || !core || !startParameters || !javaVersion || !port) {
       console.log("Error en la validación de campos", serverName, core, coreVersion, startParameters, javaVersion, port);
@@ -95,7 +95,7 @@ function getRequestData(req, keys) {
       existsfolder: existsfolder(serverName),
       fileName: formData ? formData.fileName : `${core}-${coreVersion}.jar`,
       core: core,
-      coreVersion: coreVersion,
+      coreVersion: coreVersion || version,
       startParameters: startParameters,
       javaVersion: javaVersion,
       port: port,

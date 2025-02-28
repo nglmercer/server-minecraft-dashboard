@@ -582,7 +582,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
       }
 
       currentServerStatus = status;
-      console.log("status", status, KubekPredefined.SERVER_STATUSES_TRANSLATE[status]);
+    //  console.log("status", status, KubekPredefined.SERVER_STATUSES_TRANSLATE[status]);
       WebDebugger.log("status", status, KubekPredefined.SERVER_STATUSES_TRANSLATE[status]);
       WebDebugger.toggleLogs(false);
       const actionButtons = document.querySelector('action-buttons');
@@ -793,11 +793,7 @@ let isItFirstLogRefresh = false;
 let previousConsoleUpdateLength = 0;
 let timeStampRegexp = /\[[0-9]{2}\:[0-9]{2}\:[0-9]{2}\]/gm;
 
-setInterval(() => {
-    KubekServerHeaderUI.loadServerByName(selectedServer, () => {
-        uiDebugger.log(selectedServer);
-    });
-}, 2000);
+
 // Constants
  const FILE_NAME_REGEXP = /^[\w,\s-]+\.[A-Za-z]{1,15}$/gi;
 

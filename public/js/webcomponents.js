@@ -4659,8 +4659,10 @@ class TaskNotifications extends HTMLElement {
 
   _updateNotification(notif, task) {
     notif.innerHTML = this._getNotificationHTML(task);
-    if (task.status === 'completed') {
-      notif.remove();
+    if (task.status === 'completed' || task.progress === 100) {
+      setTimeout(() => {
+        notif.remove();
+      }, 3000);
     }
   }
 

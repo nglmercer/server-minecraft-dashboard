@@ -9,7 +9,6 @@ button {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
   font-size: 14pt;
   cursor: pointer;
 }
