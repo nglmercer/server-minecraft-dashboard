@@ -8,16 +8,11 @@ class UpdateConsole {
         this.consoleElement.refreshConsoleLog(log);
     }
     fetchConsoleLogs(server) {
-        let url = `/api/servermanager/${server}/log`;
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-            //    console.log("data", data);
-                this.updatelog(data.data);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-            });
+      ServerManager.getServerLog(server, (data) => {
+      //  console.log("data getServerLog", data);
+        if (!data.data) return;
+        this.updatelog(data.data);
+      });
     }
 }
 const updateConsole = new UpdateConsole();

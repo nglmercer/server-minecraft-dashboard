@@ -227,7 +227,7 @@ class BaseAPI {
   }
   const backupAPI = new BackupAPI(''); 
   const api = new MiAPI('');
-  class fileManager {a
+  class fileManager {
     //async post(endpoint, data, options = {}) {
     static uploadFile({server,path,data}, cb) {
       //`/api/filemanager/upload?server=${server}&path=${currentPath}`
@@ -358,6 +358,87 @@ class BaseAPI {
   function downloadBackup(filename) {
     return backupAPI.downloadBackup(filename);
   } 
+  /*class awaitfilemanager extends awaitBase {
+    static async filepost(url, data) {
+        return fetch("/api" + url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }).then(res => res.json());
+    }
+    
+    static readDirectory(path) {
+        return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
+    }
+    static readFile(path) {
+        return this.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
+    }
+    static deleteFile(path) {
+        return this.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
+    }
+    static renameFile(path, newName) {
+        console.log("rename", path, newName);
+        return this.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
+    }
+    static newDirectory(path, name) {
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
+    }
+    
+    static createFile(path, name) {
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
+    }    
+    static writeFilebyName(folderName, fileName, content) {
+        return this.post("/fileManager/writeFilebyName", { folderName, fileName, content });
+    }    
+}*/
+class awaitfilemanager {
+    static async filepost(url, data) {
+        return fetch("/api" + url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }).then(res => res.json());
+    }
+    
+    static readDirectory(path) {
+        return api.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
+    }
+    static readFile(path) {
+        return api.get("/fileManager/read-file-by-path/"+getselectedserver() + path);
+    }
+    static deleteFile(path) {
+        return api.get("/fileManager/delete?server=" + getselectedserver() + "&path=" + path);
+    }
+    static renameFile(path, newName) {
+        console.log("rename", path, newName);
+        return api.get("/fileManager/rename?server=" + getselectedserver() + "&path=" + path + "&newName=" + newName);
+    }
+    static newDirectory(path, name) {
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
+    }
+    
+    static createFile(path, name) {
+        return this.filepost("/fileManager/create-file", { 
+            directoryname: getselectedserver() + path, 
+            filename: name 
+        });
+    }    
+    static writeFilebyName(folderName, fileName, content) {
+        return api.post("/fileManager/writeFilebyName", { folderName, fileName, content });
+    }
+}
+function getselectedserver() {
+    return window.localStorage.selectedServer;
+}
 export {
   BaseAPI,
   MiAPI,
@@ -368,5 +449,6 @@ export {
   deleteBackup,
   restoreBackup,
   downloadBackup,
-  fileManager
+  fileManager,
+  awaitfilemanager
 }

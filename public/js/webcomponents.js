@@ -1791,20 +1791,50 @@ customElements.define('custom-dialog', CustomDialog);
               const row = document.createElement('tr');
               row.innerHTML = `
                   <th>${letter}</th>
-                  <td>${KubekUtils.humanizeFileSize(used)}</td>
-                  <td>${KubekUtils.humanizeFileSize(free)}</td>
-                  <td>${KubekUtils.humanizeFileSize(total)}</td>
+                  <td>${humanizeFileSize(used)}</td>
+                  <td>${humanizeFileSize(free)}</td>
+                  <td>${humanizeFileSize(total)}</td>
                   <td>${percent}%</td>
               `;
               disksTable.appendChild(row);
             });
             getElement('kubek-uptime').textContent = 
-            KubekUtils.humanizeSeconds(data.uptime);
+            humanizeSeconds(data.uptime);
         }
     }
 
 // Registrar el componente
 customElements.define('system-monitor', SystemMonitor);
+function humanizeFileSize(size) {
+  if (size < 1024) {
+      size = size + " B";
+  } else if (size < 1024 * 1024) {
+      size = Math.round((size / 1024) * 10) / 10 + " Kb";
+  } else if (size < 1024 * 1024 * 1024) {
+      size = Math.round((size / 1024 / 1024) * 10) / 10 + " Mb";
+  } else if (size >= 1024 * 1024 * 1024) {
+      size = Math.round((size / 1024 / 1024 / 1024) * 10) / 10 + " Gb";
+  } else {
+      size = size + " ?";
+  }
+  return size;
+}
+
+// Convertir segundos a un formato legible por humanos
+function humanizeSeconds(seconds) {
+  let hours = Math.floor(seconds / (60 * 60));
+  let minutes = Math.floor((seconds % (60 * 60)) / 60);
+  seconds = Math.floor(seconds % 60);
+
+  return (
+      padZero(hours) + "{{commons.h}} " +
+      padZero(minutes) + "{{commons.m}} " +
+      padZero(seconds) + "{{commons.s}}"
+  );
+}
+function padZero(number) {
+  return (number < 10 ? "0" : "") + number;
+}
 if (!customElements.get('kubek-plugins-ui')) {
     class KubekPluginsUIclass extends HTMLElement {
       constructor() {
