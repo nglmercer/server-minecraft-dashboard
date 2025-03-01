@@ -1,7 +1,16 @@
 
 import { awaitfilemanager } from "../../API/fetch.js";
+import { unitUtils } from "../../utils/unit.js";
 var currentPath = "/";
-
+function returnDialogOptions(labelName, className, callback) {
+    return  {
+      label: labelName,
+      class: className,
+      callback: () => {
+        callback();
+      }
+    }
+  }
 const editableExtensions = [
     "txt", "log", "yml", "xml", "cfg", "conf", "config",
     "json", "yaml", "properties", "sh", "bat","gz"
@@ -65,13 +74,13 @@ class KubekFileManagerUI {
                 const { path, name, type } = e.detail.item;
                 explorer.setAttribute('current-path', currentPath);
                 const verifycurrentpath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
-                console.log("verify", editableExtensions.includes(KubekUtils.pathExt(name)),"e",e.detail, currentPath, type, name, verifycurrentpath);
+                console.log("verify", editableExtensions.includes(unitUtils.pathExt(name)),"e",e.detail, currentPath, type, name, verifycurrentpath);
                 if (type === 'directory') {
                     currentPath = verifycurrentpath + name;
 
                     KubekFileManagerUI.refreshDir();
                 } else if (type === 'file' && 
-                         editableExtensions.includes(KubekUtils.pathExt(name))) {
+                         editableExtensions.includes(unitUtils.pathExt(name))) {
                             const filetoedit = verifycurrentpath + name
                             console.log("filetoedit", filetoedit);
                             newFileEditor.editFile(e.detail.item, filetoedit);
@@ -84,7 +93,7 @@ class KubekFileManagerUI {
                 returnexploreroptions('delete','{{commons.delete}}','delete', () => {
                         const path = verifycurrentpath + e.detail.item.name;
                         const Deletedialog = new globalconfirmdialog("globaldialog","globaldialog_content");
-                        Deletedialog.setInfo({tittle: "{{commons.delete}}", description: "{{fileManager.areYouWantToDelete}} " + KubekUtils.pathFilename(path)});
+                        Deletedialog.setInfo({tittle: "{{commons.delete}}", description: "{{fileManager.areYouWantToDelete}} " + unitUtils.pathFilename(path)});
                         Deletedialog.show();
                         const options = [
                             returnDialogOptions("{{commons.delete}}", "delete-btn",async () => {
@@ -94,7 +103,7 @@ class KubekFileManagerUI {
                                     KubekAlerts.addAlert(
                                         "{{commons.actionFailed}}", 
                                         "warning",
-                                        "{{commons.delete}} " + KubekUtils.pathFilename(path),
+                                        "{{commons.delete}} " + unitUtils.pathFilename(path),
                                         4000,
                                         "colored"
                                     );
@@ -222,7 +231,7 @@ class KubekFileManagerUI {
         return awaitRequests.get("/fileManager/delete?server=" + window.localStorage.selectedServer + "&path=" + path);
     }
     static editFile(path) {
-        const fileExt = KubekUtils.pathExt(path);
+        const fileExt = unitUtils.pathExt(path);
         const languageMap = {
             'xml': 'xml',
             'yml': 'yaml',
@@ -532,3 +541,4 @@ function setPopupOptions(popupOptions){
     popupElement.options = popupOptions;
 }
 KubekFileManagerUI.refreshDir();
+KubekFileManagerUI.initaddeventlisteners();

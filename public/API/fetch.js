@@ -439,6 +439,26 @@ class awaitfilemanager {
 function getselectedserver() {
     return window.localStorage.selectedServer;
 }
+/*class KubekPlugins extends KubekBase {
+    // Список плагинов
+    static getPluginsList (cb) {
+        this.get("/plugins/" + KubekRequests.selectedServer, cb);
+    }
+
+    // Список модов
+    static getModsList(cb) {
+        this.get("/mods/" + KubekRequests.selectedServer, cb);
+    }
+}*/
+class awaitPlugins {
+    static getPluginsList(cb) {
+        return api.get("/plugins/" + getselectedserver(), cb);
+    }
+
+    static getModsList(cb) {
+        return api.get("/mods/" + getselectedserver(), cb);
+    }
+}
 export {
   BaseAPI,
   MiAPI,
@@ -450,5 +470,6 @@ export {
   restoreBackup,
   downloadBackup,
   fileManager,
-  awaitfilemanager
+  awaitfilemanager,
+  awaitPlugins
 }

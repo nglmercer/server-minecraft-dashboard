@@ -20,11 +20,13 @@
     <link rel="stylesheet" href="../css/mobile.css"/>
     <link rel="stylesheet" href="../css/theme.css"/>
     <!-- Scripts -->
+     <script src="../js/highlight.min.js"></script>
      <script src="../js/webcomponents.js"></script>
      <script src="../js/navwebcomponent.js"></script>
      <script type="module" src="./header.js"></script>
      <script type="module" src="./console.js"></script>
      <script type="module" src="./filemanager/filemanager.js"></script>
+     <script type="module" src="./plugins.js"></script>
      <script type="module" src="./serverSettings.js"></script>
      <script type="module" src="./hardwarestats.js"></script>
 
@@ -401,7 +403,7 @@
                 <div class="panel">
                     <div class="header">
                         <h2>{{commons.plugins}}</h2>
-                        <button class="dark-btn icon-only" onclick="KubekPluginsUI.uploadItem('plugin')">
+                        <button class="dark-btn icon-only" id="uploadItem_plugin">
                             <span class="material-symbols-rounded">upload</span>
                         </button>
                     </div>
@@ -415,7 +417,7 @@
                 <div class="panel">
                     <div class="header">
                         <h2>{{commons.mods}}</h2>
-                        <button class="dark-btn icon-only" onclick="KubekPluginsUI.uploadItem('mod')">
+                        <button class="dark-btn icon-only" id="uploadItem_mod">
                             <span class="material-symbols-rounded">upload</span>
                         </button>
                     </div>
