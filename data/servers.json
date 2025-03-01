@@ -2,7 +2,7 @@
   "test123": {
     "name": "test123",
     "path": "servers/test123",
-    "size": 51448181,
+    "size": 51448121,
     "modified": "2025-03-01T05:28:26.674Z",
     "files": [
       {
@@ -113,8 +113,8 @@
       {
         "name": "server.properties",
         "path": "server.properties",
-        "size": 1457,
-        "modified": "2025-03-01T06:34:03.944Z",
+        "size": 1397,
+        "modified": "2025-03-01T15:09:38.180Z",
         "isDirectory": false
       },
       {
