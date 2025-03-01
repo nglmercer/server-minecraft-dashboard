@@ -20,20 +20,22 @@ class BaseAPI {
         cb = options;
         options = {};
       }
-  
+      
+      // Definimos el tipo de respuesta; por defecto es 'json'
+      const responseType = options.responseType || 'json';
+    
       try {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
           method: 'GET',
           ...options,
         });
-        const result = await this.handleResponse(response);
+        const result = await this.handleResponse(response, responseType);
         if (cb) {
           cb(result);
           return; // No se retorna nada cuando se usa callback.
         }
         return result;
       } catch (error) {
-        // Si se usa callback, puedes optar por manejar el error aquí o dejar que se propague.
         if (cb) throw error;
         throw error;
       }
@@ -158,15 +160,21 @@ class BaseAPI {
      * @param {Response} response - Objeto response de fetch.
      * @returns {Promise<object>} - La respuesta en formato JSON.
      */
-    async handleResponse(response) {
+    async handleResponse(response, responseType = 'json') {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error(`Error ${response.status}: ${response.statusText}`, {
           cause: errorData,
         });
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      // Según el tipo de respuesta, retornamos blob o json
+      if (responseType === 'blob') {
+        return response.blob();
       }
       return response.json().catch(() => ({}));
     }
+    
   }
   // Extiende la clase BaseAPI para centralizar las operaciones de backups.
   class BackupAPI extends BaseAPI {
@@ -218,7 +226,20 @@ class BaseAPI {
   }
   const backupAPI = new BackupAPI(''); 
   const api = new MiAPI('');
-  
+  class fileManager {a
+    //async post(endpoint, data, options = {}) {
+    static uploadFile({server,path,data}, cb) {
+      //`/api/filemanager/upload?server=${server}&path=${currentPath}`
+      return api.post(`/filemanager/upload?server=${server}&path=${path}`,data, cb);
+    }
+    static readFilebyPath(server, path, cb) {
+      return api.get(`/filemanager/read-file-by-path/${server}/${path}`, cb);
+    }
+    //"/filemanager/serve-file/:serverName"
+    static serveFile(server, path, cb) {
+      return api.get(`/filemanager/serve-file/${server}/${path}`, cb);
+    }
+  }
   // Ejemplo de uso en una clase que administra el servidor:
   class ServerManager {
     // Obtener lista de servidores (usa callback si se provee, o retorna promesa)
@@ -311,13 +332,7 @@ class BaseAPI {
       return  api.get("/hardware/usage", cb);
     }
 }
-class fileManager {a
-  //async post(endpoint, data, options = {}) {
-  static uploadFile({server,path,data}, cb) {
-    //`/api/filemanager/upload?server=${server}&path=${currentPath}`
-    return api.post(`/filemanager/upload?server=${server}&path=${path}`,data, cb);
-  }
-}
+
   ServerManager.getServersList((servers) => {
     console.log('Lista de servidores:', servers);
   });

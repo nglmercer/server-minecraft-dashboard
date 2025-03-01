@@ -264,5 +264,21 @@ router.get("/filemanager/download-file", (req, res) => {
       return res.status(500).json({ success: false, message: error.message });
   }
 });
-
+// creamos una ruta para servir los archivos de la carpeta server que se nos pasa por parametro
+router.get("/filemanager/serve-file/:serverName/*", (req, res) => {
+  const serverName = req.params.serverName.trim(); // Elimina espacios en blanco
+  const filePath = req.params[0]; // Obtener la parte después de serverName
+  const fullPath = path.join(process.cwd(), 'servers', serverName, filePath);
+  
+  console.log("Ruta completa del archivo:", fullPath);
+  
+  // Determinar el tipo MIME según la extensión
+  const ext = path.extname(fullPath).toLowerCase();
+  if (['.png', '.jpg', '.jpeg'].includes(ext)) {
+    res.setHeader('Content-Type', `image/${ext.substring(1)}`);
+  }
+  
+  // Enviar el archivo
+  res.sendFile(fullPath);
+});
 export default router;

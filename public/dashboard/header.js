@@ -82,8 +82,16 @@ function uploadServerIcon() {
   }
 function getSeverIcon() {
     const server = window.localStorage.selectedServer;
-    const iconPath = "./icon.png";
-    fileManager.readFilebyPath(server, iconPath, (data) => {
-        console.log("readFilebyPath", data);
-    });
+    const iconPath = "/icon.png";
+    //const serverName = req.params.serverName;
+    //static serveFile(serverName, cb) {
+    //return api.get(`/filemanager/serve-file/${serverName}`, cb);}
+
+    const iconFile = fileManager.serveFile(server, iconPath,{ responseType: 'blob' })  .then(blob => {
+        // blob es el objeto obtenido
+        const iconElement = document.querySelector('#server-icon');
+        iconElement.src = URL.createObjectURL(blob);
+      })
+      .catch(error => console.error("Error al cargar el icono:", error));
 }
+getSeverIcon();
