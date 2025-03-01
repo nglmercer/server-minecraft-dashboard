@@ -1,11 +1,228 @@
 
-import { awaitfilemanager } from "../../API/fetch.js";
+import { awaitfilemanager,fileManager } from "../../API/fetch.js";
 import { unitUtils } from "../../utils/unit.js";
 var currentPath = "/";
+class globalconfirmdialog {
+    constructor(dialogID,contentID){
+        this.dialogID = dialogID;
+        this.contentID = contentID;
+        this.dialog = document.getElementById(dialogID);
+        this.content = document.getElementById(contentID);
+        this.activeElement = [];
+        setTimeout(() => {
+            this.checkexistelement();
+        }, 500);
+    }
+    checkexistelement(){
+        if(!this.dialog || !this.content){
+            this.dialog = document.getElementById(this.dialogID);
+            this.content = document.getElementById(this.contentID);
+        }
+    }
+    show(){
+        this.dialog.show();
+    }
+    hide(){
+        this.dialog.hide();
+    }
+    setOptions(options){
+        this.content.options = options;
+    }
+    setInfo(config){
+        const {tittle, description} = config;
+        this.content.setAttribute('title', tittle);
+        this.content.setAttribute('description', description);
+    }
+}
+class KubekAlerts {
+    static stylesInjected = false;
+
+    static injectStyles() {
+        if (this.stylesInjected) return;
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes fadeOut {
+                from {
+                    opacity: 1;
+                    transform: translateY(0) translateX(-50%);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(20px) translateX(-50%);
+                }
+            }
+
+            .animate__animated {
+                animation-duration: 0.5s;
+                animation-fill-mode: both;
+            }
+
+            .animate__faster {
+                animation-duration: 0.3s !important;
+            }
+
+            .animate__fadeIn {
+                animation-name: fadeIn;
+            }
+
+            .animate__fadeOut {
+                animation-name: fadeOut;
+            }
+
+            .alert {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: #1a1a1a;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                max-width: 90%;
+                width: max-content;
+                z-index: 1000;
+                cursor: pointer;
+                transition: 0.2s all ease;
+            }
+
+            .alert:hover {
+            }
+
+            .icon-bg {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 8px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .icon-bg span {
+                font-size: 20px;
+                display: block;
+                width: 24px;
+                height: 24px;
+            }
+
+            .content-2 {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .caption {
+                font-weight: 500;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .description {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.7);
+                line-height: 1.4;
+            }
+        `;
+
+        document.head.appendChild(style);
+        this.stylesInjected = true;
+    }
+
+    static addAlert(
+        text,
+        icon = "info",
+        description = "",
+        duration = 5000,
+        iconClasses = "",
+        callback = () => {}
+    ) {
+        this.injectStyles();
+        const newID = this.generateAlertID();
+        
+        const alertHTML = `
+            <div id="alert-${newID}" class="alert animate__animated animate__fadeIn animate__faster">
+                ${this.buildIconSection(icon, iconClasses)}
+                ${this.buildContentSection(text, description)}
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', alertHTML);
+        const alertElement = document.getElementById(`alert-${newID}`);
+        
+        alertElement.addEventListener('click', () => this.handleAlertClick(alertElement, callback));
+        
+        if (duration > 0) {
+            this.setAutoDismiss(alertElement, duration);
+        }
+    }
+
+    static buildIconSection(icon, iconClasses) {
+        const classes = iconClasses ? `icon-bg ${iconClasses}` : 'icon-bg';
+        return `
+            <div class="${classes}">
+                <span class="material-symbols-rounded">${icon}</span>
+            </div>
+        `;
+    }
+
+    static buildContentSection(text, description) {
+        return description 
+            ? `<div class="content-2">
+                <div class="caption">${text}</div>
+                <div class="description">${description}</div>
+               </div>`
+            : `<div class="caption">${text}</div>`;
+    }
+
+    static handleAlertClick(alertElement, callback) {
+        alertElement.remove();
+        callback();
+    }
+
+    static setAutoDismiss(alertElement, duration) {
+        setTimeout(() => {
+            alertElement.classList.add('animate__fadeOut');
+            alertElement.addEventListener('animationend', () => alertElement.remove());
+        }, duration);
+    }
+
+    static generateAlertID() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    static removeAllAlerts() {
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+    }
+}
+const globaldialog = new globalconfirmdialog("globaldialog","globaldialog_content");
 function returnDialogOptions(labelName, className, callback) {
     return  {
       label: labelName,
       class: className,
+      callback: () => {
+        callback();
+      }
+    }
+  }
+  function returnexploreroptions(idName, textName, iconName, callback) {
+    return  {
+      id: idName,
+      text: textName,
+      icon: iconName,
       callback: () => {
         callback();
       }
@@ -16,6 +233,7 @@ const editableExtensions = [
     "json", "yaml", "properties", "sh", "bat","gz"
 ];
 
+const normalizePath = (path) => path.endsWith("/") ? path : path + "/";
 // Initialize on DOM load
 const hoverStyles = `
     <style>
@@ -37,19 +255,17 @@ const hoverStyles = `
     </style>
     `;
 
-class KubekFileManagerUI {
-    static async refreshDir(saveScroll = true) {
+class fileManagerUI {
+    static async refreshDir() {
         try {
             let response = await awaitfilemanager.readDirectory(currentPath);
                                        // Sort data to put directories on top
             let data = response.data?.files;
 
-                if (data && data.length > 0) {
+            if (data && data.length > 0) {
                 data = sortToDirsAndFiles(data);
             }
 
-            const scrollData = saveScroll ? 
-                document.querySelector(".fm-container").scrollTop : 0;
             const tableListElement = document.querySelector("#fm-table tbody");
 
             tableListElement.innerHTML = "";
@@ -59,7 +275,6 @@ class KubekFileManagerUI {
             
             document.getElementById('path-display').textContent = `Current Path: ${currentPath}`;
 
-            document.getElementById("fm-table").scrollTop = scrollData;
         } catch (error) {
             console.error("Error:", error);
         }
@@ -73,12 +288,12 @@ class KubekFileManagerUI {
             if (!e.detail.item) { this.upperDir(); return; }
                 const { path, name, type } = e.detail.item;
                 explorer.setAttribute('current-path', currentPath);
-                const verifycurrentpath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
+                const verifycurrentpath = normalizePath(currentPath);
                 console.log("verify", editableExtensions.includes(unitUtils.pathExt(name)),"e",e.detail, currentPath, type, name, verifycurrentpath);
                 if (type === 'directory') {
                     currentPath = verifycurrentpath + name;
 
-                    KubekFileManagerUI.refreshDir();
+                    fileManagerUI.refreshDir();
                 } else if (type === 'file' && 
                          editableExtensions.includes(unitUtils.pathExt(name))) {
                             const filetoedit = verifycurrentpath + name
@@ -88,7 +303,7 @@ class KubekFileManagerUI {
         });
 
         explorer.addEventListener('item-contextmenu', (e) => {
-            const verifycurrentpath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
+            const verifycurrentpath = normalizePath(currentPath);
             const baseOptions = [
                 returnexploreroptions('delete','{{commons.delete}}','delete', () => {
                         const path = verifycurrentpath + e.detail.item.name;
@@ -97,7 +312,7 @@ class KubekFileManagerUI {
                         Deletedialog.show();
                         const options = [
                             returnDialogOptions("{{commons.delete}}", "delete-btn",async () => {
-                                const result = await KubekFileManagerUI.deleteFile(path);
+                                const result = await awaitfilemanager.deleteFile(path);
                                 if (result){
                                     console.log("result", result);
                                     KubekAlerts.addAlert(
@@ -107,7 +322,7 @@ class KubekFileManagerUI {
                                         4000,
                                         "colored"
                                     );
-                                    KubekFileManagerUI.refreshDir();
+                                    fileManagerUI.refreshDir();
                                 }
                             }),
                             returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
@@ -125,7 +340,7 @@ class KubekFileManagerUI {
             const downloadOptions = returnexploreroptions('download', '{{commons.download}}', 'download', () => {
                     const path = verifycurrentpath + e.detail.item.name;
                     console.log("download", e.detail, path);
-                //    KubekFileManagerUI.downloadFile(path);
+                //    fileManagerUI.downloadFile(path);
                 })
             if (!e.detail.item) return;
             console.log('Posición y datos:', e.detail.x, e.detail.y, e.detail);
@@ -159,7 +374,7 @@ class KubekFileManagerUI {
             }
             console.log("this.value", inputElement.value);
         });
-        const parsedcurrentPath = currentPath.endsWith("/") ? currentPath : currentPath + "/";
+        const parsedcurrentPath = normalizePath(currentPath);
         inputElement.style.display = "block";
         globaldialog.setInfo({tittle: "{{commons.create}}", description: "{{fileManager.newDirectory}} \nen: " + parsedcurrentPath});
         globaldialog.setOptions([
@@ -168,8 +383,8 @@ class KubekFileManagerUI {
                 class: "save-btn",
                 callback: () => {
                     //                    globaldialog.hide();
-                    KubekFileManagerUI.createFile(currentPath, inputElement.value, () => {
-                        KubekFileManagerUI.refreshDir();
+                    fileManagerUI.createFile(currentPath, inputElement.value, () => {
+                        fileManagerUI.refreshDir();
                         globaldialog.hide();
                         inputElement.style.display = "none";
                     });
@@ -192,44 +407,30 @@ class KubekFileManagerUI {
         pathParts.pop();
         pathParts.pop();
         currentPath = pathParts.join("/") + "/";
-        KubekFileManagerUI.refreshDir(false);
+        fileManagerUI.refreshDir();
         console.log("currentPath", currentPath);
     }
 
-    static uploadFile() {
+    static async uploadFile() {
         const inputElement = document.getElementById("g-file-input");
         inputElement.click();
-        
-        // Remove old listener and add new one
-        const oldListener = inputElement.onchange;
-        if (oldListener) {
-            inputElement.removeEventListener('change', oldListener);
-        }
-        inputElement.addEventListener("change", () => {
-            const formData = new FormData(document.getElementById("g-file-form"));
-
+      
+        inputElement.onchange = async () => {
+          const formData = new FormData();
+          formData.append("file", inputElement.files[0]);
             console.log("Archivo a enviar:", formData.get("file")); // Asegúrate de que se captura correctamente
-
-        
-            const server = window.localStorage.selectedServer; // Define el nombre del servidor
-        
-            fetch(`/api/filemanager/upload?server=${server}&path=${currentPath}`, {
-                method: "POST",
-                body: formData,
-            })
-            .then((response) => response.json())
-            .then((data) => console.log("Archivo subido:", data))
-            .catch((error) => console.error("Error al subir archivo:", error));
-        });
-        
-    }
-    static renameFile(path, newName) {
-        console.log("rename", path, newName);
-        return awaitRequests.get("/fileManager/rename?server=" + window.localStorage.selectedServer + "&path=" + path + "&newName=" + newName);
-    }
-    static deleteFile(path) {
-        return awaitRequests.get("/fileManager/delete?server=" + window.localStorage.selectedServer + "&path=" + path);
-    }
+            const server = window.localStorage.selectedServer;
+            fileManager.uploadFile({
+                server,
+                path: currentPath,
+                data: formData
+            }, (success) => {
+                console.log("uploadFile", success);
+                fileManagerUI.refreshDir();
+            });
+        };
+      }
+      
     static editFile(path) {
         const fileExt = unitUtils.pathExt(path);
         const languageMap = {
@@ -244,7 +445,7 @@ class KubekFileManagerUI {
         
         currentEditorLang = languageMap[fileExt] || "plaintext";
 
-        KubekFileManagerUI.readFile(path, (data) => {
+        fileManagerUI.readFile(path, (data) => {
         });
     }
 
@@ -366,11 +567,11 @@ class editNameModal {
             returnDialogOptions("{{commons.save}}", "save-btn", () => {
                 const filenewname = document.querySelector('#EditName_Input').value;
                 console.log("filenewname", filenewname, path);
-                KubekFileManagerUI.renameFile(path, filenewname, () => {
-                    KubekFileManagerUI.refreshDir()
+                awaitfilemanager.renameFile(path, filenewname, () => {
+                    fileManagerUI.refreshDir()
                 });
                 editNameModal.hide();
-                KubekFileManagerUI.refreshDir()
+                fileManagerUI.refreshDir()
             }),
             returnDialogOptions("{{commons.cancel}}", "cancel-btn", () => {
                 editNameModal.hide();
@@ -540,5 +741,54 @@ function setPopupOptions(popupOptions){
     const popupElement = document.querySelector('#fm-popup');
     popupElement.options = popupOptions;
 }
-KubekFileManagerUI.refreshDir();
-KubekFileManagerUI.initaddeventlisteners();
+fileManagerUI.refreshDir();
+fileManagerUI.initaddeventlisteners();
+const actionfmButtons = document.querySelector('#fm-actions');
+actionfmButtons.addButton({
+    id: 'new-file',
+    label: '{{commons.create}} {{commons.file.lowerCase}}',
+    icon: 'add_circle',
+    action: 'new-file'
+});
+actionfmButtons.addButton({
+    id: 'upload-file',
+    label: '{{commons.uploadFile}}',
+    icon: 'upload_file',
+    action: 'upload-file',
+    iconOnly: true
+});
+actionfmButtons.addButton({
+    id: 'new-folder',
+    label: '{{commons.create}} {{commons.folder.lowerCase}}',
+    icon: 'create_new_folder',
+    action: 'new-folder',
+    iconOnly: true
+});
+actionfmButtons.addButton({
+    id: 'refresh-folder',
+    label: '{{commons.refresh}}',
+    icon: 'refresh',
+    action: 'refresh-folder',
+    iconOnly: true
+});
+actionfmButtons.addEventListener('button-clicked', (e) => {
+    console.log("button-clicked", e);
+    const {action, id} = e.detail;
+    if (action === 'new-file') {
+        fileManagerUI.openEmptyEditor();// fix this
+    } else if (action === 'upload-file') {
+        fileManagerUI.uploadFile();
+    } else if (action === 'new-folder') {
+        fileManagerUI.newDirectory();
+    } else if (action === 'refresh-folder') {
+        fileManagerUI.refreshDir();
+    }
+});
+document.addEventListener('DOMContentLoaded', () => {
+//    fileManagerUI.initaddeventlisteners();
+//fileManagerUI.refreshDir();
+// Event listener for code editing
+document.getElementById("code-edit").addEventListener("input", function() {
+//    fileManagerUI.formatCode();
+});
+});

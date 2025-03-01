@@ -312,55 +312,7 @@
                 <action-buttons id="fm-actions"></action-buttons>
                 <script>
 
-                    const actionfmButtons = document.querySelector('#fm-actions');
-                    actionfmButtons.addButton({
-                        id: 'new-file',
-                        label: '{{commons.create}} {{commons.file.lowerCase}}',
-                        icon: 'add_circle',
-                        action: 'new-file'
-                    });
-                    actionfmButtons.addButton({
-                        id: 'upload-file',
-                        label: '{{commons.uploadFile}}',
-                        icon: 'upload_file',
-                        action: 'upload-file',
-                        iconOnly: true
-                    });
-                    actionfmButtons.addButton({
-                        id: 'new-folder',
-                        label: '{{commons.create}} {{commons.folder.lowerCase}}',
-                        icon: 'create_new_folder',
-                        action: 'new-folder',
-                        iconOnly: true
-                    });
-                    actionfmButtons.addButton({
-                        id: 'refresh-folder',
-                        label: '{{commons.refresh}}',
-                        icon: 'refresh',
-                        action: 'refresh-folder',
-                        iconOnly: true
-                    });
-                    actionfmButtons.addEventListener('button-clicked', (e) => {
-                        console.log("button-clicked", e);
-                        const {action, id} = e.detail;
-                        if (action === 'new-file') {
-                        //    KubekFileManagerUI.openEmptyEditor(); fix this
-                        } else if (action === 'upload-file') {
-                        //    KubekFileManagerUI.uploadFile();
-                        } else if (action === 'new-folder') {
-                        //    KubekFileManagerUI.newDirectory();
-                        } else if (action === 'refresh-folder') {
-                        //    KubekFileManagerUI.refreshDir();
-                        }
-                    });
-                    document.addEventListener('DOMContentLoaded', () => {
-                    //    KubekFileManagerUI.initaddeventlisteners();
-                    //KubekFileManagerUI.refreshDir();
-                    // Event listener for code editing
-                    document.getElementById("code-edit").addEventListener("input", function() {
-                    //    KubekFileManagerUI.formatCode();
-                    });
-                    });
+
                 </script>
             </div>
             <div class="breadcrumb" id="fm-breadcrumb"></div>

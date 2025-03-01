@@ -59,9 +59,9 @@ class KubekPluginsUI {
         if (inputElement.files.length === 0) return;
 
         const formData = new FormData();
-        formData.append("g-file-input", inputElement.files[0]); // Solo este campo
+        formData.append("file", inputElement.files[0]); // Solo este campo
 
-        console.log("Archivo a enviar:", formData.get("g-file-input"));
+        console.log("Archivo a enviar:", formData.get("file"));
 
         fetch(uploadURL, {
             method: "POST",
@@ -86,10 +86,10 @@ class KubekPluginsUI {
 
         const formData = new FormData();
         for (const file of inputElement.files) {
-            formData.append("g-file-input", file); // Mismo nombre esperado en el backend
+            formData.append("file", file); // Mismo nombre esperado en el backend
         }
 
-        console.log("Archivos a enviar:", formData.getAll("g-file-input"));
+        console.log("Archivos a enviar:", formData.getAll("file"));
 
         fetch(uploadURL, {
             method: "POST",

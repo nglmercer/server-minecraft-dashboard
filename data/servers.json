@@ -2,8 +2,8 @@
   "test123": {
     "name": "test123",
     "path": "servers/test123",
-    "size": 51448121,
-    "modified": "2025-03-01T05:28:26.674Z",
+    "size": 77886059,
+    "modified": "2025-03-01T15:51:25.840Z",
     "files": [
       {
         "name": "banned-ips.json",
@@ -46,6 +46,13 @@
         "size": 4096,
         "modified": "2025-03-01T06:34:06.553Z",
         "isDirectory": true
+      },
+      {
+        "name": "connect-spigot.jar",
+        "path": "connect-spigot.jar",
+        "size": 26437938,
+        "modified": "2025-03-01T15:51:25.840Z",
+        "isDirectory": false
       },
       {
         "name": "eula.txt",

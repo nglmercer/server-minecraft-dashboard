@@ -228,7 +228,7 @@ function uploadFile(servername) {
         inputElement.removeEventListener('change', oldListener);
     }
     inputElement.addEventListener("change", () => {
-        const formData = new FormData(document.getElementById("g-file-form"));
+        const formData = new FormData();
 
         console.log("Archivo a enviar:", formData.get("file")); // Asegúrate de que se captura correctamente
 
@@ -260,7 +260,7 @@ function startServerCreation(serverData, fileData) {
   
     // Si fileData es un archivo, lo agregamos al FormData
     if (fileData instanceof File) {
-      formData.append("server-core-input", fileData, fileData.name);
+      formData.append("file", fileData, fileData.name);
     }
   
     // Depuración: Ver qué datos están en el FormData antes de enviarlo
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#core_upload').addEventListener('file-upload', e => {
         const { formData, fileName } = e.detail;
         const file = [...formData.entries()][0][1];
-        formData.append("g-file-form", file);
+        formData.append("file", file);
         const serverName = document.querySelector('#server_name_input').getInputValues();
         uploadFile(serverName);
     });
