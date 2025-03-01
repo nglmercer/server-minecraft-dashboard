@@ -114,8 +114,6 @@ class BackupsManager {
                 }
                 .backup-info {
                     margin-bottom: 8px;
-                    display: flex;
-                    align-items: center;
                 }
                 .info-label {
                     font-weight: bold;
@@ -129,6 +127,7 @@ class BackupsManager {
                     padding: 12px 16px;
                     border-top: 1px solid #e0e0e0;
                     background-color: #f9f9f9;
+                    overflow: auto;
                 }
                 .btn {
                     flex: 1;

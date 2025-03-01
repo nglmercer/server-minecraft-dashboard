@@ -2,268 +2,250 @@ class BackupsList extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        
-        // Crear el template para la estructura principal
-        this._createMainTemplate();
-        
-        // Crear el template para las cards de backup
-        this._createCardTemplate();
-        
-        // Renderizar la estructura principal
-        this._renderMainStructure();
-        
-        // Obtener referencia al contenedor de backups
-        this.gridElement = this.shadowRoot.getElementById('backupsGrid');
-    }
-    
-    // Crea el template para la estructura principal
-    _createMainTemplate() {
-        this.mainTemplate = document.createElement('template');
-        this.mainTemplate.innerHTML = `
+        this.shadowRoot.innerHTML = `
             <style>
                 :host {
-                    display: block;
-                    font-family: Arial, sans-serif;
+                    --card-bg: #2a2a2a;
+                    --card-border: #444;
+                    --card-text: #e0e0e0;
+                    --card-highlight: #3a3a3a;
+                    --button-primary: #4a6da7;
+                    --button-danger: #a74a4a;
+                    --button-secondary: #4a8f6d;
+                    --button-text: #ffffff;
+                    --date-color: #a19fd8;
+                    --size-color: #8fbcbb;
+                    --hover-brightness: 1.2;
                 }
+                
                 .grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                    gap: 16px;
+                    gap: 20px;
                     padding: 16px;
                 }
-                .empty-state {
-                    text-align: center;
-                    padding: 2rem;
-                    color: #666;
-                    grid-column: 1 / -1;
-                }
-            </style>
-            <div class="grid" id="backupsGrid">
-                <div class="empty-state">No hay backups disponibles</div>
-            </div>
-        `;
-    }
-    
-    // Crea el template para las cards de backup
-    _createCardTemplate() {
-        this.cardTemplate = document.createElement('template');
-        this.cardTemplate.innerHTML = `
-            <style>
-                .backup-card {
-                    border: 1px solid #e0e0e0;
+                
+                .grid-item {
+                    background-color: var(--card-bg);
+                    border: 1px solid var(--card-border);
                     border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    background-color: #fff;
-                    overflow: hidden;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
                     transition: transform 0.2s, box-shadow 0.2s;
+                    color: var(--card-text);
                 }
-                .backup-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                
+                .grid-item:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+                    border-color: #666;
                 }
-                .backup-header {
-                    padding: 12px 16px;
-                    background-color: #f5f5f5;
-                    border-bottom: 1px solid #e0e0e0;
-                }
+                
                 .backup-name {
+                    font-size: 1.2rem;
                     font-weight: bold;
-                    font-size: 1.1em;
+                    margin-bottom: 12px;
+                    border-bottom: 1px solid var(--card-border);
+                    padding-bottom: 8px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
-                .backup-content {
-                    padding: 16px;
-                }
+                
                 .backup-info {
-                    margin-bottom: 8px;
-                    display: flex;
-                    align-items: center;
+                    display: grid;
+                    grid-template-columns: auto 1fr;
+                    gap: 6px 10px;
+                    margin-bottom: 16px;
+            white-space: normal;     
+            word-wrap: break-word;   
+            overflow: hidden;
                 }
+                
                 .info-label {
+                    color: #999;
+                    font-size: 0.9rem;
+                }
+                
+                .info-value {
+                    font-size: 0.9rem;
+
+                }
+                
+                .date-value {
+                    color: var(--date-color);
+                }
+                
+                .size-value {
+                    color: var(--size-color);
                     font-weight: bold;
-                    margin-right: 8px;
-                    color: #555;
-                    width: 50px;
                 }
-                .backup-actions {
-                    display: flex;
+                
+                .buttons {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
                     gap: 8px;
-                    padding: 12px 16px;
-                    border-top: 1px solid #e0e0e0;
-                    background-color: #f9f9f9;
                 }
+                
+                .download-btn {
+                    grid-column: 1 / -1;
+                }
+                
                 button {
-                    flex: 1;
-                    padding: 8px 12px;
+                    padding: 10px 12px;
                     border: none;
                     border-radius: 4px;
                     cursor: pointer;
                     font-weight: bold;
-                    transition: background-color 0.2s;
+                    color: var(--button-text);
+                    transition: filter 0.2s, transform 0.1s;
                 }
-                button.restore {
-                    background-color: #4caf50;
-                    color: white;
+                
+                button:hover {
+                    filter: brightness(var(--hover-brightness));
                 }
-                button.restore:hover {
-                    background-color: #45a049;
+                
+                button:active {
+                    transform: scale(0.98);
                 }
-                button.download {
-                    background-color: #2196f3;
-                    color: white;
+                
+                button[data-action="delete"] {
+                    background-color: var(--button-danger);
                 }
-                button.download:hover {
-                    background-color: #0b7dda;
+                
+                button[data-action="restore"] {
+                    background-color: var(--button-secondary);
                 }
-                button.delete {
-                    background-color: #f44336;
-                    color: white;
+                
+                button[data-action="download"] {
+                    background-color: var(--button-primary);
                 }
-                button.delete:hover {
-                    background-color: #d32f2f;
+                
+                .no-backups {
+                    grid-column: 1 / -1;
+                    text-align: center;
+                    padding: 40px;
+                    color: #999;
+                    font-style: italic;
                 }
             </style>
-            <div class="backup-card">
-                <div class="backup-header">
-                    <div class="backup-name" title=""></div>
-                </div>
-                <div class="backup-content">
-                    <div class="backup-info">
-                        <span class="info-label">Fecha:</span>
-                        <span class="backup-date"></span>
-                    </div>
-                    <div class="backup-info">
-                        <span class="info-label">Tamaño:</span>
-                        <span class="backup-size"></span>
-                    </div>
-                </div>
-                <div class="backup-actions">
-                    <button class="restore" data-action="restore">Restaurar</button>
-                    <button class="download" data-action="download">Descargar</button>
-                    <button class="delete" data-action="delete">Eliminar</button>
-                </div>
-            </div>
+            <div class="grid" id="backupsGrid"></div>
         `;
+        this.gridElement = this.shadowRoot.getElementById('backupsGrid');
     }
-    
-    // Renderiza la estructura principal en el shadow DOM
-    _renderMainStructure() {
-        const mainFragment = this.mainTemplate.content.cloneNode(true);
-        this.shadowRoot.appendChild(mainFragment);
-    }
-    
-    // Crea una card para un backup específico
-    _createBackupCard(backup) {
-        // Clonar el template de la card
-        const cardFragment = this.cardTemplate.content.cloneNode(true);
-        const card = cardFragment.querySelector('.backup-card');
-        
-        // Configurar ID y datos del backup
-        card.id = backup.id;
-        
-        // Establecer nombre y title para mostrar en hover
-        const nameElement = card.querySelector('.backup-name');
-        nameElement.textContent = backup.name;
-        nameElement.setAttribute('title', backup.name);
-        
-        // Establecer fecha formateada
-        card.querySelector('.backup-date').textContent = this._formatDate(backup.date);
-        
-        // Establecer tamaño humanizado
-        card.querySelector('.backup-size').textContent = this._humanizeSize(backup.size);
-        
-        // Configurar los eventos de los botones
-        card.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', () => {
-                this._emitDetail(button.getAttribute('data-action'), backup);
-            });
-        });
-        
-        return card;
-    }
-    
-    // Emite un evento cuando se realiza una acción en un backup
+
     _emitDetail(action, backup) {
         const detail = { ...backup, action };
         this.dispatchEvent(new CustomEvent('backup-action', { detail }));
     }
-    
-    // Formatea la fecha
-    _formatDate(date) {
-        const dateObject = new Date(date);
-        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        return dateObject.toLocaleDateString('es-ES', options);
-    }
-    
-    // Convierte bytes en formato legible
-    _humanizeSize(size) {
-        if (size === 0) {
-            return '0 B';
-        }
-        if (size < 0 || isNaN(size)) {
-            return "Valor inválido";
-        }
-        const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        let i = 0;
-        let formattedSize = size;
-        
-        while (formattedSize >= 1024 && i < units.length - 1) {
-            formattedSize /= 1024;
-            i++;
-        }
-        
-        return `${formattedSize.toFixed(2)} ${units[i]}`;
-    }
-    
-    // Método público para establecer las opciones (backups)
+
     setOptions(options) {
         this.gridElement.innerHTML = '';
         
         if (!options || options.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'empty-state';
-            emptyState.textContent = 'No hay backups disponibles';
-            this.gridElement.appendChild(emptyState);
+            const noBackups = document.createElement('div');
+            noBackups.className = 'no-backups';
+            noBackups.textContent = 'No hay copias de seguridad disponibles';
+            this.gridElement.appendChild(noBackups);
             return;
         }
         
-        // Crear y añadir las cards de backup
         options.forEach(option => {
-            const backupCard = this._createBackupCard(option);
-            this.gridElement.appendChild(backupCard);
+            const item = document.createElement('div');
+            item.className = 'grid-item';
+            item.id = option.id;
+            
+            item.innerHTML = `
+                <div class="backup-name">${option.name}</div>
+                <div class="backup-info">
+                    <span class="info-label">Nombre:</span>
+                    <span class="info-value">${option.name}</span>
+                    
+                    <span class="info-label">Fecha:</span>
+                    <span class="info-value date-value">${this._formatDate(option.date)}</span>
+                    
+                    <span class="info-label">Tamaño:</span>
+                    <span class="info-value size-value">${this._humanizeSize(option.size)}</span>
+                </div>
+                <div class="buttons">
+                    <button data-action="delete">Eliminar</button>
+                    <button data-action="restore">Restaurar</button>
+                    <button data-action="download" class="download-btn">Descargar</button>
+                </div>
+            `;
+            
+            item.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._emitDetail(button.getAttribute('data-action'), option);
+                });
+            });
+            
+            this.gridElement.appendChild(item);
         });
+    }
+    
+    _formatDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return date.toLocaleDateString('es-ES', options);
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return dateString || 'Fecha desconocida';
+        }
+    }
+    
+    _humanizeSize(size) {
+        if (size === 0) {
+            return '0 B';
+        }
+        if (size === undefined || size === null || isNaN(size)) {
+            return "Tamaño desconocido";
+        }
+        const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        let i = 0;
+        let convertedSize = parseFloat(size);
+        
+        while (convertedSize >= 1024 && i < units.length - 1) {
+            convertedSize /= 1024;
+            i++;
+        }
+        
+        return `${convertedSize.toFixed(2)} ${units[i]}`;
     }
 }
 
-// Registrar el componente
 customElements.define('backups-list', BackupsList);
+
 class ApiClient {
     constructor(baseURL) {
         this.baseURL = baseURL;
     }
-  
+
     async _request(endpoint, method, data = null, responseType = 'json') {
         const url = `${this.baseURL}${endpoint}`;
         const config = {
             method,
-            headers: {
-                // 'Content-Type': 'application/json'  // Lo quitamos para el download
-            },
+            headers: {},
         };
-  
-        if (data && method !== 'GET') { // Incluir datos solo para métodos que no sean GET
-            config.headers['Content-Type'] = 'application/json'; // Content-Type solo cuando hay body
+
+        if (data && method !== 'GET') {
+            config.headers['Content-Type'] = 'application/json';
             config.body = JSON.stringify(data);
         }
-  
-  
+
         try {
             const response = await fetch(url, config);
-  
+
             if (!response.ok) {
-                // Intenta obtener un mensaje de error del cuerpo de la respuesta, si existe.
                 let errorMessage = `Error: ${response.status} ${response.statusText}`;
                 try {
                     const errorData = await response.json();
@@ -271,265 +253,358 @@ class ApiClient {
                         errorMessage += ` - ${errorData.message}`;
                     }
                 } catch (parseError) {
-                    // Si no se puede parsear el JSON, usa el statusText.
                     console.error("Error parsing error response:", parseError);
                 }
                 throw new Error(errorMessage);
             }
-  
+
             if (responseType === 'json') {
                 return await response.json();
             } else if (responseType === 'blob') {
                 return await response.blob();
             } else {
-                return response; // Devuelve la respuesta completa si no se especifica un tipo.
+                return response;
             }
-  
+
         } catch (error) {
-            // Maneja errores de red (por ejemplo, si el servidor está caído).
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                console.error("Network error.  Is the server running?", error);
+                console.error("Network error. Is the server running?", error);
                 throw new Error("Error de red: No se pudo conectar al servidor.");
             }
-            // Re-lanza otros errores.
             throw error;
         }
     }
-  
+
     async post(endpoint, data) {
         return this._request(endpoint, 'POST', data);
     }
-  
+
     async get(endpoint) {
         return this._request(endpoint, 'GET');
     }
-  
-  
+
     async download(endpoint, filename) {
-      try {
-        const blob = await this._request(endpoint, 'GET', null, 'blob');
-  
-        // Crear un URL para el blob
-        const url = window.URL.createObjectURL(blob);
-  
-        // Crear un elemento <a> para iniciar la descarga
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename; //  el nombre de archivo que sugieres
-  
-        document.body.appendChild(a);
-        a.click();
-  
-        // Limpieza
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-  
-      } catch (error) {
-        console.error("Error during download:", error);
-        throw error; //  importante re-lanzar el error para manejarlo más arriba
-      }
+        try {
+            const blob = await this._request(endpoint, 'GET', null, 'blob');
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+
+            document.body.appendChild(a);
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            return { success: true, filename };
+        } catch (error) {
+            console.error("Error during download:", error);
+            throw error;
+        }
     }
-  }
-  
-// Clase para manejar la comunicación con la API
-class BackupsApi {
-    constructor(baseURL) {
-        this.apiClient = new ApiClient(baseURL);
-        this.backupsList = document.getElementById('backupsList');
-        this.isUpdating = false;
-        
-        this._initEventListeners();
-        this.updateBackupsList();
+}
+
+// Main application logic
+(function() {
+    const apiClient = new ApiClient('/api/backups');
+    let isUpdating = false;
+    const backupsElement = document.getElementById('backupsList');
+    
+    if (!backupsElement) {
+        console.error('Error: Element with id "backupsList" not found');
+        return;
     }
     
-    _initEventListeners() {
-        // Listener para acciones en los backups
-        this.backupsList.addEventListener('backup-action', (event) => {
-            const { action, id } = event.detail;
-            
-            switch (action) {
-                case 'delete':
-                    this.deleteBackup(id);
-                    break;
-                case 'restore':
-                    this.restoreBackup(id, window.localStorage.selectedServer);
-                    break;
-                case 'download':
-                    this.downloadBackup(id);
-                    break;
-                default:
-                    console.log('Acción no reconocida:', action);
-            }
-        });
-        
-        // Listener para crear nuevo backup
-        const createButton = document.getElementById('create_backup');
-        if (createButton) {
-            createButton.addEventListener('click', () => this.createBackup());
+    // Loading state UI
+    function showLoading(show = true) {
+        const loadingEl = document.getElementById('loading-indicator');
+        if (loadingEl) {
+            loadingEl.style.display = show ? 'block' : 'none';
         }
     }
     
-    // Actualiza la lista de backups
-    async updateBackupsList() {
-        if (this.isUpdating) {
+    // Toast notification system
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }, 10);
+    }
+    
+    async function updateBackupsList() {
+        if (isUpdating) {
             return;
         }
         
-        this.isUpdating = true;
+        isUpdating = true;
+        showLoading(true);
         
         try {
-            const response = await this.apiClient.get('/backupsInfo');
-            const options = this._generateOptions(response);
-            this.backupsList.setOptions(options);
+            const response = await apiClient.get('/backupsInfo');
+            console.log('Lista de backups:', response);
+            
+            if (response && response.data && response.data.files) {
+                const options = generateOptions(response);
+                backupsElement.setOptions(options);
+            } else {
+                backupsElement.setOptions([]);
+                console.warn('No backup files found or unexpected response format');
+            }
+            
             return response;
         } catch (error) {
             console.error('Error al obtener backups:', error);
-            this._showError('No se pudieron cargar los backups');
+            showToast('Error al cargar las copias de seguridad', 'error');
+            backupsElement.setOptions([]);
             throw error;
         } finally {
-            this.isUpdating = false;
+            isUpdating = false;
+            showLoading(false);
         }
     }
     
-    // Genera las opciones para la lista de backups
-    _generateOptions(apiResponse) {
-        const backupFiles = apiResponse.data?.files;
+    function generateOptions(response) {
+        const optionsArray = [];
+        const backupFiles = response.data?.files;
         
         if (!backupFiles || !Array.isArray(backupFiles)) {
             return [];
         }
         
-        return backupFiles.map(file => ({
-            name: file.name,
-            label: file.name,
-            id: file.name,
-            date: file.modified,
-            size: file.size,
-        }));
+        backupFiles.forEach(file => {
+            optionsArray.push({
+                name: file.name,
+                label: file.name,
+                id: file.name,
+                date: file.modified || new Date().toISOString(),
+                size: file.size || 0,
+            });
+        });
+        
+        // Sort by date, newest first
+        return optionsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
     
-    // Crea un nuevo backup
-    async createBackup() {
+    async function createBackup() {
         const serverName = window.localStorage.selectedServer;
-        const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-        const backupName = `${serverName}_${timestamp}_backup.tar.gz`;
+        if (!serverName) {
+            showToast('No se ha seleccionado un servidor', 'error');
+            return;
+        }
+        
+        showLoading(true);
+        const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+        const uniqueBackupName = `${serverName}_${timestamp}_backup.tar.gz`;
         
         try {
-            this._showLoading('Creando backup...');
-            
-            const response = await this.apiClient.post('/create', {
-                folderName: serverName,
-                outputFilename: backupName
+            const response = await apiClient.post('/create', { 
+                folderName: serverName, 
+                outputFilename: uniqueBackupName 
             });
             
-            this._showSuccess('Backup creado correctamente');
-            await this.updateBackupsList();
+            console.log('Backup creado:', response);
+            showToast('Copia de seguridad creada correctamente', 'success');
+            await updateBackupsList();
             return response;
         } catch (error) {
             console.error('Error al crear backup:', error);
-            this._showError('Error al crear el backup');
+            showToast('Error al crear la copia de seguridad', 'error');
             throw error;
         } finally {
-            this._hideLoading();
+            showLoading(false);
         }
     }
     
-    // Elimina un backup
-    async deleteBackup(filename) {
-        if (!confirm(`¿Estás seguro de que deseas eliminar el backup "${filename}"?`)) {
-            return;
-        }
-        
+    async function deleteBackup(filename) {
+        showLoading(true);
         try {
-            this._showLoading('Eliminando backup...');
-            
-            const response = await this.apiClient.post('/delete', { filename });
-            
-            this._showSuccess('Backup eliminado correctamente');
-            await this.updateBackupsList();
+            const response = await apiClient.post('/delete', { filename });
+            console.log('Backup borrado:', response);
+            showToast('Copia de seguridad eliminada correctamente', 'success');
+            await updateBackupsList();
             return response;
         } catch (error) {
-            console.error('Error al eliminar backup:', error);
-            this._showError('Error al eliminar el backup');
+            console.error('Error al borrar backup:', error);
+            showToast('Error al eliminar la copia de seguridad', 'error');
             throw error;
         } finally {
-            this._hideLoading();
+            showLoading(false);
         }
     }
     
-    // Restaura un backup
-    async restoreBackup(filename, outputFolderName) {
-        if (!confirm(`¿Estás seguro de que deseas restaurar el backup "${filename}"? Esta acción sobrescribirá los datos existentes.`)) {
+    async function restoreBackup(filename, outputFolderName) {
+        if (!outputFolderName) {
+            showToast('No se ha seleccionado un servidor de destino', 'error');
             return;
         }
         
+        // Confirmation dialog
+        if (!confirm(`¿Está seguro de restaurar la copia de seguridad "${filename}" en el servidor "${outputFolderName}"?`)) {
+            return;
+        }
+        
+        showLoading(true);
         try {
-            this._showLoading('Restaurando backup...');
-            
-            const response = await this.apiClient.post('/restore', {
-                filename,
-                outputFolderName
+            const response = await apiClient.post('/restore', { 
+                filename, 
+                outputFolderName 
             });
             
-            this._showSuccess('Backup restaurado correctamente');
-            await this.updateBackupsList();
+            console.log('Backup restaurado:', response);
+            showToast('Copia de seguridad restaurada correctamente', 'success');
+            await updateBackupsList();
             return response;
         } catch (error) {
             console.error('Error al restaurar backup:', error);
-            this._showError('Error al restaurar el backup');
+            showToast('Error al restaurar la copia de seguridad', 'error');
             throw error;
         } finally {
-            this._hideLoading();
+            showLoading(false);
         }
     }
     
-    // Descarga un backup
-    async downloadBackup(filename) {
+    async function downloadBackup(filename) {
+        showLoading(true);
         try {
-            this._showLoading('Preparando descarga...');
-            
-            await this.apiClient.download(`/download/${filename}`, filename);
-            
-            this._showSuccess('Descarga iniciada');
-            return true;
+            await apiClient.download(`/download/${filename}`, filename);
+            console.log(`Descargando ${filename}...`);
+            showToast(`Descargando ${filename}...`, 'info');
         } catch (error) {
-            console.error('Error al descargar backup:', error);
+            console.error(`Error al descargar ${filename}:`, error);
             
             if (error.message.includes("404")) {
-                this._showError('El archivo de backup no existe');
+                showToast("El archivo no existe o ha sido eliminado", 'error');
             } else {
-                this._showError('Error al descargar el backup');
+                showToast("Error al descargar el archivo", 'error');
             }
             
             throw error;
         } finally {
-            this._hideLoading();
+            showLoading(false);
         }
     }
     
-    // Métodos para mostrar feedback al usuario
-    _showLoading(message) {
-        // Implementar según la UI
-        console.log(message);
+    // Event listeners
+    backupsElement.addEventListener('backup-action', (event) => {
+        console.log('Backup action:', event.detail);
+        const { action, id } = event.detail;
+        
+        switch (action) {
+            case 'delete':
+                deleteBackup(id).catch(error => {
+                    console.error("Error during delete:", error);
+                });
+                break;
+            case 'restore':
+                restoreBackup(id, window.localStorage.selectedServer).catch(error => {
+                    console.error("Error during restore:", error);
+                });
+                break;
+            case 'download':
+                downloadBackup(id).catch(error => {
+                    console.error("Error during download:", error);
+                });
+                break;
+            default:
+                console.log('No se encontró una acción para el evento:', event.detail);
+        }
+    });
+    
+    const createBackupBtn = document.getElementById('create_backup');
+    if (createBackupBtn) {
+        createBackupBtn.addEventListener('click', () => {
+            createBackup().catch(error => {
+                console.error("Error during create backup:", error);
+            });
+        });
     }
     
-    _hideLoading() {
-        // Implementar según la UI
-    }
+    // Add CSS for toast notifications
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background-color: #333;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast-success {
+            background-color: #4a8f6d;
+        }
+        
+        .toast-error {
+            background-color: #a74a4a;
+        }
+        
+        .toast-info {
+            background-color: #4a6da7;
+        }
+        
+        /* Loading indicator */
+        #loading-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
     
-    _showSuccess(message) {
-        // Implementar según la UI
-        console.log(message);
-    }
+    // Create loading indicator element
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.id = 'loading-indicator';
+    loadingIndicator.style.display = 'none';
+    loadingIndicator.innerHTML = '<div class="spinner"></div>';
+    document.body.appendChild(loadingIndicator);
     
-    _showError(message) {
-        // Implementar según la UI
-        console.error(message);
-    }
-}
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-    const backupsApi = new BackupsApi('/api/backups');
-});
+    // Initial load
+    updateBackupsList().catch(error => {
+        console.error("Error during initial backup list update:", error);
+    });
+})();
