@@ -10,3 +10,4 @@ data/tasks.json
 /backups
 /build
 /src/node_modules
+data/servers.json
