@@ -165,7 +165,7 @@ class KubekAlerts {
         
         alertElement.addEventListener('click', () => this.handleAlertClick(alertElement, callback));
         
-        if (duration > 0) {
+        if (duration > 0 ) {
             this.setAutoDismiss(alertElement, duration);
         }
     }
@@ -193,7 +193,7 @@ class KubekAlerts {
         callback();
     }
 
-    static setAutoDismiss(alertElement, duration) {
+    static setAutoDismiss(alertElement, duration = 5000) {
         setTimeout(() => {
             alertElement.classList.add('animate__fadeOut');
             alertElement.addEventListener('animationend', () => alertElement.remove());
@@ -316,7 +316,7 @@ class fileManagerUI {
                                 if (result){
                                     console.log("result", result);
                                     KubekAlerts.addAlert(
-                                        "{{commons.actionFailed}}", 
+                                        result.success, 
                                         "warning",
                                         "{{commons.delete}} " + unitUtils.pathFilename(path),
                                         4000,
