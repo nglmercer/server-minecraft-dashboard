@@ -62,7 +62,7 @@ router.post('/delete', async (req, res) => {
 router.get('/download/:filename', (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(process.cwd(), 'backups', filename); // o la ruta donde guardes los backups
-
+  console.log("filePath de download", filePath)
   // Verificar que el archivo exista
   if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: 'Archivo de backup no encontrado' });
