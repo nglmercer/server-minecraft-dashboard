@@ -534,7 +534,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
    * @param {Function} callback - Callback function to execute after refresh
    */
   static refreshServerHeader(callback) {
-      this.loadServerByName(selectedServer, callback);
+    KubekServerHeaderUI.loadServerByName(selectedServer, callback);
   }
 
   /**
@@ -612,7 +612,7 @@ var uiDebugger = DebuggerGroupManager.create('UI');
       return true;
   }
 }
-
+setInterval(KubekServerHeaderUI.refreshServerHeader, 1000);
 class KubekAlerts {
     static stylesInjected = false;
 

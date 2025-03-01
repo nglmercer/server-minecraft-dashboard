@@ -47,22 +47,34 @@ class BaseAPI {
      * @returns {Promise<object>|undefined}
      */
     async post(endpoint, data, options = {}) {
+      console.log("post", endpoint, data, options);
       let cb = null;
       if (typeof options === 'function') {
         cb = options;
         options = {};
       }
-  
+    
       try {
+        // Determinar el tipo de contenido apropiado
+        let headers = {...(options.headers || {})};
+        let body = data;
+    
+        // Si es FormData, no establecer Content-Type (el navegador lo hace automáticamente)
+        if (!(data instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+          // Si data no es un string, convertirlo a JSON
+          if (typeof data !== 'string') {
+            body = JSON.stringify(data);
+          }
+        }
+    
         const response = await fetch(`${this.baseURL}${endpoint}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-          },
-          body: JSON.stringify(data),
-          ...options,
+          headers: headers,
+          body: body,
+          ...(options.fetchOptions || {})
         });
+    
         const result = await this.handleResponse(response);
         if (cb) {
           cb(result);
@@ -70,11 +82,10 @@ class BaseAPI {
         }
         return result;
       } catch (error) {
-        if (cb) throw error;
+        if (cb) cb(null, error);
         throw error;
       }
     }
-  
     /**
      * Realiza una petición PUT a la API.
      * @param {string} endpoint - Ruta del recurso.
@@ -284,11 +295,29 @@ class BaseAPI {
   }
  //window.localStorage.selectedServer 
   // Ejemplo de uso directo sin callback (retorna promesa):
-  api.get(`/servermanager/${window.localStorage.selectedServer}/log`)
+/*   api.get(`/servermanager/${window.localStorage.selectedServer}/log`)
     .then((data) => console.log(data))
-    .catch((error) => console.error(error));
+    .catch((error) => console.error(error)); */
   
   // Ejemplo de uso con callback:
+  class serverHardware {
+    // Получить суммарную информацию о hardware
+    static getSummary(cb){
+      return  api.get("/hardware/summary", cb);
+    }
+
+    // Получить информацию об использовании ЦПУ, памяти и тд
+    static getUsage(cb){
+      return  api.get("/hardware/usage", cb);
+    }
+}
+class fileManager {a
+  //async post(endpoint, data, options = {}) {
+  static uploadFile({server,path,data}, cb) {
+    //`/api/filemanager/upload?server=${server}&path=${currentPath}`
+    return api.post(`/filemanager/upload?server=${server}&path=${path}`,data, cb);
+  }
+}
   ServerManager.getServersList((servers) => {
     console.log('Lista de servidores:', servers);
   });
@@ -315,8 +344,10 @@ export {
   MiAPI,
   api,
   ServerManager,
+  serverHardware,
   createBackup,
   deleteBackup,
   restoreBackup,
-  downloadBackup
+  downloadBackup,
+  fileManager
 }

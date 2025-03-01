@@ -142,7 +142,8 @@ router.post('/filemanager/writeFilebyName', (req, res) => {
   }
 });
 // add upload file 
-router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => {
+// Change this line:
+router.post("/filemanager/upload", upload.single("file"), (req, res) => {
   try {
     const { server, path: serverPath } = req.query;
 
@@ -153,8 +154,6 @@ router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => 
         data: { server, path: serverPath, fileReceived: !!req.file },
       });
     }
-
-   // console.log("Archivo recibido:", req.file);
 
     const fileName = req.file.originalname;
     const fileContent = req.file.buffer;
@@ -168,7 +167,9 @@ router.post("/filemanager/upload", upload.single("g-file-input"), (req, res) => 
     return res.status(500).json({ success: false, message: error.message });
   }
 });
-router.post("/filemanager/upload/files", upload.array("g-file-input"), (req, res) => {
+
+// Also update the multiple file upload route:
+router.post("/filemanager/upload/files", upload.array("file"), (req, res) => {
   try {
     const { server, path: serverPath } = req.query;
 

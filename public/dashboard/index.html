@@ -7,83 +7,28 @@
             name="viewport"
             content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <title>Kubek</title>
+    <title>MCdashboard</title>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="css/globals.css"/>
-    <link rel="stylesheet" href="css/animate.min.css"/>
-    <link rel="stylesheet" href="css/atom-one-dark.css">
-    <link href="./assets/materialSymbols.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/globals.css"/>
+    <link rel="stylesheet" href="../css/animate.min.css"/>
+    <link rel="stylesheet" href="../css/atom-one-dark.css">
+    <link href="../assets/materialSymbols.css" rel="stylesheet" />
     <!-- Elements styles -->
-    <link rel="stylesheet" href="css/elements/elements.css"/>
+    <link rel="stylesheet" href="../css/elements/elements.css"/>
 
-    <link rel="stylesheet" href="css/preloader.css"/>
-    <link rel="stylesheet" href="css/mobile.css"/>
-    <link rel="stylesheet" href="css/theme.css"/>
-    <script src="js/KubekRequests.js"></script>
-    <script src="js/KubekNotifyModal.js"></script>
+    <link rel="stylesheet" href="../css/mobile.css"/>
+    <link rel="stylesheet" href="../css/theme.css"/>
     <!-- Scripts -->
-     <script src="js/utils.js"></script>
-     <script src="js/webcomponents.js"></script>
-     <script src="js/navwebcomponent.js"></script>
-     <script src="js/task.js"></script>
-    <script src="js/moment.min.js"></script>
-    <script src="js/base64.min.js"></script>
-    <script src="js/highlight.min.js"></script>
-    <script src="js/mineParse.js"></script>
-    <script src="js/modalcomponents.js"></script>
-    <script src="js/task.js" type="module"></script>
-    <script src="./pages/serverSettings.js" type="module"></script>
-    <script src="./pages/serverproperties.js" type="module"></script>
-    <script src="./pages/Console.js" type="module"></script>
-    <script type="module" src="./pages/Serversbar.js"></script>
-    <!-- Classes -->
-    <script type="module" src="/initialize.js"></script>
+     <script src="../js/webcomponents.js"></script>
+     <script src="../js/navwebcomponent.js"></script>
+     <script type="module" src="./header.js"></script>
+     <script type="module" src="./console.js"></script>
+
 </head>
 
 <body class="scheme-dark-light">
     <task-notifications id="notificaciones"></task-notifications>
-
-    <template id="mod-card-template">
-        <div class="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors cursor-pointer">
-          <div class="flex items-center gap-4">
-            <img class="w-16 h-16 rounded-lg object-cover" src="" alt="Mod icon">
-            <div>
-              <h3 class="text-xl font-bold"></h3>
-              <p class="text-gray-400 line-clamp-2"></p>
-            </div>
-          </div>
-        </div>
-      </template>
-    
-      <template id="mod-details-template">
-        <div class="max-w-4xl mx-auto">
-          <button class="mb-4 text-blue-500 hover:text-blue-400 btnbase-rounded" id="back-button">← Back to results</button>
-          <div class="bg-gray-800 rounded-lg p-6">
-            <div class="flex items-start gap-6">
-              <img class="w-32 h-32 rounded-lg object-cover" src="" alt="Mod icon">
-              <div class="flex-1">
-                <h1 class="text-3xl font-bold mb-2"></h1>
-                <div class="flex gap-4 mb-4">
-                  <span class="bg-gray-700 px-3 py-1 rounded-full text-sm"></span>
-                  <span class="bg-gray-700 px-3 py-1 rounded-full text-sm"></span>
-                </div>
-                <p class="text-gray-300 mb-6"></p>
-                <div class="flex gap-4 mb-6">
-                  <select class="bg-gray-700 px-4 py-2 rounded texte" id="version-filter">
-                    <option value="">All Versions</option>
-                  </select>
-                  <select class="bg-gray-700 px-4 py-2 rounded" id="loader-filter">
-                    <option value="">All Loaders</option>
-                  </select>
-                </div>
-                <div class="space-y-2 max-h-70dvh overflow-y-auto" id="versions-list"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-    <div class="blurScreen" style="display: none; position: fixed;"></div>
 
     <dialog-container
      id="Eula_dialog_container" 
@@ -119,7 +64,7 @@
 </form>
 
 <div class="content-header">
-    <div class="icon-bg" onclick="uploadServerIcon()">
+    <div class="icon-bg" id="uploadServerIconBtn">
         <img src="" alt="Server icon"/>
         <span class="material-symbols-rounded" style="display: none">upload</span>
     </div>
@@ -438,8 +383,8 @@
 
             <!-- Footer -->
             <div class="footer">
-                <button class="primary-btn" onclick="KubekFileManagerUI.writeFile()">{{commons.save}}</button>
-                <button class="dark-btn" onclick="KubekFileManagerUI.closeEditor()">{{commons.cancel}}</button>
+                <button class="primary-btn" >{{commons.save}}</button>
+                <button class="dark-btn" >{{commons.cancel}}</button>
             </div>
         </div>
 
@@ -483,19 +428,19 @@
                         if (action === 'new-file') {
                         //    KubekFileManagerUI.openEmptyEditor(); fix this
                         } else if (action === 'upload-file') {
-                            KubekFileManagerUI.uploadFile();
+                        //    KubekFileManagerUI.uploadFile();
                         } else if (action === 'new-folder') {
-                            KubekFileManagerUI.newDirectory();
+                        //    KubekFileManagerUI.newDirectory();
                         } else if (action === 'refresh-folder') {
-                            KubekFileManagerUI.refreshDir();
+                        //    KubekFileManagerUI.refreshDir();
                         }
                     });
                     document.addEventListener('DOMContentLoaded', () => {
-                        KubekFileManagerUI.initaddeventlisteners();
-                    KubekFileManagerUI.refreshDir();
+                    //    KubekFileManagerUI.initaddeventlisteners();
+                    //KubekFileManagerUI.refreshDir();
                     // Event listener for code editing
                     document.getElementById("code-edit").addEventListener("input", function() {
-                        KubekFileManagerUI.formatCode();
+                    //    KubekFileManagerUI.formatCode();
                     });
                     });
                 </script>
@@ -687,7 +632,7 @@
             
         </div>
         <div slot="6-content" class="bg-slate-800 text-white">
-            <script type="module" src="pages/generalSettings.js"></script>
+            <script type="module" src="./generalSettings.js" type="module"></script>
 
             <div class="ksettings-container animate__animated animate__fadeIn animate__faster h-full" style="overflow: auto;">
                 <!-- Заголовок -->
@@ -722,7 +667,6 @@
 
             </div>
 
-            <!-- Modal создания/редактирования пользователя -->
             <div class="userEditModal" style="display: none">
                 <h2>{{kubekSettings.userEditor}}</h2>
                 <!-- Header -->
@@ -987,74 +931,7 @@
 </body>
 <kubek-alerts id="alerts_pool"></kubek-alerts>
 <script>
-    const Eula_dialog = document.querySelector("#Eula_dialog");
-    Eula_dialog.options = [
-        {
-            label: "{{commons.iAccept}}",
-            class: "save-btn",
-            callback: () => {
-                console.log("accept");
-                KubekRequests.get("/kubek/eula/accept", () => {
-                    window.location.reload();
-                });
-            }
-        }
-        ];	
-console.log("[UI] Starting Kubek UI...");
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
-let act = urlParams.get("act");
-var selectedServer = window.localStorage.selectedServer || "";
-let consoleRamUsageBar, consoleCpuUsageBar;
 
-document.addEventListener('DOMContentLoaded', function () { 
-    KubekServers.getServersList((servers) => {
-        if (!servers && servers !== false && !servers.length) {
-            window.location.href = "newServer.html";
-            console.log("servers getServersList", servers, "servers.length", servers.length);
-            return;
-        }
-        if (!servers) return;
-        console.log("servers getServersList", servers); 
-        if (servers.has(window.localStorage.selectedServer)) {
-            selectedServer = window.localStorage.selectedServer;
-        } else {
-            localStorage.setItem("selectedServer", servers[0]);
-            selectedServer = servers[0];
-        }
-    });
-/*     KubekRequests.get("/rawlanguages", (langs) => {
-        localStorage.setItem("rawlanguages", JSON.stringify(langs));
-    }); */
-});
-function uploadServerIcon() {
-    // Obtener el elemento input
-    const inputElement = document.getElementById('server-icon-input');
-    
-    // Simular click en el input para abrir el selector de archivos
-    inputElement.click();
-    
-    // Remover event listeners previos para evitar duplicados
-    inputElement.removeEventListener('change', handleFileChange);
-    
-    // Agregar nuevo event listener
-    inputElement.addEventListener('change', handleFileChange);
-    
-    // Función para manejar el cambio de archivo
-    function handleFileChange() {
-        // Crear FormData a partir del formulario
-        const formElement = document.getElementById('server-icon-form');
-        const formData = new FormData(formElement);
-        
-        // Realizar la petición POST
-        KubekRequests.post(`/servers/${selectedServer}/icon`, () => {
-            // Recargar la UI después de subir el ícono
-            KubekServerHeaderUI.loadServerByName(selectedServer, () => {
-                KubekUI.loadServersList();
-            });
-        }, formData);
-    }
-}
 </script>
 
 
@@ -1078,12 +955,7 @@ function uploadServerIcon() {
 document.getElementById('mod-search-button').addEventListener('click', () => {
   document.getElementById('custom-modal').open();
 });
-setTimeout(() => {
-    if (!window.localStorage.selectedServer) {
-        window.location.href = "newServer.html";
-    }
-}, 1000);
+
 </script>
-<script src="./js/plugins.js">
 
 </script>
