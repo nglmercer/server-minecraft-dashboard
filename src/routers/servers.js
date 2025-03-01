@@ -183,6 +183,10 @@ function getRequestData(req, keys) {
         const metrics = manager.getServerMetrics(serverName);
         res.status(200).json({ success: true, data: metrics });
         break;
+      case 'kill':
+        const kill = manager.killserver(serverName);
+        res.status(200).json({ success: true, data: kill });
+        break;
       default:
         res.status(400).json({ success: false, error: "La acción no es válida." });
     }

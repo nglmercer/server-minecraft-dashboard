@@ -422,7 +422,15 @@ class ServerManager {
       console.error(`Servidor ${serverName} no registrado.`);
     }
   }
-  
+  killserver(serverName) {
+    const server = this.servers.get(serverName);
+    if (server) {
+      server.kill();
+      console.log(`Servidor ${serverName} detenido.`);
+    } else {
+      console.error(`Servidor ${serverName} no registrado.`);
+    }
+  }
 }
 
 const manager = new ServerManager();

@@ -1,3 +1,4 @@
+import { PREDEFINED } from '../dashboard/constants.js';
 class BaseAPI {
     /**
      * @param {string} baseURL - URL base de la API, ej: 'https://miapi.com'
@@ -289,23 +290,26 @@ class BaseAPI {
   
     // Iniciar servidor (requiere que se pase el estado actual para la validación)
     static startServer(server, currentServerStatus) {
-      if (currentServerStatus === KubekPredefined.SERVER_STATUSES.STOPPED) {
-        return api.get(`/servermanager/${server}/start`);
+      return api.get(`/servermanager/${server}/start`);
+      if (currentServerStatus === PREDEFINED.SERVER_STATUSES.STOPPED) {
       }
     }
   
     // Reiniciar servidor
     static restartServer(server, currentServerStatus) {
-      if (currentServerStatus === KubekPredefined.SERVER_STATUSES.RUNNING) {
-        return api.get(`/servermanager/${server}/restart`);
+      return api.get(`/servermanager/${server}/restart`);
+      if (currentServerStatus === PREDEFINED.SERVER_STATUSES.RUNNING) {
       }
     }
   
     // Detener servidor
     static stopServer(server, currentServerStatus) {
-      if (currentServerStatus === KubekPredefined.SERVER_STATUSES.RUNNING) {
-        return api.get(`/servermanager/${server}/stop`);
+      return api.get(`/servermanager/${server}/stop`);
+      if (currentServerStatus === PREDEFINED.SERVER_STATUSES.RUNNING) {
       }
+    }
+    static killServer(server) {
+      return api.get(`/servermanager/${server}/kill`);
     }
     static createBackup(server) {
       return api.get(`/servermanager/${server}/backup`);
