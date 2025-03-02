@@ -310,3 +310,6 @@ uploadItem_mod.addEventListener('click', () => {
   console.log("uploadItem_mod");
   awaitPluginsUI.uploadItem('mod');
 });
+document.getElementById('mod-search-button').addEventListener('click', () => {
+  document.getElementById('custom-modal').open();
+});
