@@ -102,7 +102,7 @@ function setServertoselect(servers) {
 
     serverMenu.addEventListener('server-change', (e) => {
         window.localStorage.selectedServer = e.detail.server;
-        location.href = 'dashboard.html';
+        location.href = '/dashboard/index.html';
       });
       serverMenu.addEventListener('server-contextmenu', (e) => {
         console.log("server-contextmenu", e);
