@@ -116,10 +116,7 @@ const fetchHardwareData = async () => {
   return { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo };
 };
 
-/**
- * Función principal para obtener el uso de recursos (CPU y RAM).
- */
-const getResourcesUsage = async (cb) => {
+const getResourcesUsage = async () => {
   logger.log('Iniciando getResourcesUsage');
 
   try {
@@ -148,17 +145,15 @@ const getResourcesUsage = async (cb) => {
     };
 
     logger.debug('Resultado de getResourcesUsage:', usage);
-    cb(usage);
+    return usage;
   } catch (error) {
     logger.error('getResourcesUsage encontró un error:', error);
-    cb({ error: 'Error al obtener uso de recursos' });
+    throw error;
   }
 };
 
-/**
- * Función principal para obtener información del hardware y sistema.
- */
-const getHardwareInfo = async (cb) => {
+
+const getHardwareInfo = async () => {
   logger.log('Iniciando getHardwareInfo');
 
   try {
@@ -246,10 +241,10 @@ const getHardwareInfo = async (cb) => {
     }
 
     logger.debug('Resultado de getHardwareInfo:', info);
-    cb(info);
+    return info;
   } catch (error) {
     logger.error('getHardwareInfo encontró un error:', error);
-    cb({ error: 'Error al obtener información del hardware' });
+    throw error;
   }
 };
 
