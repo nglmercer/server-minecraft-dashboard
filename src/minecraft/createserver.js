@@ -36,7 +36,6 @@ import {
   FileManager,
   FolderManager
 } from "../modules/FileManager.js";
-import exp from "constants";
 export const getPlatformInfo = () => {
   const isTermux = process.platform === "android" || fs.existsSync("/data/data/com.termux");
   const isWindows = process.platform === "win32";
@@ -120,10 +119,10 @@ export class ServerManager {
 }
 
 const newServerManager = new ServerManager();
-
-export async function startJavaServerGeneration(params, cb) {
-  let { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = params;
-  const javaRequirements = await generateserverrequirements(params);
+//  { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
+//  { serverName, startParameters, serverPort, fileName,javaVersion } = startJavaServerbyFile;
+export async function startJavaServerGeneration({ serverName, core, coreVersion, startParameters, serverPort,javaVersion }, cb) {
+  const javaRequirements = await generateserverrequirements({coreVersion});
   //console.log("javaRequirements",javaRequirements) works
   if (!javaRequirements || !javaRequirements.installed) {
     console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements.javaVersionRequired);
@@ -156,8 +155,7 @@ export async function startJavaServerGeneration(params, cb) {
     cb(false);
   }
 }
-export async function startJavaServerbyFile(params, cb) {
-  let { serverName, startParameters, serverPort, fileName,javaVersion } = params;
+export async function startJavaServerbyFile({ serverName, startParameters, serverPort, fileName,javaVersion }, cb) {
   const serverFolderPath = path.join("./servers", serverName);
   const existFile = fs.existsSync(serverFolderPath + "/" + fileName);
   if (!existFile) {

@@ -223,7 +223,7 @@ async function serverManagementRoutes(fastify, options) {
         }
 
         const mapedServerInfo = {
-            existsfolder: existsfolder(serverName), // Llama a la función importada
+            existsfolder: existsfolder(serverName),
             fileName: formData?.fileName || `${core}-${coreVersion}.jar`, // Usa optional chaining y coalescing
             core: core,
             coreVersion: coreVersion,
@@ -302,10 +302,10 @@ async function serverManagementRoutes(fastify, options) {
             reply.code(500).send({ success: false, error: error.message || 'Error interno al procesar la creación del servidor.' });
         }
     });
+//  { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
+//  { serverName, startParameters, serverPort, fileName,javaVersion } = startJavaServerbyFile;
     fastify.post('/newserver', async (req, reply) => {
         try {
-            // 1. Acceder al string JSON desde req.body.jsonData.value
-            // 'jsonData' es el nombre del campo en tu form-data
             if (!req.body || !req.body.jsonData || typeof req.body.jsonData.value !== 'string') {
                 return reply.status(400).send({
                     message: 'El campo jsonData es requerido y debe contener un string en su propiedad .value.'
@@ -314,7 +314,6 @@ async function serverManagementRoutes(fastify, options) {
             const jsonDataString = req.body.jsonData.value;
             let parsedJsonData;
     
-            // 2. Parsear el string JSON
             try {
                 parsedJsonData = JSON.parse(jsonDataString);
             } catch (e) {
@@ -328,32 +327,13 @@ async function serverManagementRoutes(fastify, options) {
             const {
                 serverName,
                 javaVersion,
-                Ramsize,
                 serverPort,
-                optiflags,
                 coreName,
                 startParameters,
                 fileName,
                 coreVersion
-            } = parsedJsonData;
-    
-            console.info('Datos JSON validados:', parsedJsonData);
-    
-            // 4. Manejar el archivo. Accederlo desde req.body.file
-            // 'file' es el nombre del campo del archivo en tu form-data
-            const fileData = req.body.file; // <--- CAMBIO CLAVE AQUÍ
-    
-            // Verificar si el archivo fue realmente subido
-            if (!fileData || !fileData.filename) {
-                 console.warn('No se recibió ningún archivo o el campo del archivo está mal nombrado. Esperado: "file"');
-                // Puedes decidir si esto es un error o si el archivo es opcional
-                // return reply.status(400).send({ message: 'No se subió ningún archivo o el campo es incorrecto.' });
-            }
-    
-            console.log("parsedJsonData", parsedJsonData);
-            console.log("jsonDataString (type):", typeof jsonDataString);
-            console.log("fileData (from req.body.file):", fileData); // fileData ahora será el objeto del archivo
-    
+            } = parsedJsonData;    
+            const fileData = req.body.file;
             // Ejemplo: Si quieres guardar el archivo (necesitas 'fs' y 'util')
             // const fs = require('node:fs');
             // const util = require('node:util');
@@ -370,8 +350,6 @@ async function serverManagementRoutes(fastify, options) {
             //     console.info(`Archivo ${fileData.filename} recibido, tamaño: ${buffer.length} bytes`);
             //     // Haz algo con el buffer
             // }
-    
-    
             const serverConfig = {
                 serverName,
                 javaVersion: parseInt(javaVersion, 10),
@@ -380,14 +358,36 @@ async function serverManagementRoutes(fastify, options) {
                 startParameters,
                 fileName: fileData?.filename || fileName || `${coreName}-${coreVersion}.jar`,
             };
+            const isnotvalid = []
+            Object.entries(serverConfig).forEach(([key, value]) => {
+                if (!value) {
+                    isnotvalid.push({ key, value });
+                }
+            });
+            if (!fileData && !coreVersion){
+                isnotvalid.push({ key: 'Archivo(fileData) || Version(coreVersion)', value: coreVersion });
+            }
+            if (isnotvalid.length > 0) {
+                console.warn('Faltan campos requeridos en /newserver', isnotvalid);
+                return reply.code(400).send({
+                    success: false,
+                    error: "Campos requeridos: " + isnotvalid.map(i => i.key).join(', ') // coreVersion puede venir de 'version'
+                });
+            }
             { serverName, startParameters, serverPort, fileName,javaVersion }
             console.info('Configuración final a procesar:', serverConfig);
-    
+            if (fileData && (!coreVersion || !coreName)) {
+                const fileBuffer = await fileData.toBuffer();
+                console.log("fileBuffer", fileBuffer);
+                createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
+            }else {
+
+            }
             return reply.send({
                 message: 'Servidor configurado exitosamente!',
                 data: serverConfig
             });
-    
+            
         } catch (err) {
             console.error('Error en el manejador /newserver:', err);
             if (!reply.sent) {

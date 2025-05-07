@@ -308,8 +308,7 @@ const getClosestJavaVersion = (requiredVersion, installedVersions) => {
 
     return Math.min(...validVersions);  // Retornamos la versión más cercana (mínima entre las mayores)
 };
-async function generateserverrequirements(params){
-    let {serverName,core,coreVersion,startParameters,javaExecutablePath,serverPort } = params;
+async function generateserverrequirements({coreVersion}){
     if (!getLocalJavaVersions()) {
         console.log("No se encontraron versiones de Java en este sistema.");
         //manejar instalacion de java
