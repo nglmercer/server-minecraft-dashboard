@@ -29,88 +29,6 @@ function getreqData(req, keys) {
     return data;
 }
 
-  /**
- * Obtiene todos los campos de texto (no archivos) de un request multipart/form-data.
- * También consume los streams de los archivos para evitar que el request se cuelgue.
- * @param {import('fastify').FastifyRequest} req El objeto de solicitud de Fastify.
- * @returns {Promise<Object>} Un objeto con los campos de texto.
- */
-  async function processFormData(req) {
-    const formFields = {}; // Para almacenar los campos que no son archivos
-    let fileData = null;   // Para almacenar la información del archivo
-  
-    // Asegurarse de que es una petición multipart
-    if (!req.isMultipart()) {
-      req.log.warn('processFormData: Attempted to process a non-multipart request.');
-      throw new Error('Request is not multipart/form-data');
-    }
-  
-    try {
-      const parts = req.parts(); // Obtiene un iterador asíncrono de las partes del form-data
-      
-      for await (const part of parts) {
-        req.log.info(`processFormData: Processing part: fieldname='${part.fieldname}', filename=${part.filename ? `'${part.filename}'` : 'null'}`);
-        
-        if (!part.filename) {
-          // Es un campo de formulario
-          req.log.info(`processFormData: Part is a field. fieldname='${part.fieldname}', value='${part.value}'`);
-          formFields[part.fieldname] = part.value;
-        } else {
-          // Es un archivo - guardamos la información relevante
-          req.log.info(`processFormData: Found file part: fieldname='${part.fieldname}', filename='${part.filename}'`);
-          fileData = {
-            fieldname: part.fieldname,
-            filename: part.filename,
-            mimetype: part.mimetype,
-            encoding: part.encoding,
-            // Si necesitas el contenido como buffer:
-            // buffer: await part.toBuffer() 
-            // Pero esto consume memoria para archivos grandes
-          };
-          
-          // Si necesitas guardar el archivo en disco, podrías hacer algo como:
-          // const pump = require('pump');
-          // const fs = require('fs');
-          // const path = require('path');
-          // const filePath = path.join('uploads', part.filename);
-          // pump(part.file, fs.createWriteStream(filePath));
-          // fileData.path = filePath;
-        }
-      }
-      
-      req.log.info({ formFields, fileInfo: fileData }, 'processFormData: Successfully processed form data.');
-      
-      return {
-        formFields,
-        fileData
-      };
-      
-    } catch (error) {
-      req.log.error({ err: error }, 'processFormData: Error occurred while processing multipart parts.');
-      throw new Error(`Failed to process form data. Original error: ${error.message}`);
-    }
-  }
-  
-  async function getFileAndFormData(req) {
-    // Obtener el archivo
-    const fileData = await req.file();
-    
-    // Extraer detalles relevantes del archivo
-    const fileInfo = fileData ? {
-      filename: fileData.filename,        // Nombre original del archivo
-      fieldname: fileData.fieldname,      // Nombre del campo del formulario
-      mimetype: fileData.mimetype,        // Tipo MIME
-      encoding: fileData.encoding,        // Codificación
-      file: fileData.file,                // Stream del archivo
-      // Para obtener el buffer completo si es necesario:
-      // buffer: await fileData.toBuffer()  // Contenido completo como buffer
-    } : null;
-    
-    return {
-      fileInfo,
-      file: fileData
-    };
-  }
 async function serverManagementRoutes(fastify, options) {
 
     const serversBaseDir = path.resolve(process.cwd(), 'servers'); // Define el directorio base de servidores
@@ -303,8 +221,8 @@ async function serverManagementRoutes(fastify, options) {
             reply.code(500).send({ success: false, error: error.message || 'Error interno al procesar la creación del servidor.' });
         }
     });
-//  { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
-//  { serverName, startParameters, serverPort, fileName,javaVersion } = startJavaServerbyFile;
+//  { serverName,serverPort, coreName, coreVersion, startParameters,javaVersion } = startJavaServerGeneration;
+//  { serverName,serverPort, fileName, startParameters,javaVersion } = startJavaServerbyFile;
     fastify.post('/newserver', async (req, reply) => {
         try {
             if (!req.body || !req.body.jsonData || typeof req.body.jsonData.value !== 'string') {
@@ -336,32 +254,21 @@ async function serverManagementRoutes(fastify, options) {
                 coreVersion
             } = parsedJsonData;    
             const fileData = req.body.file;
-            // Ejemplo: Si quieres guardar el archivo (necesitas 'fs' y 'util')
-            // const fs = require('node:fs');
-            // const util = require('node:util');
-            // const pump = util.promisify(require('node:stream').pipeline);
-            //
-            // if (fileData && fileData.file) { // fileData.file es el stream
-            //     const uploadPath = `./uploads/${fileData.filename}`;
-            //     await pump(fileData.file, fs.createWriteStream(uploadPath));
-            //     console.info(`Archivo ${fileData.filename} guardado en ${uploadPath}`);
-            // }
-            // O si quieres el buffer:
-            // if (fileData && typeof fileData.toBuffer === 'function') {
-            //     const buffer = await fileData.toBuffer();
-            //     console.info(`Archivo ${fileData.filename} recibido, tamaño: ${buffer.length} bytes`);
-            //     // Haz algo con el buffer
-            // }
+
             const serverConfig = {
                 serverName,
                 javaVersion: parseInt(javaVersion, 10),
                 serverPort: parseInt(serverPort, 10),
-                coreName,
                 startParameters,
                 fileName: fileData?.filename || fileName || `${coreName}-${coreVersion}.jar`,
+                coreName,
+                coreVersion
             };
             const isnotvalid = []
             Object.entries(serverConfig).forEach(([key, value]) => {
+                if ((key !== 'fileName' || key !== 'coreVersion')){
+                    return;
+                }
                 if (!value) {
                     isnotvalid.push({ key, value });
                 }
@@ -380,21 +287,50 @@ async function serverManagementRoutes(fastify, options) {
                     data: isnotvalid
                 });
             }
-            { serverName, startParameters, serverPort, fileName,javaVersion }
 
             console.info('Configuración final a procesar:', serverConfig,{ isValidServerPath, serverPath});
 
             if (fileData && (!coreVersion || !coreName)) {
                 const fileBuffer = await fileData.toBuffer();
                 console.log("fileBuffer", fileBuffer);
-            //  createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
+                createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
+                const serverResult = await new Promise((resolve, reject) => {
+                    startJavaServerbyFile(serverConfig, (result) => {
+                        if (result) { // Asume que `result` contiene la data de éxito o un objeto de error
+                            if (result.success === false) { // Si la función de callback indica un error conocido
+                                console.error(`Error (callback) al crear servidor con archivo ${serverName}: ${result.error}`);
+                                reject(new Error(result.error || 'Error reportado por startJavaServerbyFile'));
+                            } else {
+                                resolve(result);
+                            }
+                        } else {
+                            console.error(`Error inesperado (callback vacío) al crear servidor con archivo ${serverName}`);
+                            reject(new Error('Error desconocido durante la creación del servidor (callback vacío).'));
+                        }
+                    });
+                });
+                // Si la promesa se resuelve, envía la respuesta exitosa
+                return { success: true, data: serverConfig, message: serverResult };
             }else {
-
+                new Promise((resolve, reject) => {
+                    startJavaServerGeneration(serverConfig, result => {
+                        if (result) {
+                            console.info(`Generación de servidor ${serverName} completada (o en progreso).`);
+                            resolve(result); // Resuelve la promesa (aunque no la esperemos)
+                        } else {
+                            console.error(`Error en la generación de servidor ${serverName} (callback).`);
+                            reject(new Error('Error durante la generación del servidor (callback).')); // Rechaza la promesa
+                        }
+                    });
+                }).catch(err => {
+                    // Captura errores de la promesa en segundo plano para loguearlos
+                    console.error(`Error en background de startJavaServerGeneration para ${serverName}: ${err.message}`);
+                });
+                return reply.send({
+                    message: 'Servidor configurado exitosamente!',
+                    data: serverConfig
+                });
             }
-            return reply.send({
-                message: 'Servidor configurado exitosamente!',
-                data: serverConfig
-            });
             
         } catch (err) {
             console.error('Error en el manejador /newserver:', err);

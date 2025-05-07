@@ -119,9 +119,9 @@ export class ServerManager {
 }
 
 const newServerManager = new ServerManager();
-//  { serverName, core, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
+//  { serverName, coreName, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
 //  { serverName, startParameters, serverPort, fileName,javaVersion } = startJavaServerbyFile;
-export async function startJavaServerGeneration({ serverName, core, coreVersion, startParameters, serverPort,javaVersion }, cb) {
+export async function startJavaServerGeneration({ serverName, coreName, coreVersion, startParameters, serverPort,javaVersion }, cb) {
   const javaRequirements = await generateserverrequirements({coreVersion});
   //console.log("javaRequirements",javaRequirements) works
   if (!javaRequirements || !javaRequirements.installed) {
@@ -129,12 +129,12 @@ export async function startJavaServerGeneration({ serverName, core, coreVersion,
     await prepareJavaForServer( javaRequirements.javaVersionRequired || javaVersion);
   }
   
-  const coreFileName = `${core}-${coreVersion}.jar`;
+  const coreFileName = `${coreName}-${coreVersion}.jar`;
   const serverDirectoryPath = `./servers/${serverName}`;
   fs.mkdirSync(serverDirectoryPath, { recursive: true });
   
   try {
-    const coreDownloadURL = await getCoreVersionURL(core, coreVersion);
+    const coreDownloadURL = await getCoreVersionURL(coreName, coreVersion);
     if (!coreDownloadURL) {
       console.error("[ERROR] Failed to retrieve download URL");
       cb(false);
@@ -151,7 +151,7 @@ export async function startJavaServerGeneration({ serverName, core, coreVersion,
     console.log(`✅ Core descargado exitosamente: ${coreFilePath}`);
     cb(true);
   } catch (error) {
-    console.error("[ERROR] Failed to download core:", error);
+    console.error("[ERROR] Failed to download coreName:", error);
     cb(false);
   }
 }
@@ -178,8 +178,8 @@ export async function startJavaServerbyFile({ serverName, startParameters, serve
 // Ejemplo de uso:
 /* const configserver = {
   serverName: "melserver",  // Nombre del servidor
-  core: "paper",          // Tipo de core
-  coreVersion: "1.21",    // Versión del core
+  coreName: "paper",          // Tipo de coreName
+  coreVersion: "1.21",    // Versión del coreName
   startParameters: "-Xms2G -Xmx4G",
   serverPort: 25565,
 };

@@ -26,12 +26,12 @@ fastify.register(multipart, {
   attachFieldsToBody: true,
   limits: {
     fieldNameSize: 100, // Max field name size in bytes
-    fieldSize: 1024 * 1024 * 5, // Max field value size in bytes (ej: 5MB)
+    fieldSize: 1024 * 1024 * 50, // Max field value size in bytes (ej: 5MB)
     fields: 10,         // Max number of non-file fields
-    fileSize: 1024 * 1024 * 100, // Max file size in bytes (ej: 100MB) - ¡AUMENTA ESTE!
+    fileSize: 1024 * 1024 * 500, // Max file size in bytes (ej: 100MB) - ¡AUMENTA ESTE!
     files: 5,           // Max number of file fields
-    headerPairs: 2000,  // Max number of header pairs
-    parts: 1000,        // Max number of parts (fields + files)
+    headerPairs: 5000,  // Max number of header pairs
+    parts: 2000,        // Max number of parts (fields + files)
   },
   // Para manejar el error de "file too large" específicamente:
   onFileSizeLimit: function (part) {

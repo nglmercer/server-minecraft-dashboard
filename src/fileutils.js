@@ -19,7 +19,7 @@ export function isValidFilenamePattern(filename, patternRegex = /^[a-zA-Z0-9_.-]
     const regex = (typeof patternRegex === 'string') ? new RegExp(patternRegex) : patternRegex;
     return regex.test(filename);
 }
-export function isValidDirectoryName(directoryName, patternRegex = /^[a-zA-Z0-9_.\-\/]+$/) {
+export function isValidDirectoryName(directoryName, patternRegex = /^\/[a-zA-Z0-9\-\/]+$/) {
     if (!directoryName) {
         return false;
     }

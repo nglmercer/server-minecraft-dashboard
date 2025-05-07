@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import axios from "axios";
 import { TASK_MANAGER, addDownloadTask, unpackArchive } from "../modules/taskmanager.js";
 import { logger } from "../utils/utils.js";
-
+import { PathUtils } from "../fileutils.js";
 //import { createRequire } from 'module';
 //const require = createRequire(import.meta.url);
 // Helper function to fetch data from a URL using axios
@@ -222,7 +222,9 @@ const getJavaPath = (javaVersion) => {
         return false;
     }
 
-    const javaDirPath = path.join('./binaries/java', javaVersion);
+    const javabinPath = path.join(PathUtils.binariesPath, "java");
+    console.log("javabinPath", javabinPath);
+    const javaDirPath = path.join(javabinPath, String(javaVersion));
     const javaSearchPath = path.join(javaDirPath, 'bin', 'java') + (process.platform === 'win32' ? '.exe' : '');
 
     if (fs.existsSync(javaDirPath) && fs.lstatSync(javaDirPath).isDirectory()) {

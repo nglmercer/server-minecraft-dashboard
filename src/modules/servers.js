@@ -59,7 +59,7 @@ class FileManager {
       const newFilePath = path.join(folderPath, fileDir, newName);
 
       if (!fs.existsSync(oldFilePath)) {
-        throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+        throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`,newFilePath);
       }
 
       // Evitar sobrescribir archivos existentes
@@ -96,7 +96,7 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`,filePath);
     }
 
     fs.writeFileSync(filePath, content, { encoding: 'utf8' });
@@ -114,7 +114,7 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-        throw new Error(`El archivo o directorio '${fileName}' no existe en la carpeta '${folderName}'.`);
+        throw new Error(`El archivo o directorio '${fileName}' no existe en la carpeta '${folderName}'.`,filePath);
     }
 
     const stats = fs.statSync(filePath);

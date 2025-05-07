@@ -45,7 +45,8 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`,filePath);
+    return  this.createFile(folderName, fileName);
+    //  throw new Error(`El archivo '${fileName}' filefolder readFile no existe en la carpeta '${folderName}'.`,{folderName, fileName});
     }
 
     return fs.readFileSync(filePath, { encoding: 'utf8' });
@@ -59,7 +60,7 @@ class FileManager {
       const newFilePath = path.join(folderPath, fileDir, newName);
 
       if (!fs.existsSync(oldFilePath)) {
-        throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+        throw new Error(`El archivo '${fileName}' filefolder renameFile no existe en la carpeta '${folderName}'.`,{folderName, fileName, newName});
       }
 
       // Evitar sobrescribir archivos existentes
@@ -96,7 +97,7 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
+      throw new Error(`El archivo '${fileName}' filefolder no existe en la carpeta '${folderName}'.`,{folderName, fileName, content});
     }
 
     fs.writeFileSync(filePath, content, { encoding: 'utf8' });
@@ -114,7 +115,7 @@ class FileManager {
     const filePath = path.join(folderPath, fileName);
 
     if (!fs.existsSync(filePath)) {
-        throw new Error(`El archivo o directorio '${fileName}' no existe en la carpeta '${folderName}'.`);
+        throw new Error(`El archivo o directorio '${fileName}' no existe en la carpeta '${folderName}'.`,filePath);
     }
 
     const stats = fs.statSync(filePath);
@@ -144,7 +145,7 @@ class FileManager {
   compressFile(fileName, outputPath = null) {
     const filePath = path.join(this.basePath, fileName);
     if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo '${fileName}' no existe.`);
+      throw new Error(`El archivo '${fileName}' filefolder no existe.`,{fileName, outputPath});
     }
 
     const compressedFileName = `${fileName}.gz`;
@@ -475,7 +476,6 @@ function getFileInfo(folderName, fileName) {
     console.error(error.message);
   }
 }
-console.log(getFileInfo("servers", "eula.txt"))
 export {
   createserverfolder,
   createserverfile,
