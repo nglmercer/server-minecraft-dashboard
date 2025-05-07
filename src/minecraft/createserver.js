@@ -122,11 +122,11 @@ const newServerManager = new ServerManager();
 //  { serverName, coreName, coreVersion, startParameters, serverPort,javaVersion } = startJavaServerGeneration;
 //  { serverName, startParameters, serverPort, fileName,javaVersion } = startJavaServerbyFile;
 export async function startJavaServerGeneration({ serverName, coreName, coreVersion, startParameters, serverPort,javaVersion }, cb) {
-  const javaRequirements = await generateserverrequirements({coreVersion});
+  const javaRequirements = await generateserverrequirements(coreVersion);
   //console.log("javaRequirements",javaRequirements) works
   if (!javaRequirements || !javaRequirements.installed) {
     console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements.javaVersionRequired);
-    await prepareJavaForServer( javaRequirements.javaVersionRequired || javaVersion);
+    await prepareJavaForServer(javaversion(javaRequirements, javaVersion));
   }
   
   const coreFileName = `${coreName}-${coreVersion}.jar`;
@@ -155,6 +155,10 @@ export async function startJavaServerGeneration({ serverName, coreName, coreVers
     cb(false);
   }
 }
+function javaversion(obj, number){
+  if (!obj) return number;
+  return obj.javaVersionRequired || obj.version || obj.java?.version || number;
+}
 export async function startJavaServerbyFile({ serverName, startParameters, serverPort, fileName,javaVersion }, cb) {
   const serverFolderPath = path.join("./servers", serverName);
   const existFile = fs.existsSync(serverFolderPath + "/" + fileName);
@@ -162,15 +166,15 @@ export async function startJavaServerbyFile({ serverName, startParameters, serve
     console.log("El archivo no existe en el servidor", serverFolderPath + "/" + fileName);
     return cb(false);
   }
-  const javaRequirements = await verifyJavaInstallation(javaVersion);
-  //console.log("javaRequirements",javaRequirements) works
-  if (!javaRequirements) {
-    console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements, javaVersion);
-    await prepareJavaForServer(javaVersion);
+  const javaRequirements = await generateserverrequirements(javaVersion);
+  console.log("javaRequirements",javaRequirements)
+  if (!javaRequirements || !javaRequirements.installed || javaRequirements.javaVersionRequired !== javaVersion) {
+    console.log("No se encontraron versiones de Java compatibles en este sistema. Instalando Java", javaRequirements.javaVersionRequired);
+    await prepareJavaForServer(javaversion(javaRequirements, javaVersion));
   }
   const coreFileName = fileName;
   const coreFilePath = path.join(serverFolderPath, fileName);
-  const javaExecutablePath = getJavaInfoByVersion(javaVersion).javaBinPath || getJavaInfoByVersion(javaVersion).javaPath;
+  const javaExecutablePath = getJavaInfoByVersion(javaRequirements.javaVersionRequired).javaBinPath || getJavaInfoByVersion(javaRequirements.javaVersionRequired).javaPath;
   newServerManager.writeStartFiles({ serverName, coreFilePath,coreFileName, startParameters, serverPort,javaExecutablePath });
   console.log(`✅ Core descargado exitosamente: ${coreFilePath}`);
   cb(true);

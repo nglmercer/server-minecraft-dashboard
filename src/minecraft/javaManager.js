@@ -25,8 +25,8 @@ const isTermux = () => {
 
 // Convertir versión del juego a versión Java requerida
 const gameVersionToJava = (version) => {
-    const [, sec, ter] = version.split(".").map(Number);
     if (!version) return 18;
+    const [, sec, ter] = version.split(".").map(Number);
     if (sec <= 8) return 8;
     if (sec <= 11) return 11;
     if (sec <= 15) return 11;
@@ -310,11 +310,13 @@ const getClosestJavaVersion = (requiredVersion, installedVersions) => {
 
     return Math.min(...validVersions);  // Retornamos la versión más cercana (mínima entre las mayores)
 };
-async function generateserverrequirements({coreVersion}){
+async function generateserverrequirements(coreVersion){
     if (!getLocalJavaVersions()) {
         console.log("No se encontraron versiones de Java en este sistema.");
-        //manejar instalacion de java
-        return;
+        return{
+            installed: false,
+            javaVersionRequired: gameVersionToJava(coreVersion),
+        }
     }
     
     const javaVersionRequired = gameVersionToJava(coreVersion);
