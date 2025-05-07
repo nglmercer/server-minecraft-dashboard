@@ -15,6 +15,7 @@ import {
     ServerManager // Igual que arriba
 } from "../minecraft/servermanager.js"; // Verifica la ruta
 import { startJavaServerGeneration, startJavaServerbyFile } from "../minecraft/createserver.js"; // Verifica la ruta
+import { PathUtils } from '../fileutils.js';
 import path from 'path'; // Útil para construir rutas de forma segura
 
 // La función getreqData se puede mantener o integrar su lógica directamente
@@ -308,7 +309,8 @@ async function serverManagementRoutes(fastify, options) {
         try {
             if (!req.body || !req.body.jsonData || typeof req.body.jsonData.value !== 'string') {
                 return reply.status(400).send({
-                    message: 'El campo jsonData es requerido y debe contener un string en su propiedad .value.'
+                    message: 'El campo jsonData es requerido y debe contener un string en su propiedad .value.',
+                    data: typeof req.body.jsonData.value
                 });
             }
             const jsonDataString = req.body.jsonData.value;
@@ -364,6 +366,9 @@ async function serverManagementRoutes(fastify, options) {
                     isnotvalid.push({ key, value });
                 }
             });
+            const serverPath = path.join(PathUtils.serverPath, serverConfig.serverName);
+            const isValidServerPath = PathUtils.isValidDirectoryName(serverPath);
+            if (!isValidServerPath) isnotvalid.push({ key: 'Directorio(serverPath)', value: serverConfig.serverName });
             if (!fileData && !coreVersion){
                 isnotvalid.push({ key: 'Archivo(fileData) || Version(coreVersion)', value: coreVersion });
             }
@@ -371,15 +376,18 @@ async function serverManagementRoutes(fastify, options) {
                 console.warn('Faltan campos requeridos en /newserver', isnotvalid);
                 return reply.code(400).send({
                     success: false,
-                    error: "Campos requeridos: " + isnotvalid.map(i => i.key).join(', ') // coreVersion puede venir de 'version'
+                    error: "Campos requeridos: " + isnotvalid.map(i => i.key).join(', '),
+                    data: isnotvalid
                 });
             }
             { serverName, startParameters, serverPort, fileName,javaVersion }
-            console.info('Configuración final a procesar:', serverConfig);
+
+            console.info('Configuración final a procesar:', serverConfig,{ isValidServerPath, serverPath});
+
             if (fileData && (!coreVersion || !coreName)) {
                 const fileBuffer = await fileData.toBuffer();
                 console.log("fileBuffer", fileBuffer);
-                createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
+            //  createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
             }else {
 
             }
