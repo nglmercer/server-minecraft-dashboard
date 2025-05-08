@@ -1,4 +1,4 @@
-// fileValidatorUtils.js
+// fileutils.js
 import fs from 'node:fs';
 import path from 'node:path';
 const serverPath = path.resolve(process.cwd(), 'servers');
