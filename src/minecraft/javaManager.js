@@ -32,7 +32,7 @@ const gameVersionToJava = (version) => {
     if (sec <= 15) return 11;
     if (sec === 16) return ter <= 4 ? 11 : 16;
     if (sec >= 21) return 21;
-    return 18;
+    return 21;
 };
 
 // Obtener la arquitectura del sistema

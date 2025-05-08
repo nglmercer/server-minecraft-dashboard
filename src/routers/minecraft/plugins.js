@@ -12,7 +12,7 @@ import {
 } from '../../modules/servers.js'; // Verifica la ruta
 
 // Importamos las utilidades de validación de archivos
-import { PathUtils } from '../../utils/fileutils.js'; // Ajusta la ruta según tu estructura
+import { PathUtils } from '../../fileutils.js'; // Ajusta la ruta según tu estructura
 
 // --- Funciones Helper ---
 
