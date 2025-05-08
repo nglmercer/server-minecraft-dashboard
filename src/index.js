@@ -13,6 +13,7 @@ import backupsRouter from './routers/backup.js'
 import path from 'path'; // Importa el módulo path para manejar rutas de archivos
 import * as mime from 'mime-types'
 import fs from 'fs/promises';
+import cors from 'cors';
 import {
   getLangInstance,
   getLangStore,
@@ -20,6 +21,7 @@ import {
   translateText
 } from './modules/langs.js';
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 // Middleware para parsear JSON
