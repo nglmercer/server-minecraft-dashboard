@@ -1,5 +1,6 @@
 import path from 'path';
-import fs from 'fs/promises'; // Usar promesas para operaciones de FS es más moderno
+import fs from 'fs'; // Usar fs normal para fs.constants y existsSync si es necesario
+import fsp from 'fs/promises'; // Para fs.access
 import {
   createserverfolder,
   createserverfile,
@@ -11,485 +12,549 @@ import {
   writeFilebyName,
   renamefile,
   deletefile,
-  deleteserver
-} from '../modules/servers.js'; // Verifica la ruta
+  deleteserver,
+  // Nuevas funciones de backup si las vas a exponer en el API:
+  generateServerFolderBackup,
+  uncompressServerFolderBackup
+} from '../modules/servers.js'; // Ajusta esta ruta
 import {
   downloadFileFromUrl
-} from "../utils/utils.js"; // Verifica la ruta
+} from "../utils/utils.js"; // Ajusta esta ruta
+import { PathUtils } from '../fileutils.js'; // Importar PathUtils para SERVERS_PATH
 
-// Helper para sanitizar nombres/rutas (¡MUY IMPORTANTE!)
-// Esta es una versión BÁSICA, considera una librería más robusta o validaciones más estrictas.
+// Directorio base de servidores desde fileutils
+const SERVERS_BASE_DIR = PathUtils.serverPath;
+
+// Helper para sanitizar nombres/rutas
 function sanitizePathInput(input) {
-  if (!input || typeof input !== 'string') return null; // O lanzar error
+  if (!input || typeof input !== 'string') return ''; // Devolver string vacío para unirse sin problemas
   // Prevenir Path Traversal y caracteres problemáticos
-  const sanitized = input.replace(/\.\.\//g, '').replace(/\.\./g, '').replace(/^\//, '');
-  // Podrías añadir más reemplazos o validaciones aquí (ej: caracteres permitidos)
+  // Eliminar ../ y ./ del inicio, y normalizar
+  let sanitized = path.normalize(input).replace(/^(\.\.[/\\])+/, '');
+  // Eliminar caracteres que no suelen ser seguros en nombres de archivo/directorio
+  // Esta es una lista básica, podrías necesitar una más exhaustiva.
+  sanitized = sanitized.replace(/[<>:"|?*]/g, '');
   if (sanitized !== input) {
-    console.warn(`Intento de Path Traversal detectado o caracteres inválidos: "${input}" -> "${sanitized}"`);
+    console.warn(`Sanitización de ruta aplicada: "${input}" -> "${sanitized}"`);
   }
   return sanitized;
 }
 
+// Función helper para construir rutas seguras DENTRO de SERVERS_BASE_DIR
+// y devolver la ruta relativa al SERVERS_BASE_DIR, que es lo que esperan las funciones de 'servers.js'
+function getRelativeServerPath(...args) {
+  const sanitizedArgs = args.map(arg => sanitizePathInput(arg || '')).filter(Boolean);
+  if (sanitizedArgs.length === 0) {
+    throw new Error("Se requiere al menos un componente de ruta válido.");
+  }
+  const relativePath = path.join(...sanitizedArgs);
+  const resolvedPath = path.resolve(SERVERS_BASE_DIR, relativePath);
+
+  if (!resolvedPath.startsWith(SERVERS_BASE_DIR)) {
+    throw new Error(`Acceso prohibido fuera del directorio de servidores: ${relativePath}`);
+  }
+  // Las funciones de 'servers.js' esperan rutas relativas a SERVERS_BASE_DIR
+  // o el nombre del servidor y luego la ruta relativa dentro de ese servidor.
+  // Esta función devuelve la ruta completa relativa a SERVERS_BASE_DIR
+  return relativePath;
+}
+
+
 async function fileManagerRoutes(fastify, options) {
 
-  const serversBaseDir = path.resolve(process.cwd(), 'servers'); // Directorio base seguro
-
-  // Función helper para construir rutas seguras dentro de serversBaseDir
-  const getServerPath = (...args) => {
-    const potentiallyUnsafePath = path.join(...args.map(arg => sanitizePathInput(arg || '')).filter(Boolean));
-    const resolvedPath = path.resolve(serversBaseDir, potentiallyUnsafePath);
-    // ¡Validación CRUCIAL! Asegurarse que la ruta resultante está DENTRO de serversBaseDir
-    if (!resolvedPath.startsWith(serversBaseDir)) {
-      throw new Error(`Acceso prohibido fuera del directorio de servidores: ${potentiallyUnsafePath}`);
-    }
-    return {
-        absolute: resolvedPath,
-        relative: path.relative(serversBaseDir, resolvedPath) // Ruta relativa a 'servers'
-    };
-  };
-
-
-  // Ruta para crear una carpeta (POST /filemanager/create-folder)
+  // Ruta para crear una carpeta de servidor
   fastify.post('/create-folder', async (request, reply) => {
     const { directoryname: rawDirName } = request.body;
-    const directoryname = sanitizePathInput(rawDirName);
-
-    if (!directoryname) {
-      return reply.code(400).send({ success: false, error: "El nombre de la carpeta es requerido o inválido." });
-    }
     try {
-      // Asume que createserverfolder trabaja relativo a la base o maneja rutas absolutas de forma segura
-      // Si necesita la ruta absoluta segura: getServerPath(directoryname).absolute
-      const result = createserverfolder(directoryname); // Ajusta si necesita ruta absoluta/relativa
-      return { success: true, data: result };
+      const directoryname = getRelativeServerPath(rawDirName); // Esto valida y devuelve la ruta relativa
+      const result = await createserverfolder(directoryname); // createserverfolder espera solo el nombre del server (primer nivel)
+      
+      if (typeof result === 'string') { // Es un mensaje de error de createserverfolder
+        return reply.code(400).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
     } catch (error) {
-      fastify.log.error(`Error creando carpeta ${directoryname}: ${error.message}`);
-      reply.code(500).send({ success: false, error: 'Error al crear la carpeta.' });
+      fastify.log.error(`Error creando carpeta ${rawDirName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al crear la carpeta.' });
     }
   });
 
-  // Ruta para crear un archivo (POST /filemanager/create-file)
+  // Ruta para crear un archivo
   fastify.post('/create-file', async (request, reply) => {
     const { directoryname: rawDirName, filename: rawFileName, content } = request.body;
-    const directoryname = sanitizePathInput(rawDirName);
-    const filename = sanitizePathInput(rawFileName);
-
-    if (!directoryname || !filename) { // content puede ser vacío
-      return reply.code(400).send({ success: false, error: "Nombre de directorio y archivo son requeridos/inválidos." });
-    }
     try {
-      // Similar a create-folder, ajusta cómo pasas las rutas a createserverfile
-      const result = createserverfile(directoryname, filename, content ?? ''); // Usa ?? para default seguro
-      return { success: true, data: result };
+      const serverName = sanitizePathInput(rawDirName); // El primer nivel es el server
+      const relativeFilePathInServer = sanitizePathInput(rawFileName); // El resto es la ruta relativa dentro del server
+
+      if (!serverName || !relativeFilePathInServer) {
+        return reply.code(400).send({ success: false, error: "Nombre de directorio (servidor) y archivo son requeridos/inválidos." });
+      }
+      // createserverfile(serverName, pathToFileInServer, content)
+      // Ejemplo: createserverfile("myServer", "config/settings.json", "{}")
+      const result = await createserverfile(serverName, relativeFilePathInServer, content ?? '');
+      
+      if (typeof result === 'string' && (result.startsWith("Extensión no permitida") || result.includes("no existe"))) {
+        return reply.code(400).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
     } catch (error) {
-      fastify.log.error(`Error creando archivo ${filename} en ${directoryname}: ${error.message}`);
-      reply.code(500).send({ success: false, error: 'Error al crear el archivo.' });
+      fastify.log.error(`Error creando archivo ${rawFileName} en ${rawDirName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al crear el archivo.' });
     }
   });
 
-  // Ruta para crear una subcarpeta (POST /filemanager/create-subfolder)
+  // Ruta para crear una subcarpeta
   fastify.post('/create-subfolder', async (request, reply) => {
     const { directoryname: rawDirName, subfoldername: rawSubfolderName } = request.body;
-    const directoryname = sanitizePathInput(rawDirName);
-    const subfoldername = sanitizePathInput(rawSubfolderName);
-
-    if (!directoryname || !subfoldername) {
-      return reply.code(400).send({ success: false, error: "Nombre de directorio y subcarpeta son requeridos/inválidos." });
-    }
     try {
-      // Ajusta cómo pasas las rutas a createsubfolder
-      const result = createsubfolder(directoryname, subfoldername);
-      return { success: true, data: result };
-    } catch (error) {
-      fastify.log.error(`Error creando subcarpeta ${subfoldername} en ${directoryname}: ${error.message}`);
-      reply.code(500).send({ success: false, error: 'Error al crear la subcarpeta.' });
-    }
-  });
+      const serverName = sanitizePathInput(rawDirName);
+      const subfolderName = sanitizePathInput(rawSubfolderName);
 
-  // Ruta para obtener información de una carpeta (GET /filemanager/folder-info/:folderName)
-  fastify.get('/folder-info/:folderName', async (request, reply) => {
-    const { folderName: rawFolderName } = request.params;
-    const folderName = sanitizePathInput(rawFolderName);
-
-    if (!folderName) {
-      return reply.code(400).send({ success: false, error: "El nombre de la carpeta es requerido o inválido." });
-    }
-    try {
-      // Ajusta cómo pasas la ruta a getfolderinfo
-      const result = getfolderinfo(folderName); // Asume que maneja errores si no existe
-      return { success: true, data: result };
-    } catch (error) {
-      fastify.log.error(`Error obteniendo info de ${folderName}: ${error.message}`);
-      // Diferenciar Not Found de otros errores
-      if (error.message.includes('ENOENT') || error.message.toLowerCase().includes('not found')) {
-         reply.code(404).send({ success: false, error: 'Carpeta no encontrada.' });
-      } else {
-         reply.code(500).send({ success: false, error: 'Error al obtener información de la carpeta.' });
+      if (!serverName || !subfolderName) {
+        return reply.code(400).send({ success: false, error: "Nombre de directorio (servidor) y subcarpeta son requeridos/inválidos." });
       }
+      // createsubfolder(serverName, subfolderPathRelativeToAsyncServer)
+      const result = await createsubfolder(serverName, subfolderName);
+      
+      if (typeof result === 'string') { // Es un mensaje de error
+        return reply.code(400).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      fastify.log.error(`Error creando subcarpeta ${rawSubfolderName} en ${rawDirName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al crear la subcarpeta.' });
     }
   });
 
-  // Ruta para actualizar la información de una carpeta (POST /filemanager/update-folder-info)
+  // Ruta para obtener información de una carpeta
+  fastify.get('/folder-info/:folderName(.*)', async (request, reply) => { // :folderName(.*) para capturar subrutas
+    const { folderName: rawFolderName } = request.params;
+    try {
+      const folderPath = getRelativeServerPath(rawFolderName); // Valida y obtiene ruta relativa
+      const result = await getfolderinfo(folderPath); // getfolderinfo espera la ruta relativa completa
+      
+      if (typeof result === 'string') { // Es un mensaje de error
+        return reply.code(404).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      fastify.log.error(`Error obteniendo info de ${rawFolderName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al obtener información de la carpeta.' });
+    }
+  });
+
+  // Ruta para actualizar la información de una carpeta (usualmente automático, pero si es manual)
   fastify.post('/update-folder-info', async (request, reply) => {
     const { folderName: rawFolderName } = request.body;
-    const folderName = sanitizePathInput(rawFolderName);
-
-    if (!folderName) {
-      return reply.code(400).send({ success: false, error: "El nombre de la carpeta es requerido o inválido." });
-    }
     try {
-      updatefolderinfo(folderName); // Asume síncrona o devuelve promesa
-      return { success: true, message: "Información de la carpeta actualizada correctamente." };
+      const folderName = getRelativeServerPath(rawFolderName); // folderName es la ruta relativa al server base
+      await updatefolderinfo(folderName); // updatefolderinfo maneja la lógica de /
+      return reply.send({ success: true, message: "Información de la carpeta en proceso de actualización." });
     } catch (error) {
-      fastify.log.error(`Error actualizando info de ${folderName}: ${error.message}`);
-      reply.code(500).send({ success: false, error: 'Error al actualizar la información.' });
+      fastify.log.error(`Error actualizando info de ${rawFolderName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al actualizar la información.' });
     }
   });
 
-  // Ruta para leer un archivo por nombre (GET /filemanager/read-file/:folderName/:fileName)
-  fastify.get('/read-file/:folderName/:fileName', async (request, reply) => {
-    const { folderName: rawFolderName, fileName: rawFileName } = request.params;
-    const folderName = sanitizePathInput(rawFolderName);
-    const fileName = sanitizePathInput(rawFileName);
-
-
-    if (!folderName || !fileName) {
-      return reply.code(400).send({ success: false, error: "Nombre de carpeta y archivo son requeridos/inválidos." });
-    }
+  // Ruta para leer un archivo por nombre (server/folder/file)
+  fastify.get('/read-file/:serverName/:filePath(.*)', async (request, reply) => {
+    const { serverName: rawServerName, filePath: rawFilePath } = request.params;
     try {
-      const result = readfilebyname(folderName, fileName); // Asume que maneja errores
-      return { success: true, data: result };
-    } catch (error) {
-      fastify.log.error(`Error leyendo ${fileName} en ${folderName}: ${error.message}`);
-      if (error.message.includes('ENOENT') || error.message.toLowerCase().includes('not found')) {
-         reply.code(404).send({ success: false, error: 'Archivo no encontrado.' });
-      } else {
-         reply.code(500).send({ success: false, error: 'Error al leer el archivo.' });
+      const serverName = sanitizePathInput(rawServerName);
+      const filePathInServer = sanitizePathInput(rawFilePath);
+
+      if (!serverName || !filePathInServer) {
+        return reply.code(400).send({ success: false, error: "Nombre de servidor y ruta de archivo son requeridos/inválidos." });
       }
-    }
-  });
-
-  // Ruta para leer un archivo por ruta completa (relativa a 'servers') (GET /filemanager/read-file-by-path/*)
-  fastify.get('/read-file-by-path/*', async (request, reply) => {
-    const rawFilePath = request.params['*']; // Obtiene la parte del wildcard
-    const filePath = sanitizePathInput(rawFilePath);
-
-    if (!filePath) {
-        return reply.code(400).send({ success: false, error: "La ruta del archivo es requerida o inválida." });
-    }
-    try {
-        // ¡CRUCIAL! Asegúrate que readfilebypath está confinado al directorio 'servers'
-        // O usa el helper para obtener la ruta absoluta segura y pásala
-        const safePath = getServerPath(filePath).absolute; // Lanza error si está fuera
-        const result = await readfilebypath(safePath); // Asume que readfilebypath acepta ruta absoluta
-        // O si readfilebypath espera la ruta relativa a 'servers':
-        // const result = readfilebypath(getServerPath(filePath).relative);
-
-        return { success: true, data: result };
+      // readfilebyname(serverName, pathToFileInServer)
+      const result = await readfilebyname(serverName, filePathInServer);
+      
+      if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
+        return reply.code(404).send({ success: false, error: 'Archivo no encontrado.' });
+      }
+      if (typeof result === 'object' && result.name && result.files ) { // Parece info de carpeta
+        return reply.code(400).send({ success: false, error: 'La ruta especificada es una carpeta, no un archivo.', data: result });
+      }
+      return reply.send({ success: true, data: result });
     } catch (error) {
-        fastify.log.error(`Error leyendo por path ${filePath}: ${error.message}`);
-        if (error.message.includes('ENOENT') || error.message.toLowerCase().includes('not found') || error.message.includes('Acceso prohibido')) {
-            reply.code(404).send({ success: false, error: 'Archivo no encontrado o acceso denegado.' });
-        } else {
-            reply.code(500).send({ success: false, error: 'Error al leer el archivo por ruta.' });
-        }
+      fastify.log.error(`Error leyendo ${rawFilePath} en ${rawServerName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al leer el archivo.' });
     }
   });
-
-
-  // Ruta para escribir un archivo (POST /filemanager/writeFilebyName)
-  fastify.post('/writeFilebyName', async (request, reply) => {
-    let { folderName: rawFolderName, fileName: rawFileName, content } = request.body;
-    const folderName = sanitizePathInput(rawFolderName);
-    let fileName = sanitizePathInput(rawFileName);
-
-    if (!folderName || !fileName) { // content puede ser null/undefined
-      return reply.code(400).send({ success: false, error: "Nombre de carpeta y archivo son requeridos/inválidos." });
-    }
-    // La lógica original eliminaba '/', ya lo hace sanitizePathInput si está al inicio
-    // Podrías añadir más validaciones a fileName si es necesario
-
+  
+  // Ruta para leer un archivo por ruta completa (relativa a 'servers')
+  fastify.get('/read-file-by-path/:filePath(.*)', async (request, reply) => {
+    const rawFilePathParams = request.params.filePath; // Puede ser undefined si no hay nada después de /
     try {
-      fastify.log.info(`Escribiendo archivo: ${folderName}/${fileName}`);
-      const result = writeFilebyName(folderName, fileName, content ?? '');
-      fastify.log.info("Resultado escritura:", result);
-      return { success: true, data: result };
+      const relativeFilePath = getRelativeServerPath(rawFilePathParams || '');
+      const result = await readfilebypath(relativeFilePath); // readfilebypath espera ruta relativa a SERVERS_BASE_DIR
+      
+      if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
+        return reply.code(404).send({ success: false, error: 'Archivo no encontrado.' });
+      }
+       if (typeof result === 'object' && result.name && result.files ) { // Parece info de carpeta
+        return reply.code(400).send({ success: false, error: 'La ruta especificada es una carpeta, no un archivo.', data: result });
+      }
+      return reply.send({ success: true, data: result });
     } catch (error) {
-      fastify.log.error(`Error escribiendo ${fileName} en ${folderName}: ${error.message}`);
-      reply.code(500).send({ success: false, error: 'Error al escribir el archivo.' });
+      fastify.log.error(`Error leyendo por path ${rawFilePathParams}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al leer el archivo por ruta.' });
     }
   });
 
-  // Ruta para subir un solo archivo (POST /filemanager/upload)
+  // Ruta para escribir/actualizar un archivo
+  fastify.post('/write-file', async (request, reply) => {
+    let { directoryname: rawDirName, filename: rawFileName, content } = request.body;
+    try {
+      const serverName = sanitizePathInput(rawDirName);
+      const filePathInServer = sanitizePathInput(rawFileName);
+
+      if (!serverName || !filePathInServer) {
+        return reply.code(400).send({ success: false, error: "Nombre de directorio (servidor) y archivo son requeridos/inválidos." });
+      }
+      // writeFilebyName(serverName, pathToFileInServer, content)
+      const result = await writeFilebyName(serverName, filePathInServer, content ?? '');
+      
+      if (typeof result === 'string') { // Es un mensaje de error
+        return reply.code(400).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      fastify.log.error(`Error escribiendo ${rawFileName} en ${rawDirName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al escribir el archivo.' });
+    }
+  });
+
+  // Ruta para subir un solo archivo
   fastify.post('/upload', async (request, reply) => {
-    // Los campos 'server' y 'path' vienen del query string
-    const { server: rawServer, path: rawServerPath } = request.query;
-    const server = sanitizePathInput(rawServer);
-    const serverPath = sanitizePathInput(rawServerPath) || ''; // Default a raíz del server si no se provee path
+    const { server: rawServer, path: rawRelativePathInServer } = request.query; // path es relativo DENTRO del server
 
-    // Verifica si la petición es multipart
     if (!request.isMultipart()) {
-      return reply.code(400).send({ success: false, message: "Se esperaba una petición multipart/form-data." });
+      return reply.code(400).send({ success: false, error: "Se esperaba una petición multipart/form-data." });
     }
 
     try {
-      const fileData = await request.file(); // Espera el primer archivo
+      const serverName = sanitizePathInput(rawServer);
+      const relativePathInServer = sanitizePathInput(rawRelativePathInServer) || ''; // Default a raíz del server
 
-      if (!fileData || !server) {
-        return reply.code(400).send({
-          success: false,
-          message: "Faltan parámetros (server) en query o archivo no recibido",
-          data: { server, path: serverPath, fileReceived: !!fileData },
-        });
+      if (!serverName) {
+        return reply.code(400).send({ success: false, error: "Parámetro 'server' es requerido/inválido." });
       }
 
-      const originalFileName = sanitizePathInput(fileData.filename); // Sanitizar nombre original
+      const fileData = await request.file();
+      if (!fileData) {
+        return reply.code(400).send({ success: false, error: "No se recibió ningún archivo." });
+      }
+
+      const originalFileName = sanitizePathInput(fileData.filename);
       if (!originalFileName) {
-         return reply.code(400).send({ success: false, message: "Nombre de archivo inválido." });
+         return reply.code(400).send({ success: false, error: "Nombre de archivo inválido." });
       }
 
-      const fileContent = await fileData.toBuffer(); // Obtener contenido como Buffer
+      const fileContent = await fileData.toBuffer();
+      const finalRelativePathInServer = path.join(relativePathInServer, originalFileName);
 
-      // Construye la ruta relativa DENTRO del servidor específico
-      const relativeFilePath = path.join(serverPath, originalFileName);
+      fastify.log.info(`Subiendo archivo a server: ${serverName}, ruta en server: ${finalRelativePathInServer}`);
+      
+      const result = await createserverfile(serverName, finalRelativePathInServer, fileContent);
 
-      fastify.log.info(`Subiendo archivo a: server=${server}, rutaRelativa=${relativeFilePath}`);
-
-      // Llama a la función que crea/escribe el archivo
-      // Asegúrate que createserverfile maneje la ruta relativa dentro del 'server' dado
-      // y que también valide/sanitice internamente por seguridad.
-      const result = createserverfile(server, relativeFilePath, fileContent);
-
-      return { success: true, result };
+      if (typeof result === 'string') {
+        return reply.code(400).send({ success: false, error: result });
+      }
+      return reply.send({ success: true, data: result });
 
     } catch (error) {
-      // Maneja errores de @fastify/multipart (ej. límites excedidos) u otros
-      fastify.log.error(`Error subiendo archivo a ${server}/${serverPath}: ${error.message}`, error);
-       if (error.validation) { // Error de validación de @fastify/multipart
-           reply.code(400).send({ success: false, message: `Error de validación: ${error.message}` });
-       } else if (error.message.includes('Request file too large')) {
-            reply.code(413).send({ success: false, message: 'El archivo es demasiado grande.' });
-       }
-       else {
-          reply.code(500).send({ success: false, message: 'Error interno al subir el archivo.' });
+      fastify.log.error(`Error subiendo archivo: ${error.message}`, error);
+       if (error.validation) {
+           reply.code(400).send({ success: false, error: `Error de validación: ${error.message}` });
+       } else if (error.message.includes('Request file too large') || error.code === 'FST_REQ_FILE_TOO_LARGE') {
+            reply.code(413).send({ success: false, error: 'El archivo es demasiado grande.' });
+       } else {
+          reply.code(500).send({ success: false, error: 'Error interno al subir el archivo.' });
        }
     }
   });
 
-  // Ruta para subir múltiples archivos (POST /filemanager/upload/files)
+  // Ruta para subir múltiples archivos
   fastify.post('/upload/files', async (request, reply) => {
-    const { server: rawServer, path: rawServerPath } = request.query;
-    const server = sanitizePathInput(rawServer);
-    const serverPath = sanitizePathInput(rawServerPath) || '';
+    const { server: rawServer, path: rawRelativePathInServer } = request.query;
 
     if (!request.isMultipart()) {
-      return reply.code(400).send({ success: false, message: "Se esperaba una petición multipart/form-data." });
+      return reply.code(400).send({ success: false, error: "Se esperaba una petición multipart/form-data." });
     }
-
-    if (!server) {
-       return reply.code(400).send({ success: false, message: "Parámetro 'server' requerido en query." });
-    }
-
+    
     const results = [];
-    let filesReceived = 0;
+    let filesReceivedCount = 0;
 
     try {
-      const parts = request.files(); // Obtiene un Async Iterator para los archivos
+      const serverName = sanitizePathInput(rawServer);
+      const relativePathInServer = sanitizePathInput(rawRelativePathInServer) || '';
 
+      if (!serverName) {
+        return reply.code(400).send({ success: false, error: "Parámetro 'server' es requerido/inválido." });
+      }
+
+      const parts = request.files();
       for await (const part of parts) {
-        filesReceived++;
+        filesReceivedCount++;
         const originalFileName = sanitizePathInput(part.filename);
+
         if (!originalFileName) {
-          fastify.log.warn(`Archivo omitido en subida múltiple a ${server}/${serverPath}: Nombre inválido`);
+          fastify.log.warn(`Archivo omitido (nombre inválido): ${part.filename}`);
           results.push({ filename: part.filename, success: false, error: 'Nombre de archivo inválido.' });
-          continue; // Salta este archivo
+          continue;
         }
 
         const fileContent = await part.toBuffer();
-        const relativeFilePath = path.join(serverPath, originalFileName);
-
+        const finalRelativePathInServer = path.join(relativePathInServer, originalFileName);
+        
         try {
-          fastify.log.info(`Subiendo archivo múltiple a: server=${server}, rutaRelativa=${relativeFilePath}`);
-          const result = createserverfile(server, relativeFilePath, fileContent);
-          results.push({ filename: originalFileName, success: true, result });
+          fastify.log.info(`Subiendo (múltiple) a server: ${serverName}, ruta en server: ${finalRelativePathInServer}`);
+          const opResult = await createserverfile(serverName, finalRelativePathInServer, fileContent);
+          if (typeof opResult === 'string') {
+            results.push({ filename: originalFileName, success: false, error: opResult });
+          } else {
+            results.push({ filename: originalFileName, success: true, data: opResult });
+          }
         } catch (fileError) {
-          fastify.log.error(`Error subiendo ${originalFileName} a ${server}/${serverPath}: ${fileError.message}`);
+          fastify.log.error(`Error subiendo ${originalFileName}: ${fileError.message}`);
           results.push({ filename: originalFileName, success: false, error: fileError.message });
         }
       }
 
-      if (filesReceived === 0) {
-          return reply.code(400).send({
-              success: false,
-              message: "No se recibieron archivos válidos.",
-              data: { server, path: serverPath, filesReceived },
-          });
+      if (filesReceivedCount === 0) {
+          return reply.code(400).send({ success: false, error: "No se recibieron archivos válidos." });
       }
-
-      return { success: true, results };
+      return reply.send({ success: true, results });
 
     } catch (error) {
-      fastify.log.error(`Error en subida múltiple a ${server}/${serverPath}: ${error.message}`, error);
+      fastify.log.error(`Error en subida múltiple: ${error.message}`, error);
        if (error.validation) {
-           reply.code(400).send({ success: false, message: `Error de validación: ${error.message}` });
-       } else if (error.message.includes('reach file limit')) {
-            reply.code(413).send({ success: false, message: 'Se superó el límite de archivos.' });
+           reply.code(400).send({ success: false, error: `Error de validación: ${error.message}` });
+       } else if (error.code === 'FST_FILES_LIMIT' || error.code === 'FST_FIELDS_LIMIT' || error.code === 'FST_PARTS_LIMIT') {
+            reply.code(413).send({ success: false, error: `Límite excedido: ${error.message}` });
        } else {
-          reply.code(500).send({ success: false, message: 'Error interno durante la subida múltiple.' });
+          reply.code(500).send({ success: false, error: 'Error interno durante la subida múltiple.' });
        }
     }
   });
 
-  // Ruta para renombrar (GET /filemanager/rename) - ¡Debería ser PUT/PATCH!
-  fastify.get('/rename', async (request, reply) => {
-    // NOTA: Usar GET para modificar estado no es ideal. Considera PUT o PATCH.
-    const { server: rawServer, path: rawServerPath, newName: rawNewName } = request.query;
-    const server = sanitizePathInput(rawServer);
-    const serverPath = sanitizePathInput(rawServerPath);
-    const newName = sanitizePathInput(rawNewName);
-
-
-    if (!server || !serverPath || !newName) {
-      return reply.code(400).send({ success: false, message: "Parámetros requeridos/inválidos: server, path, newName" });
-    }
+  // Ruta para renombrar (Considerar PUT/PATCH /filemanager/servers/:serverName/path/:filePath)
+  fastify.put('/rename', async (request, reply) => { // Cambiado a PUT
+    const { server: rawServer, path: rawServerPath, newName: rawNewName } = request.body; // Cambiado a request.body
     try {
-      // Asegúrate que renamefile maneje las rutas de forma segura
-      const result = renamefile(server, serverPath, newName);
-      return { success: true, result };
+      const serverName = sanitizePathInput(rawServer);
+      const filePathInServer = sanitizePathInput(rawServerPath); // Esta es la ruta del archivo/carpeta a renombrar DENTRO del server
+      const newNameOnly = sanitizePathInput(rawNewName); // Este es SOLO el nuevo nombre base
+
+      if (!serverName || !filePathInServer || !newNameOnly) {
+        return reply.code(400).send({ success: false, error: "Parámetros server, path, y newName son requeridos/inválidos." });
+      }
+      // renamefile(serverName, pathToFileOrFolderInServer, newBaseName)
+      const result = await renamefile(serverName, filePathInServer, newNameOnly);
+      
+      if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
+        return reply.code(404).send({ success: false, error: result || 'Elemento no encontrado para renombrar.' });
+      }
+      if (typeof result === 'string' && result.includes("ya existe")) {
+        return reply.code(409).send({ success: false, error: result }); // 409 Conflict
+      }
+      return reply.send({ success: true, data: result });
     } catch (error) {
-      fastify.log.error(`Error renombrando ${serverPath} a ${newName} en ${server}: ${error.message}`);
-      reply.code(500).send({ success: false, message: 'Error al renombrar.' });
+      fastify.log.error(`Error renombrando ${rawServerPath} a ${rawNewName} en ${rawServer}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al renombrar.' });
     }
   });
 
-  // Ruta para borrar (GET /filemanager/delete) - ¡Debería ser DELETE!
-  fastify.get('/delete', async (request, reply) => {
-    // NOTA: Usar GET para borrar no es ideal. Considera DELETE.
-    const { server: rawServer, path: rawServerPath } = request.query;
-    const server = sanitizePathInput(rawServer);
-    const serverPath = sanitizePathInput(rawServerPath);
-
-    if (!server || !serverPath) {
-      return reply.code(400).send({ success: false, message: "Parámetros requeridos/inválidos: server, path" });
-    }
+  // Ruta para borrar un archivo o carpeta dentro de un servidor
+  fastify.delete('/delete', async (request, reply) => { // Cambiado a DELETE
+    const { server: rawServer, path: rawServerPath } = request.query; // Mantenido en query para simplicidad, pero body es opción
     try {
-      // Asegúrate que deletefile maneje las rutas de forma segura
-      const result = deletefile(server, serverPath);
-      return { success: true, result };
+      const serverName = sanitizePathInput(rawServer);
+      const pathInServerToDelete = sanitizePathInput(rawServerPath);
+
+      if (!serverName || !pathInServerToDelete) {
+        return reply.code(400).send({ success: false, error: "Parámetros server y path son requeridos/inválidos." });
+      }
+      // deletefile(serverName, pathToFileOrFolderInServer)
+      const result = await deletefile(serverName, pathInServerToDelete);
+      
+      if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
+        return reply.code(404).send({ success: false, error: result || 'Elemento no encontrado para borrar.' });
+      }
+      return reply.send({ success: true, data: { message: "Elemento borrado exitosamente."} }); // result es true/false/error
     } catch (error) {
-      fastify.log.error(`Error borrando ${serverPath} en ${server}: ${error.message}`);
-      reply.code(500).send({ success: false, message: 'Error al borrar.' });
+      fastify.log.error(`Error borrando ${rawServerPath} en ${rawServer}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al borrar.' });
     }
   });
 
-  // Ruta para borrar un servidor completo (DELETE /filemanager/servers/:serverName)
+  // Ruta para borrar un servidor completo
   fastify.delete('/servers/:serverName', async (request, reply) => {
     const { serverName: rawServerName } = request.params;
-    const serverName = sanitizePathInput(rawServerName);
-
-    if (!serverName) {
-      return reply.code(400).send({ success: false, message: "Nombre de servidor requerido/inválido." });
-    }
     try {
-      // Asegúrate que deleteserver sea seguro y borre solo el directorio correcto
-      const result = deleteserver(serverName);
-      return { success: true, result };
+      const serverName = sanitizePathInput(rawServerName);
+      if (!serverName) {
+        return reply.code(400).send({ success: false, error: "Nombre de servidor es requerido/inválido." });
+      }
+      const result = await deleteserver(serverName); // deleteserver espera el nombre del server
+      
+      if (result === false) {
+         return reply.code(404).send({ success: false, error: 'Servidor no encontrado o ya eliminado.' });
+      }
+      return reply.send({ success: true, data: { message: `Servidor '${serverName}' eliminado.` } });
     } catch (error) {
-      fastify.log.error(`Error borrando servidor ${serverName}: ${error.message}`);
-      reply.code(500).send({ success: false, message: 'Error al borrar el servidor.' });
+      fastify.log.error(`Error borrando servidor ${rawServerName}: ${error.message}`);
+      reply.code(500).send({ success: false, error: error.message || 'Error al borrar el servidor.' });
     }
   });
-
-  // Ruta para descargar un archivo desde URL y guardarlo (GET /filemanager/download-file)
-  fastify.get('/download-file', async (request, reply) => {
-    const { server: rawServer, path: rawServerPath, url } = request.query;
-    const server = sanitizePathInput(rawServer);
-    const serverPath = sanitizePathInput(rawServerPath) || ''; // Directorio destino dentro del server
-
-     // Validación básica de URL (podría ser más robusta)
-    if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
-         return reply.code(400).send({ success: false, message: "URL inválida o faltante." });
-    }
-    if (!server) {
-       return reply.code(400).send({ success: false, message: "Parámetro 'server' requerido/inválido." });
-    }
-
+  
+  // Ruta para descargar un archivo desde URL y guardarlo
+  fastify.post('/download-file', async (request, reply) => { // Cambiado a POST ya que crea un recurso
+    const { server: rawServer, path: rawPathInServer, url } = request.body; // Cambiado a body
     try {
-        // Extraer nombre de archivo de la URL de forma segura
+        const serverName = sanitizePathInput(rawServer);
+        const pathInServer = sanitizePathInput(rawPathInServer) || '';
+
+        if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+            return reply.code(400).send({ success: false, error: "URL inválida o faltante." });
+        }
+        if (!serverName) {
+           return reply.code(400).send({ success: false, error: "Parámetro 'server' es requerido/inválido." });
+        }
+
         const urlObject = new URL(url);
-        const rawFileName = path.basename(urlObject.pathname);
-        const fileName = sanitizePathInput(rawFileName);
+        let fileNameFromUrl = path.basename(urlObject.pathname);
+        if (!fileNameFromUrl || fileNameFromUrl === '/' || fileNameFromUrl === '.') {
+            // Intenta obtener de Content-Disposition o generar uno si es necesario
+            // Esto es más complejo y depende de la respuesta del servidor remoto.
+            // Por ahora, si no hay nombre, se podría generar o rechazar.
+            // Ejemplo simple: usar un timestamp si el nombre no es válido.
+            fileNameFromUrl = `downloaded_${Date.now()}`;
+            console.warn(`No se pudo determinar un nombre de archivo válido desde la URL '${url}', usando '${fileNameFromUrl}'`);
+        }
+        const safeFileName = sanitizePathInput(fileNameFromUrl);
 
-        if (!fileName) {
-           return reply.code(400).send({ success: false, message: "No se pudo determinar un nombre de archivo válido desde la URL." });
+
+        if (!safeFileName) {
+           return reply.code(400).send({ success: false, error: "No se pudo determinar un nombre de archivo válido desde la URL." });
         }
 
-        // Construir la ruta de destino relativa dentro del servidor
-        const relativeDestPath = path.join(serverPath, fileName);
+        const relativeDestPathInServer = path.join(pathInServer, safeFileName);
 
-        fastify.log.info(`Iniciando descarga de ${url} a ${server}/${relativeDestPath}`);
+        fastify.log.info(`Iniciando descarga de ${url} a server: ${serverName}, ruta en server: ${relativeDestPathInServer}`);
+        
+        // Aquí downloadFileFromUrl es llamado. Asumimos que es asíncrono y devuelve un resultado
+        // similar a las otras funciones (o una promesa que resuelva a eso).
+        const downloadResult = await downloadFileFromUrl({
+          server: serverName,
+          url,
+          filePath: relativeDestPathInServer, // Ruta relativa DENTRO del servidor
+          // cb: (status) => fastify.log.info("Download status:", status) // Si tu cb devuelve algo útil
+        });
 
-        // Configuración para downloadFileFromUrl
-        // Asegúrate que esta función maneje la escritura segura en 'server/relativeDestPath'
-        const fileConfig = {
-          server, // Nombre del servidor base
-          url,    // URL de origen
-          filePath: relativeDestPath, // Ruta relativa donde guardar DENTRO del servidor
-          cb: (...args) => { // Callback opcional
-            fastify.log.info("Callback de downloadFileFromUrl:", ...args);
-          }
-        };
-
-        // Ejecutar la descarga (asume que es async o fire-and-forget)
-        // Si es async y quieres esperar: await downloadFileFromUrl(fileConfig);
-        downloadFileFromUrl(fileConfig);
-
-        // Responder inmediatamente como en el código original
-        return { success: true, message: "Descarga iniciada en segundo plano." };
+        // Suponiendo que downloadFileFromUrl ahora devuelve { success, data/error }
+        if (downloadResult && downloadResult.success) {
+            return reply.send({ success: true, message: "Descarga completada.", data: downloadResult.data });
+        } else {
+            return reply.code(500).send({ success: false, error: downloadResult.error || 'Error durante la descarga.' });
+        }
 
     } catch (error) {
-        fastify.log.error(`Error iniciando descarga desde ${url} a ${server}/${serverPath}: ${error.message}`);
-        reply.code(500).send({ success: false, message: 'Error al iniciar la descarga.' });
+        fastify.log.error(`Error en la descarga desde ${url}: ${error.message}`);
+        reply.code(500).send({ success: false, error: error.message || 'Error al procesar la descarga.' });
     }
   });
 
-   // Servir archivos estáticos desde un servidor específico (GET /filemanager/serve-file/:serverName/*)
-   fastify.get('/serve-file/:serverName/*', async (request, reply) => {
-    const { serverName: rawServerName } = request.params;
-    const serverName = sanitizePathInput(rawServerName);
-    const rawFilePath = request.params['*'];
-    const filePath = sanitizePathInput(rawFilePath); // Sanitiza la ruta relativa del archivo
-
-    if (!serverName || !filePath) {
-        return reply.code(400).send({ error: 'Nombre del servidor y ruta del archivo son requeridos/inválidos.' });
-    }
-
+   // Servir archivos estáticos desde un servidor específico
+   fastify.get('/serve-file/:serverName/:filePath(.*)', async (request, reply) => {
+    const { serverName: rawServerName, filePath: rawFilePathInServer } = request.params;
     try {
-        // Construye la ruta absoluta y valida que esté dentro del directorio permitido
-        const safePath = getServerPath(serverName, filePath).absolute;
+        const serverName = sanitizePathInput(rawServerName);
+        const filePathInServer = sanitizePathInput(rawFilePathInServer);
 
-        fastify.log.info(`Intentando servir archivo: ${safePath}`);
+        if (!serverName || !filePathInServer) {
+            return reply.code(400).send({ error: 'Nombre del servidor y ruta del archivo son requeridos/inválidos.' });
+        }
 
-        // Verifica si el archivo existe antes de intentar enviarlo
-        await fs.access(safePath, fs.constants.R_OK);
+        const absolutePathToServe = path.resolve(SERVERS_BASE_DIR, serverName, filePathInServer);
 
-        // Usa reply.sendFile para enviar el archivo. Fastify maneja Content-Type, etc.
-        // Proporciona la ruta ABSOLUTA VALIDADA.
-        return reply.sendFile(filePath, serversBaseDir); // Sirve el archivo relativo al root especificado
+        if (!absolutePathToServe.startsWith(path.resolve(SERVERS_BASE_DIR, serverName))) {
+          fastify.log.warn(`Intento de acceso fuera del directorio del servidor: ${absolutePathToServe}`);
+          return reply.code(403).send({ error: 'Acceso prohibido.' });
+        }
+        
+        // Verificar si es un directorio, no servir directorios directamente
+        // a menos que tengas una lógica para listar contenidos o servir un index.html
+        const stats = await fsp.stat(absolutePathToServe).catch(() => null);
+        if (!stats) {
+            return reply.code(404).send({ error: 'Archivo no encontrado.' });
+        }
+        if (stats.isDirectory()) {
+            return reply.code(403).send({ error: 'No se permite listar o servir directorios directamente.' });
+        }
 
+        // fastify.log.info(`Sirviendo archivo: ${absolutePathToServe}`);
+        // `reply.sendFile` toma el nombre del archivo RELATIVO al `root` especificado.
+        // El `root` debe ser el directorio del servidor específico.
+        return reply.sendFile(filePathInServer, path.resolve(SERVERS_BASE_DIR, serverName));
 
     } catch (error) {
-        fastify.log.error(`Error sirviendo ${filePath} desde ${serverName}: ${error.message}`);
-        if (error.code === 'ENOENT' || error.message.includes('Acceso prohibido') || error.code === 'FST_ERR_SEND_FILE_INVALID_PATH') {
-             reply.code(404).send({ error: 'Archivo no encontrado o acceso denegado.' });
+        fastify.log.error(`Error sirviendo archivo: ${error.message} (Path: ${rawServerName}/${rawFilePathInServer})`);
+        if (error.code === 'ENOENT' || error.code === 'FST_ERR_SEND_FILE_INVALID_PATH') {
+             reply.code(404).send({ error: 'Archivo no encontrado.' });
         } else if (error.code === 'EACCES') {
-            reply.code(403).send({ error: 'Permiso denegado para leer el archivo.' });
-        }
-         else {
+            reply.code(403).send({ error: 'Permiso denegado.' });
+        } else {
              reply.code(500).send({ error: 'Error al servir el archivo.' });
         }
     }
   });
+
+  // --- Rutas de Backup ---
+  fastify.post('/servers/:serverName/backup', async (request, reply) => {
+    const { serverName: rawServerName } = request.params;
+    const { outputFileName: rawOutputFileName } = request.body || {}; // outputFileName es opcional desde el body
+    try {
+        const serverName = sanitizePathInput(rawServerName);
+        const outputFileName = rawOutputFileName ? sanitizePathInput(rawOutputFileName) : null;
+
+        if (!serverName) {
+            return reply.code(400).send({ success: false, error: "Nombre de servidor es requerido/inválido." });
+        }
+        
+        const result = await generateServerFolderBackup(serverName, outputFileName);
+        if (typeof result === 'string' && (result.includes("no existe") || result.startsWith("Error"))) {
+             return reply.code(404).send({ success: false, error: result });
+        }
+        return reply.send({ success: true, data: result }); // result es la ruta del backup
+    } catch (error) {
+        fastify.log.error(`Error generando backup para ${rawServerName}: ${error.message}`);
+        reply.code(500).send({ success: false, error: error.message || 'Error al generar el backup.' });
+    }
+  });
+
+  fastify.post('/servers/uncompress-backup', async (request, reply) => {
+    const { compressedFileName: rawCompressedFile, outputFolderName: rawOutputFolder } = request.body;
+    try {
+        const compressedFileName = sanitizePathInput(rawCompressedFile); // Nombre del archivo en 'backups/'
+        const outputFolderName = rawOutputFolder ? sanitizePathInput(rawOutputFolder) : null; // Nombre para la carpeta en 'servers/'
+
+        if (!compressedFileName) {
+            return reply.code(400).send({ success: false, error: "Nombre del archivo comprimido es requerido/inválido." });
+        }
+
+        const result = await uncompressServerFolderBackup(compressedFileName, outputFolderName);
+        if (typeof result === 'string' && (result.includes("no existe") || result.startsWith("Error"))) {
+             return reply.code(404).send({ success: false, error: result });
+        }
+        return reply.send({ success: true, data: result }); // result es la ruta de la carpeta descomprimida
+    } catch (error) {
+        fastify.log.error(`Error descomprimiendo ${rawCompressedFile}: ${error.message}`);
+        reply.code(500).send({ success: false, error: error.message || 'Error al descomprimir el backup.' });
+    }
+  });
+
 
 }
 

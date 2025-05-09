@@ -208,7 +208,7 @@ export async function deleteserver(serverName) {
 }
 
 // Example Usage (Async IIFE or top-level await if your environment supports it)
-
+/*
 (async () => {
     const server1 = "testServer123";
     const server2 = "anotherServer";
@@ -232,17 +232,17 @@ export async function deleteserver(serverName) {
     console.log("\n--- Renaming file ---");
     let newPath = await renamefile(server1, `config/settings.json`, "user_prefs.json");
     console.log("New path:", newPath);
-
+    
     console.log("\n--- Getting folder info for server ---");
     let serverInfo = await getfolderinfo(server1);
     console.log("Server info:", JSON.stringify(serverInfo, null, 2));
-
+    
     console.log("\n--- Updating file content ---");
     await writeFilebyName(`${server1}/config`, "user_prefs.json", JSON.stringify({ theme: "light", fontSize: 14 }));
     content = await readfilebypath(`${server1}/config/user_prefs.json`);
     console.log("Updated content:", content);
-    
     /*
+    
     console.log("\n--- Compressing server folder ---");
     const backupFile = await generateServerFolderBackup(server1, `${server1}_backup.tar.gz`);
     console.log("Backup file created:", backupFile);
@@ -270,5 +270,7 @@ export async function deleteserver(serverName) {
     // }
     
     console.log("\n--- Check Storage ---");
-    console.log("Storage keys:", storage.keys()); */
+    console.log("Storage keys:", storage.keys());
+    * /
 })();
+*/
