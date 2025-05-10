@@ -126,22 +126,26 @@ async function fileManagerRoutes(fastify, options) {
     }
   });
 
-  // Ruta para obtener información de una carpeta
-  fastify.get('/folder-info/:folderName(.*)', async (request, reply) => { // :folderName(.*) para capturar subrutas
-    const { folderName: rawFolderName } = request.params;
-    try {
-      const folderPath = getRelativeServerPath(rawFolderName); // Valida y obtiene ruta relativa
-      const result = await getfolderinfo(folderPath); // getfolderinfo espera la ruta relativa completa
-      
-      if (typeof result === 'string') { // Es un mensaje de error
-        return reply.code(404).send({ success: false, error: result });
+    // Ruta para obtener información de una carpeta
+    fastify.get('/folder-info/*', async (request, reply) => {
+      // El parámetro capturado por '*' está disponible en request.params['*']
+      const rawFolderName = request.params['*'];
+    
+      try {
+        // getRelativeServerPath debería sanitizar y validar esta entrada
+        const folderPath = getRelativeServerPath(rawFolderName);
+      //  console.log("Ruta solicitada (relativa procesada):", folderPath, Date.now(), rawFolderName);
+        const result = await getfolderinfo(folderPath); // getfolderinfo espera la ruta relativa completa
+    
+        if (typeof result === 'string') { // Es un mensaje de error de getfolderinfo
+          return reply.code(404).send({ success: false, error: result });
+        }
+        return reply.send({ success: true, data: result });
+      } catch (error) {
+        fastify.log.error(`Error obteniendo info de '${rawFolderName}': ${error.message}`);
+        reply.code(500).send({ success: false, error: error.message || 'Error al obtener información de la carpeta.' });
       }
-      return reply.send({ success: true, data: result });
-    } catch (error) {
-      fastify.log.error(`Error obteniendo info de ${rawFolderName}: ${error.message}`);
-      reply.code(500).send({ success: false, error: error.message || 'Error al obtener información de la carpeta.' });
-    }
-  });
+    });
 
   // Ruta para actualizar la información de una carpeta (usualmente automático, pero si es manual)
   fastify.post('/update-folder-info', async (request, reply) => {
