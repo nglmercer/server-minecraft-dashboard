@@ -27,16 +27,21 @@ const SERVERS_BASE_DIR = PathUtils.serverPath;
 
 // Helper para sanitizar nombres/rutas
 function sanitizePathInput(input) {
-  if (!input || typeof input !== 'string') return ''; // Devolver string vacío para unirse sin problemas
-  // Prevenir Path Traversal y caracteres problemáticos
-  // Eliminar ../ y ./ del inicio, y normalizar
+  if (!input || typeof input !== 'string') return ''; // Evitar errores
+
+  // Eliminar múltiples barras al inicio
+  input = input.replace(/^[/\\]+/, ''); // Elimina todos los '/' o '\' iniciales
+
+  // Prevenir path traversal y normalizar
   let sanitized = path.normalize(input).replace(/^(\.\.[/\\])+/, '');
-  // Eliminar caracteres que no suelen ser seguros en nombres de archivo/directorio
-  // Esta es una lista básica, podrías necesitar una más exhaustiva.
+
+  // Eliminar caracteres problemáticos
   sanitized = sanitized.replace(/[<>:"|?*]/g, '');
+
   if (sanitized !== input) {
     console.warn(`Sanitización de ruta aplicada: "${input}" -> "${sanitized}"`);
   }
+
   return sanitized;
 }
 
@@ -51,7 +56,7 @@ function getRelativeServerPath(...args) {
   const resolvedPath = path.resolve(SERVERS_BASE_DIR, relativePath);
 
   if (!resolvedPath.startsWith(SERVERS_BASE_DIR)) {
-    throw new Error(`Acceso prohibido fuera del directorio de servidores: ${relativePath}`);
+    throw new Error(`Acceso prohibido fuera del directorio de servidores: ${relativePath}, ruta actual: ${resolvedPath}`);
   }
   // Las funciones de 'servers.js' esperan rutas relativas a SERVERS_BASE_DIR
   // o el nombre del servidor y luego la ruta relativa dentro de ese servidor.
