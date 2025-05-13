@@ -499,12 +499,14 @@ export function isValidFilenamePattern(filename, patternRegex = /^[a-zA-Z0-9_.-]
     const regex = (typeof patternRegex === 'string') ? new RegExp(patternRegex) : patternRegex;
     return regex.test(filename);
 }
-export function isValidDirectoryName(directoryName, patternRegex = /^\/[a-zA-Z0-9\-\/]+$/) {
+export function isValidDirectoryName(directoryName, patternRegex = /^([a-zA-Z]:)?[\\/][\w\s\-\\.]+([\\/][\w\s\-\\.]+)*$/) {
     if (!directoryName) {
         return false;
     }
     const regex = (typeof patternRegex === 'string') ? new RegExp(patternRegex) : patternRegex;
-    return regex.test(directoryName);
+    const isValid = regex.test(directoryName);
+    console.log("regex",regex,directoryName,isValid);
+    return isValid;
 }
 export function pathExists(filePath) {
     if (!filePath) return false;

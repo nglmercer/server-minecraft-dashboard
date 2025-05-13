@@ -296,6 +296,7 @@ async function prepareJavaForServer(javaVersion) {
     }
 }
 const isJavaVersionCompatible = (requiredVersion, installedVersions) => {
+    if (!installedVersions || !Array.isArray(installedVersions)) return [];
     return installedVersions
         .map(Number)  // Convertimos a número
         .filter(v => !isNaN(v))  // Filtramos valores no numéricos

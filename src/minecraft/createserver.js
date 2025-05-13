@@ -141,7 +141,7 @@ export async function startJavaServerGeneration({ serverName, coreName, coreVers
     let javaInfo = getJavaInfoByVersion(requiredJavaVersion);
     let javaExecutablePath = javaInfo?.javaBinPath || javaInfo?.javaPath;
 
-    if (!javaInfo || !javaInfo.installed || !isJavaVersionCompatible(javaInfo.version, requiredJavaVersion)) {
+    if (!javaInfo || !javaInfo.installed && !isJavaVersionCompatible(javaInfo.version, requiredJavaVersion)) {
       console.log(`Java ${requiredJavaVersion} no encontrado o no compatible. Intentando preparar...`);
       const preparationResult = await prepareJavaForServer(requiredJavaVersion);
       if (!preparationResult.success) {

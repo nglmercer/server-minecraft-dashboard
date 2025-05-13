@@ -245,7 +245,7 @@ async function serverManagementRoutes(fastify, options) {
             const serverPath = path.join(PathUtils.serverPath, serverConfig.serverName);
             const isValidServerPath = PathUtils.isValidDirectoryName(serverPath);
             
-            if (!isValidServerPath) isnotvalid.push({ key: 'Directorio(serverPath)', value: serverConfig.serverName });
+            if (!isValidServerPath) isnotvalid.push({ key: 'Directorio(serverPath)', value: {serverConfig,isValidServerPath} });
             if (!fileData && !coreVersion){
                 isnotvalid.push({ key: 'Archivo(fileData) || Version(coreVersion)', value: coreVersion });
             }
