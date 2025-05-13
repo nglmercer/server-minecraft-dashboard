@@ -5,7 +5,11 @@ import * as tar from 'tar';
 
 // --- Constants from original main file ---
 export const ALLOWED_EXTENSIONS =
-    ['json', 'yaml', 'txt', 'properties', 'sh', 'bat', 'js', 'jpg', 'png', 'jar', '.gz'];
+[
+    ".txt", ".log", ".json", ".yaml", ".yml", ".ini", ".conf",
+    ".properties", ".env", ".csv", ".tsv", ".md", ".xml", ".mcfunction",
+    ".sh", ".bash",".bat", ".zsh", ".ps1"
+  ];
 
 // --- Base Path Constants (as defined in your original fileutils.js) ---
 // These are used for initialization and as defaults/references in the functions.
@@ -49,18 +53,83 @@ export function function_with_error_handling(fn) {
 // --- Internal Helper ---
 function _isValidExtensionInternal(rawExtension) { // rawExtension es lo que viene de path.extname().slice(1)
     const extLower = rawExtension.toLowerCase();
-    // Check if the extension (e.g., "json") or the extension with a dot (e.g., ".json") is in ALLOWED_EXTENSIONS
-    // ALLOWED_EXTENSIONS can have 'json' or '.gz'
     return ALLOWED_EXTENSIONS.some(allowed => {
         const allowedLower = allowed.toLowerCase();
-        if (allowedLower.startsWith('.')) { // e.g., '.gz' in ALLOWED_EXTENSIONS
-            return `.${extLower}` === allowedLower; // Compare ".gz" with ".gz"
-        } else { // e.g., 'json' in ALLOWED_EXTENSIONS
-            return extLower === allowedLower; // Compare "json" with "json"
+        if (allowedLower.startsWith('.')) {
+            return `.${extLower}` === allowedLower;
+        } else { 
+            return extLower === allowedLower;
         }
     });
 }
-
+async function checkFileValidity(filePath, options = {}) {
+    // Opciones por defecto
+    const defaultOptions = {
+      allowedExtensions: [
+        ".txt", ".log", ".json", ".yaml", ".yml", ".ini", ".conf",
+        ".properties", ".env", ".csv", ".tsv", ".md", ".xml", ".mcfunction",
+        ".sh", ".bash",".bat", ".zsh", ".ps1"
+      ],
+      maxSize: 1024 * 1024, // 1 MB en bytes
+      checkContent: true
+    };
+    const { allowedExtensions, maxSize, checkContent } = { ...defaultOptions, ...options };
+  
+    // Objeto de resultados inicial
+    const results = {
+      isValid: true, // Será false si alguna verificación falla
+      details: {
+        extension: { valid: false, message: '' },
+        size: { valid: false, message: '' },
+        content: { valid: true, message: '' } // Por defecto true si no se verifica contenido
+      }
+    };
+  
+    try {
+      // 1. Verificación de la extensión
+      const ext = path.extname(filePath).toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        results.details.extension.valid = false;
+        results.details.extension.message = `Extensión no permitida: ${ext}`;
+        results.isValid = false;
+      } else {
+        results.details.extension.valid = true;
+        results.details.extension.message = `Extensión permitida: ${ext}`;
+      }
+  
+      // 2. Verificación del tamaño
+      const stats = fs.statSync(filePath);
+      if (stats.size > maxSize) {
+        results.details.size.valid = false;
+        results.details.size.message = `Tamaño excede el límite: ${stats.size} bytes > ${maxSize} bytes`;
+        results.isValid = false;
+      } else {
+        results.details.size.valid = true;
+        results.details.size.message = `Tamaño dentro del límite: ${stats.size} bytes <= ${maxSize} bytes`;
+      }
+  
+      // 3. Verificación del contenido (opcional)
+      if (checkContent) {
+        const buffer = fs.readFileSync(filePath, { encoding: null });
+        const sample = buffer.slice(0, 1024).toString('utf8'); // Lee primeros 1024 bytes
+        if (!/^[\x20-\x7E\n\r\t]*$/.test(sample)) {
+          results.details.content.valid = false;
+          results.details.content.message = 'El archivo no parece ser texto plano';
+          results.isValid = false;
+        } else {
+          results.details.content.valid = true;
+          results.details.content.message = 'El archivo parece ser texto plano';
+        }
+      }
+  
+    } catch (error) {
+      // Manejo de errores (ej. archivo no existe)
+      results.isValid = false;
+      results.details.error = `Error al verificar el archivo: ${error.message}`;
+    }
+  
+    return results;
+  }
 
 // --- File Operation Utilities (Derived from FileManager) ---
 
@@ -248,7 +317,7 @@ const _getFolderSizeLogic = (folderPath) => { // Expects absolute folderPath
 };
 // Not wrapped with interceptor as it's a helper, or can be if used directly
 
-const _listDirectoryContentsLogic = (currentPath) => { // Expects absolute currentPath
+const _listDirectoryContentsLogic = (currentPath) => {
     if (!fs.existsSync(currentPath)) {
         return [];
     }
@@ -681,7 +750,8 @@ export const PathUtils = {
     validateFileAttributes,
     serverPath: serverPathBase, // Use the initialized constant
     backupPath: backupPathBase, // Use the initialized constant
-    binariesPath: path.resolve(process.cwd(), 'binaries') // As per original
+    binariesPath: path.resolve(process.cwd(), 'binaries'),
+    checkFileValidity
 };
 
 // Ensure binariesPath also exists if needed by application logic

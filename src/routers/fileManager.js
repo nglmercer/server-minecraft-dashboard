@@ -13,7 +13,6 @@ import {
   renamefile,
   deletefile,
   deleteserver,
-  // Nuevas funciones de backup si las vas a exponer en el API:
   generateServerFolderBackup,
   uncompressServerFolderBackup
 } from '../modules/servers.js'; // Ajusta esta ruta
@@ -196,7 +195,13 @@ async function fileManagerRoutes(fastify, options) {
     const rawFilePathParams = request.params.filePath; // Puede ser undefined si no hay nada después de /
     try {
       const relativeFilePath = getRelativeServerPath(rawFilePathParams || '');
+      
+      const verifyPath = path.join(PathUtils.serverPath, relativeFilePath);
       const result = await readfilebypath(relativeFilePath); // readfilebypath espera ruta relativa a SERVERS_BASE_DIR
+      const allowedFile = await PathUtils.checkFileValidity(verifyPath);
+      if (!allowedFile.isValid) {
+        return reply.code(400).send({ success: false, details: allowedFile.details });
+      }
       
       if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
         return reply.code(404).send({ success: false, error: 'Archivo no encontrado.' });
