@@ -131,7 +131,7 @@ async function checkFileValidity(filePath, options = {}) {
     return results;
   }
 
-// --- File Operation Utilities (Derived from FileManager) ---
+// --- File Operation Utilities ---
 
 const _createFileLogic = (basePath, folderName, fileName, content = '') => {
     const folderPath = path.join(basePath, folderName);
