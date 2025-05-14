@@ -15,7 +15,7 @@ import uploadRouter from './routers/uploadRouter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
-  logger: true
+  logger: false
 });
 
 // Register CORS plugin

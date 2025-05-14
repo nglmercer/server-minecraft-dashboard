@@ -4,7 +4,6 @@ import { dirname, join, resolve, isAbsolute, normalize } from 'path'; // Added r
 import fs from 'fs';
 import util from 'util';
 import { pipeline } from 'stream';
-import { randomUUID } from 'crypto';
 
 // Convert pipeline to promise-based function
 const pump = util.promisify(pipeline);
@@ -97,7 +96,7 @@ async function uploadRouter(fastify, options) {
   async function saveFile(part, targetDir) { // targetDir now includes subDirectory if provided
     try {
       // Generate unique filename to prevent collisions
-      const filename = `${randomUUID()}-${part.filename}`;
+      const filename = `${part.filename}`;
       const filepath = join(targetDir, filename);
 
       // Create write stream for the file
@@ -178,46 +177,81 @@ async function uploadRouter(fastify, options) {
   fastify.post('/files', async (request, reply) => {
     try {
       let targetDir;
-
       try {
-        targetDir = getTargetDirectory(request); // Passes request
+        targetDir = getTargetDirectory(request);
       } catch (error) {
+        fastify.log.warn({ msg: "getTargetDirectory failed", err: error.message, query: request.query });
+        return reply.code(400).send({ error: 'Bad Request', message: error.message });
+      }
+
+      const reqBody = request.body;
+      const uploadedFiles = [];
+      const otherFields = {}; // To store non-file fields if any
+
+      fastify.log.info({ msg: "Request body received", body: reqBody, requestId: request.id });
+
+      if (!reqBody || typeof reqBody !== 'object') {
+        fastify.log.warn({ msg: "Request body is empty or not an object", requestId: request.id });
         return reply.code(400).send({
           error: 'Bad Request',
-          message: error.message
+          message: 'No data received in request body.'
         });
       }
 
-      const parts = request.parts();
-      const uploadedFiles = [];
-      const fileFields = {};
+      // Iterate over the properties of request.body
+      // When attachFieldsToBody: true, file parts are objects with a 'type' property.
+      for (const fieldname in reqBody) {
+        if (Object.prototype.hasOwnProperty.call(reqBody, fieldname)) {
+          const part = reqBody[fieldname];
 
-      for await (const part of parts) {
-        if (part.type === 'file') {
-          const fileData = await saveFile(part, targetDir);
-          uploadedFiles.push(fileData);
-        } else {
-          fileFields[part.fieldname] = part.value;
+          // Check if 'part' is an array (busboy might wrap multiple files with same fieldname in an array)
+          if (Array.isArray(part)) {
+            for (const p of part) {
+              if (p && typeof p === 'object' && p.type === 'file' && p.file && p.filename) {
+                fastify.log.info({ msg: "Processing file part from array", fieldname, filename: p.filename, requestId: request.id });
+                // The 'p' object here is what 'saveFile' expects as a "part"
+                const fileData = await saveFile(p, targetDir); // Pass the actual file part object
+                uploadedFiles.push(fileData);
+              } else if (p && typeof p === 'object' && p.type !== 'file') {
+                // Handle non-file fields if they are also in an array (less common for simple fields)
+                 if (!otherFields[fieldname]) otherFields[fieldname] = [];
+                 otherFields[fieldname].push(p.value !== undefined ? p.value : p); // Assuming p.value or p itself
+              }
+            }
+          } else if (part && typeof part === 'object' && part.type === 'file' && part.file && part.filename) {
+            // This is a single file part
+            fastify.log.info({ msg: "Processing single file part", fieldname, filename: part.filename, requestId: request.id });
+            // The 'part' object here is what 'saveFile' expects
+            const fileData = await saveFile(part, targetDir); // Pass the actual file part object
+            uploadedFiles.push(fileData);
+          } else {
+            // This is a non-file field
+            otherFields[fieldname] = part.value !== undefined ? part.value : part; // If it's an object from busboy, it might have a .value
+          }
         }
       }
 
+      fastify.log.info({ msg: "Finished processing request body parts", uploadedCount: uploadedFiles.length, otherFieldsCount: Object.keys(otherFields).length, requestId: request.id });
+
       if (uploadedFiles.length === 0) {
+        fastify.log.warn({ msg: "No files were processed from request.body, sending 400.", requestId: request.id });
         return reply.code(400).send({
           error: 'Bad Request',
-          message: 'No files were uploaded'
+          message: 'No files were uploaded or identified in the request.'
         });
       }
 
       return reply.code(200).send({
         success: true,
-        message: `${uploadedFiles.length} file(s) uploaded successfully`,
+        message: `${uploadedFiles.length} file(s) uploaded successfully from request.body`,
         files: uploadedFiles,
-        fields: fileFields,
+        fields: otherFields,
         pathType: request.query.pathType || 'uploads',
-        subDirectory: request.query.subDirectory || null // Include subDirectory in response
+        subDirectory: request.query.subDirectory || null
       });
+
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error({ msg: "Error in POST /files handler (processing request.body)", requestId: request.id, err: error.message, stack: error.stack });
       return reply.code(500).send({
         error: 'Internal Server Error',
         message: 'Error uploading files'
