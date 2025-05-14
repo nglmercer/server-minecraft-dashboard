@@ -11,6 +11,7 @@ import coresRouter from './routers/minecraft/cores.js';
 import javaVersionsRouter from './routers/minecraft/javaversions.js';
 import pluginMCRouter from './routers/minecraft/plugins.js';
 import backupsRouter from './routers/backup.js';
+import uploadRouter from './routers/uploadRouter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
@@ -55,7 +56,7 @@ fastify.register(javaVersionsRouter, { prefix: '/api/java' });
 fastify.register(pluginMCRouter, { prefix: '/api' });
 fastify.register(langRouters, { prefix: '/api' });
 fastify.register(backupsRouter, { prefix: '/api/backups' });
-
+fastify.register(uploadRouter, { prefix: '/upload' }); // Register the new router with prefix
 // Start server
 const start = async () => {
   try {
