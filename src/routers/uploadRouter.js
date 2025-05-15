@@ -3,229 +3,267 @@ import { fileURLToPath } from 'url';
 import { dirname, join, resolve, isAbsolute, normalize } from 'path';
 import fs from 'fs';
 import util from 'util';
-import { pipeline } from 'stream';
-
-const pump = util.promisify(pipeline);
+import { pipeline } from 'stream'; // Aún útil si part.toBuffer() no existiera para algún caso
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const UPLOAD_DIR = join(__dirname, '..', 'uploads');
-const serverPath = join(process.cwd(), 'servers');
-const backupPath = join(process.cwd(), 'backups');
+const SERVER_PATH = join(process.cwd(), 'servers');
+const BACKUP_PATH = join(process.cwd(), 'backups');
 
 const PathsValids = {
   uploads: UPLOAD_DIR,
-  servers: serverPath,
-  backups: backupPath
+  servers: SERVER_PATH,
+  backups: BACKUP_PATH
 };
 
 Object.values(PathsValids).forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+    console.info(`[INIT] Created base directory: ${dir}`); // Log de inicialización
   }
 });
 
-/**
- * File upload router with routes for single and multiple file uploads
- * @param {import('fastify').FastifyInstance} fastify Fastify instance
- * @param {Object} options Router options
- */
-async function uploadRouter(fastify, options) {
-  function getTargetDirectory(request) {
-    const pathType = request.query.pathType || 'uploads';
-    const subDirectory = request.query.subDirectory;
+function getTargetDirectory(request, fastify) {
+  const pathType = request.query.pathType || 'uploads';
+  const subDirectory = request.query.subDirectory;
 
-    if (!PathsValids[pathType]) {
-      throw new Error(`Invalid path type: ${pathType}. Must be one of: ${Object.keys(PathsValids).join(', ')}`);
-    }
-
-    let targetDir = PathsValids[pathType];
-
-    if (subDirectory) {
-      const normalizedSubDirectory = normalize(subDirectory).replace(/^(\.\.(\/|\\|$))+/, '');
-
-      if (normalizedSubDirectory.includes('..') || isAbsolute(normalizedSubDirectory)) {
-        throw new Error('Invalid subDirectory: Path traversal or absolute paths are not allowed.');
-      }
-      
-      targetDir = join(targetDir, normalizedSubDirectory);
-
-      const resolvedBase = resolve(PathsValids[pathType]);
-      const resolvedTarget = resolve(targetDir);
-
-      if (!resolvedTarget.startsWith(resolvedBase)) {
-        fastify.log.warn(`Potential path traversal attempt: base='${resolvedBase}', final='${resolvedTarget}', subDirectory='${subDirectory}'`);
-        throw new Error('Invalid subDirectory: Path attempts to go outside the allowed base directory.');
-      }
-    }
-
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-      console.info(`Created directory: ${targetDir}`);
-    }
-
-    return targetDir;
+  if (!PathsValids[pathType]) {
+    const errorMessage = `Invalid path type: ${pathType}. Must be one of: ${Object.keys(PathsValids).join(', ')}`;
+    fastify.log.warn({ msg: "getTargetDirectory validation failed", pathType, subDirectory });
+    throw new Error(errorMessage);
   }
 
-  async function saveFile(part, baseTargetDir, fastifyInstance) {
-    try {
-      let relativePathFromPart = normalize(part.filename);
-      relativePathFromPart = relativePathFromPart.replace(/^[\/\\]+/, '');
+  let targetDir = PathsValids[pathType];
 
-      if (relativePathFromPart.includes('..') || isAbsolute(relativePathFromPart)) {
-        throw new Error(`Invalid filename structure: Path traversal or absolute paths are not allowed in filename "${part.filename}".`);
-      }
-      if (relativePathFromPart === '' || relativePathFromPart === '.' || relativePathFromPart === '..') {
-        throw new Error(`Invalid filename: Filename cannot be empty or just dots after normalization: "${part.filename}"`);
-      }
+  if (subDirectory) {
+    const normalizedSubDirectory = normalize(subDirectory).replace(/^(\.\.(\/|\\|$))+/, '');
+    if (normalizedSubDirectory.includes('..') || isAbsolute(normalizedSubDirectory)) {
+      const errorMessage = 'Invalid subDirectory: Path traversal or absolute paths are not allowed.';
+      fastify.log.warn({ msg: "getTargetDirectory path traversal attempt", subDirectory, normalizedSubDirectory });
+      throw new Error(errorMessage);
+    }
+    targetDir = join(targetDir, normalizedSubDirectory);
+    const resolvedBase = resolve(PathsValids[pathType]);
+    const resolvedTarget = resolve(targetDir);
+    if (!resolvedTarget.startsWith(resolvedBase)) {
+      fastify.log.warn(`Potential path traversal attempt: base='${resolvedBase}', final='${resolvedTarget}', subDirectory='${subDirectory}'`);
+      throw new Error('Invalid subDirectory: Path attempts to go outside the allowed base directory.');
+    }
+  }
 
-      const filepath = join(baseTargetDir, relativePathFromPart);
-      const fileDir = dirname(filepath);
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+    fastify.log.info(`Created target directory: ${targetDir}`);
+  }
+  return targetDir;
+}
 
-      const resolvedBase = resolve(baseTargetDir);
-      const resolvedFilepath = resolve(filepath);
+async function saveFile(part, baseTargetDir, fastifyInstance) {
+  let relativePathFromPart = normalize(part.filename);
+  relativePathFromPart = relativePathFromPart.replace(/^[\/\\]+/, '');
 
-      if (!resolvedFilepath.startsWith(resolvedBase)) {
-        fastifyInstance.log.warn(`Potential path traversal attempt via part.filename: base='${resolvedBase}', final='${resolvedFilepath}', part.filename='${part.filename}'`);
-        throw new Error('Invalid filename: Path attempts to go outside the allowed base directory.');
-      }
+  if (relativePathFromPart.includes('..') || isAbsolute(relativePathFromPart)) {
+    throw new Error(`Invalid filename structure: Path traversal or absolute paths are not allowed in filename "${part.filename}".`);
+  }
+  if (relativePathFromPart === '' || relativePathFromPart === '.' || relativePathFromPart === '..') {
+    throw new Error(`Invalid filename: Filename cannot be empty or just dots after normalization: "${part.filename}"`);
+  }
 
-      if (!fs.existsSync(fileDir)) {
-        fs.mkdirSync(fileDir, { recursive: true });
-      }
+  const filepath = join(baseTargetDir, relativePathFromPart);
+  const fileDir = dirname(filepath);
 
+  const resolvedBase = resolve(baseTargetDir);
+  const resolvedFilepath = resolve(filepath);
+
+  if (!resolvedFilepath.startsWith(resolvedBase)) {
+    fastifyInstance.log.warn(`Potential path traversal attempt via part.filename: base='${resolvedBase}', final='${resolvedFilepath}', part.filename='${part.filename}'`);
+    throw new Error('Invalid filename: Path attempts to go outside the allowed base directory.');
+  }
+
+  if (!fs.existsSync(fileDir)) {
+    fs.mkdirSync(fileDir, { recursive: true });
+    fastifyInstance.log.info(`Created directory for file: ${fileDir}`);
+  }
+  
+  fastifyInstance.log.info(`Attempting to save file to: ${filepath}. Original client filename: ${part.originalBusboyFilename}, Mimetype: ${part.mimetype}. Part has 'toBuffer': ${typeof part.toBuffer === 'function'}`);
+
+  let bytesWritten = 0;
+  try {
+    if (typeof part.toBuffer === 'function') {
+      const fileBuffer = await part.toBuffer();
+      fs.writeFileSync(filepath, fileBuffer);
+      bytesWritten = fileBuffer.length;
+      fastifyInstance.log.info(`Successfully wrote buffer (from part.toBuffer()) to ${filepath}. Bytes written: ${bytesWritten}`);
+    } else {
+      fastifyInstance.log.warn({ msg: `part.toBuffer is not a function for file part "${part.originalBusboyFilename}". Attempting to use part.file stream. This may result in a 0-byte file if the stream was already consumed.`});
       const writeStream = fs.createWriteStream(filepath);
-      await pump(part.file, writeStream);
-
-      return {
-        originalName: part.filename,
-        filename: relativePathFromPart,
-        mimetype: part.mimetype,
-        filepath: resolvedFilepath,
-        directory: resolve(fileDir),
-        size: writeStream.bytesWritten
-      };
-    } catch (error) {
-      fastifyInstance.log.error(`Error saving file "${part.filename}": ${error.message}`);
-      throw error;
+      await util.promisify(pipeline)(part.file, writeStream);
+      bytesWritten = writeStream.bytesWritten; // Esto probablemente seguirá siendo 0
+       if (bytesWritten === 0 && part.file && part.file.bytesRead > 0) {
+         fastifyInstance.log.warn(`Fallback stream pump wrote 0 bytes, but part.file.bytesRead (from parser) was ${part.file.bytesRead}.`);
+      }
     }
-  }
 
-  fastify.post('/files', async (request, reply) => {
-    try {
-      let targetDir; // This is the base directory like /path/to/servers/subDirectoryName
+    if (bytesWritten === 0 ) {
+        const fileStatSize = fs.existsSync(filepath) ? fs.statSync(filepath).size : 0;
+        if (fileStatSize === 0) { // Doble check, fs.writeFileSync podría haber creado archivo vacío
+             fastifyInstance.log.warn(`WARNING: Final file size is 0 bytes for ${filepath}. Client filename: ${part.originalBusboyFilename}. Was the uploaded file empty?`);
+        } else if (bytesWritten === 0 && fileStatSize > 0) { // Raro, bytesWritten era 0 pero el archivo tiene tamaño
+            bytesWritten = fileStatSize; // Corregir bytesWritten
+            fastifyInstance.log.info(`Corrected bytesWritten to ${bytesWritten} based on file stat for ${filepath}.`);
+        }
+    }
+    
+    return {
+      originalName: part.originalBusboyFilename,
+      filename: relativePathFromPart,
+      mimetype: part.mimetype,
+      filepath: resolvedFilepath,
+      directory: resolve(fileDir),
+      size: bytesWritten
+    };
+  } catch (error) {
+    fastifyInstance.log.error({ msg: `Error saving file "${part.originalBusboyFilename}" to "${filepath}"`, err: error.message, stack: error.stack });
+    if (fs.existsSync(filepath)) {
       try {
-        targetDir = getTargetDirectory(request);
-      } catch (error) {
-        fastify.log.warn({ msg: "getTargetDirectory failed", err: error.message, query: request.query });
-        return reply.code(400).send({ error: 'Bad Request', message: error.message });
+        fs.unlinkSync(filepath);
+        fastifyInstance.log.info(`Cleaned up file due to error: ${filepath}`);
+      } catch (cleanupError) {
+        fastifyInstance.log.error({ msg: `Error cleaning up file: ${filepath}`, err: cleanupError });
       }
-  
-      const reqBody = request.body;
-      const uploadedFiles = [];
-      const otherFields = {};
-  
-      fastify.log.info({ msg: "Request body received", bodyKeys: Object.keys(reqBody), requestId: request.id });
-  
-      if (!reqBody || typeof reqBody !== 'object') {
-        fastify.log.warn({ msg: "Request body is empty or not an object", requestId: request.id });
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'No data received in request body.'
-        });
-      }
-  
-      for (const intendedPathAsFieldname in reqBody) { // The key from FormData, which is your desired path
-        if (Object.prototype.hasOwnProperty.call(reqBody, intendedPathAsFieldname)) {
-          const partOrPartsArray = reqBody[intendedPathAsFieldname];
-  
-          const processPart = async (currentPart) => {
-            // IMPORTANT: currentPart.filename from busboy is just the basename (e.g., "logoraw.jpeg")
-            // We want to use 'intendedPathAsFieldname' for saving.
-            // We create a new object or modify a copy to avoid mutating the original busboy part too much,
-            // and ensure saveFile receives the full intended path in its 'filename' property.
-            const partForSaving = {
-              ...currentPart, // Spread the original part properties
-              filename: intendedPathAsFieldname, // Override filename with the full path from the fieldname
-              originalBusboyFilename: currentPart.filename // Optionally keep track of busboy's filename
-            };
-  
-            fastify.log.info({
-              msg: "Processing file part",
-              intendedPath: intendedPathAsFieldname,
-              busboyOriginalFilename: currentPart.filename, // This would be "logoraw.jpeg"
-              mimetype: currentPart.mimetype,
-              requestId: request.id
-            });
-  
+    }
+    throw error;
+  }
+}
+
+async function uploadRouter(fastify, options) {
+  fastify.post('/files', async (request, reply) => {
+    let targetDir;
+    try {
+      targetDir = getTargetDirectory(request, fastify);
+    } catch (error) {
+      fastify.log.warn({ msg: "getTargetDirectory failed in POST /files", err: error.message, query: request.query, requestId: request.id });
+      return reply.code(400).send({ error: 'Bad Request', message: error.message });
+    }
+
+    const reqBody = request.body;
+    const uploadedFiles = [];
+    const otherFields = {};
+
+    if (!reqBody || typeof reqBody !== 'object' || Object.keys(reqBody).length === 0) {
+      fastify.log.warn({ msg: "Request body is empty or not an object for POST /files", requestId: request.id });
+      return reply.code(400).send({
+        error: 'Bad Request',
+        message: 'No data received in request body or body is not structured as expected.'
+      });
+    }
+
+    fastify.log.info({ 
+        msg: "Processing request body for file uploads", 
+        bodyKeys: Object.keys(reqBody), 
+        pathType: request.query.pathType,
+        subDirectory: request.query.subDirectory,
+        targetDir,
+        requestId: request.id 
+    });
+    
+    for (const intendedPathAsFieldname in reqBody) {
+      if (Object.prototype.hasOwnProperty.call(reqBody, intendedPathAsFieldname)) {
+        const partOrPartsArray = reqBody[intendedPathAsFieldname];
+        
+        const processPart = async (currentPartData) => {
+          if (!currentPartData || typeof currentPartData !== 'object' || !currentPartData.type ) {
+            fastify.log.warn({ msg: "Skipping malformed part or non-file/non-field part", fieldname: intendedPathAsFieldname, partType: currentPartData?.type, requestId: request.id });
+            return;
+          }
+
+          if (currentPartData.type !== 'file') {
+            fastify.log.info({ msg: "Processing non-file field", fieldname: intendedPathAsFieldname, value: currentPartData.value, requestId: request.id });
+            if (!otherFields[intendedPathAsFieldname]) otherFields[intendedPathAsFieldname] = [];
+             otherFields[intendedPathAsFieldname].push(currentPartData.value !== undefined ? currentPartData.value : currentPartData);
+            return;
+          }
+          
+          if (currentPartData.type === 'file' && typeof currentPartData.toBuffer !== 'function' && !currentPartData.file) {
+            fastify.log.warn({ msg: "File part is missing 'toBuffer' function and 'file' stream.", fieldname: intendedPathAsFieldname, requestId: request.id });
+            return;
+          }
+
+          const partForSaving = {
+            ...currentPartData,
+            filename: intendedPathAsFieldname,
+            originalBusboyFilename: currentPartData.filename 
+          };
+
+          fastify.log.info({
+            msg: "Processing file part for saving",
+            intendedPath: intendedPathAsFieldname,
+            originalClientFilename: currentPartData.filename,
+            mimetype: currentPartData.mimetype,
+            hasToBuffer: typeof currentPartData.toBuffer === 'function',
+            requestId: request.id
+          });
+          
+          try {
             const fileData = await saveFile(partForSaving, targetDir, fastify);
             uploadedFiles.push(fileData);
-          };
-  
-          if (Array.isArray(partOrPartsArray)) { // Should not happen if client sends unique fieldnames
-            for (const p of partOrPartsArray) {
-              if (p && typeof p === 'object' && p.type === 'file' && p.file) {
-                await processPart(p);
-              } else if (p && typeof p === 'object' && p.type !== 'file') {
-                if (!otherFields[intendedPathAsFieldname]) otherFields[intendedPathAsFieldname] = [];
-                otherFields[intendedPathAsFieldname].push(p.value !== undefined ? p.value : p);
-              }
-            }
-          } else if (partOrPartsArray && typeof partOrPartsArray === 'object' && partOrPartsArray.type === 'file' && partOrPartsArray.file) {
-            await processPart(partOrPartsArray);
-          } else {
-            // This is a non-file field (shouldn't happen if fieldname is a path like "gg/file.txt")
-            otherFields[intendedPathAsFieldname] = partOrPartsArray.value !== undefined ? partOrPartsArray.value : partOrPartsArray;
+          } catch (error) {
+             fastify.log.error({ msg: `Failed to save file for intended path: ${intendedPathAsFieldname}`, originalFilename: currentPartData.filename, err: error.message, requestId: request.id });
           }
-        }
-      }
-  
-      fastify.log.info({ msg: "Finished processing request body parts", uploadedCount: uploadedFiles.length, otherFieldsCount: Object.keys(otherFields).length, requestId: request.id });
-  
-      if (uploadedFiles.length === 0) {
-        // Check if there were file parts in reqBody but processing failed for some reason
-        const hasFilePartsInBody = Object.values(reqBody).some(val =>
-          (Array.isArray(val) && val.some(p => p && p.type === 'file')) || (val && val.type === 'file')
-        );
-        if (hasFilePartsInBody) {
-            fastify.log.warn({ msg: "File parts were present in body but none were successfully processed.", requestId: request.id });
-             return reply.code(400).send({
-              error: 'Bad Request',
-              message: 'Files received but could not be processed. Check server logs for details.'
-            });
+        };
+
+        if (Array.isArray(partOrPartsArray)) {
+          fastify.log.info({ msg: `Field '${intendedPathAsFieldname}' is an array of parts. Processing each.`, count: partOrPartsArray.length, requestId: request.id });
+          for (const p of partOrPartsArray) {
+            await processPart(p);
+          }
         } else {
-            fastify.log.warn({ msg: "No files were processed from request.body, sending 400.", requestId: request.id });
-            return reply.code(400).send({
-              error: 'Bad Request',
-              message: 'No files were uploaded or identified in the request.'
-            });
+          await processPart(partOrPartsArray);
         }
-      }
-  
-      return reply.code(200).send({
-        success: true,
-        message: `${uploadedFiles.length} file(s) uploaded successfully from request.body`,
-        files: uploadedFiles,
-        fields: otherFields,
-        pathType: request.query.pathType || 'uploads',
-        subDirectory: request.query.subDirectory || null
-      });
-  
-    } catch (error) {
-      fastify.log.error({ msg: "Error in POST /files handler (processing request.body)", requestId: request.id, err: error.message, stack: error.stack });
-      // It's good practice to check if headers have already been sent before trying to send a response
-      if (!reply.sent) {
-        return reply.code(500).send({
-          error: 'Internal Server Error',
-          message: 'Error uploading files'
-        });
-      } else {
-        // If headers sent, just log. The connection might already be closed or in a weird state.
-        fastify.log.error("Error occurred after headers were sent in POST /files.");
       }
     }
+
+    fastify.log.info({ msg: "Finished processing all parts from request.body", uploadedCount: uploadedFiles.length, otherFieldsCount: Object.keys(otherFields).length, requestId: request.id });
+
+    if (uploadedFiles.length === 0) {
+      const hasFilePartsInBody = Object.values(reqBody).some(val =>
+        (Array.isArray(val) && val.some(p => p && p.type === 'file')) || 
+        (val && val.type === 'file')
+      );
+
+      if (hasFilePartsInBody) {
+          fastify.log.warn({ msg: "File parts were present in body but none were successfully processed into uploadedFiles array.", requestId: request.id });
+           return reply.code(400).send({
+            error: 'Bad Request',
+            message: 'Files were received but could not be processed. Check server logs for details on individual file errors.'
+          });
+      } else {
+          fastify.log.warn({ msg: "No files parts were identified in the request.body. Sending 400.", requestId: request.id });
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: 'No files were uploaded or identified in the request.'
+          });
+      }
+    }
+
+    return reply.code(200).send({
+      success: true,
+      message: `${uploadedFiles.length} file(s) processed successfully from request.body.`,
+      files: uploadedFiles,
+      fields: otherFields,
+      pathType: request.query.pathType || 'uploads',
+      subDirectory: request.query.subDirectory || null
+    });
   });
+  
+  fastify.addHook('onError', async (request, reply, error) => {
+    if (!reply.sent) {
+        request.log.error({ msg: "Unhandled error in uploadRouter caught by onError hook", err: error.message, stack: error.stack, requestId: request.id });
+    }
+  });
+
   fastify.get('/allowedpaths', async (request, reply) => {
     try {
       return reply.code(200).send({
@@ -233,12 +271,12 @@ async function uploadRouter(fastify, options) {
         paths: Object.keys(PathsValids),
         details: Object.entries(PathsValids).map(([key, path]) => ({
           name: key,
-          path: path,
+          path: path, 
           exists: fs.existsSync(path)
         }))
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error({ msg: "Error in GET /allowedpaths", err: error.message, requestId: request.id });
       return reply.code(500).send({
         error: 'Internal Server Error',
         message: 'Error listing path types'

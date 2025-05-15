@@ -239,120 +239,6 @@ async function fileManagerRoutes(fastify, options) {
     }
   });
 
-  // Ruta para subir un solo archivo
-  fastify.post('/upload', async (request, reply) => {
-    const { server: rawServer, path: rawRelativePathInServer } = request.query; // path es relativo DENTRO del server
-
-    if (!request.isMultipart()) {
-      return reply.code(400).send({ success: false, error: "Se esperaba una petición multipart/form-data." });
-    }
-
-    try {
-      const serverName = sanitizePathInput(rawServer);
-      const relativePathInServer = sanitizePathInput(rawRelativePathInServer) || ''; // Default a raíz del server
-
-      if (!serverName) {
-        return reply.code(400).send({ success: false, error: "Parámetro 'server' es requerido/inválido." });
-      }
-
-      const fileData = await request.file();
-      if (!fileData) {
-        return reply.code(400).send({ success: false, error: "No se recibió ningún archivo." });
-      }
-
-      const originalFileName = sanitizePathInput(fileData.filename);
-      if (!originalFileName) {
-         return reply.code(400).send({ success: false, error: "Nombre de archivo inválido." });
-      }
-
-      const fileContent = await fileData.toBuffer();
-      const finalRelativePathInServer = path.join(relativePathInServer, originalFileName);
-
-      fastify.log.info(`Subiendo archivo a server: ${serverName}, ruta en server: ${finalRelativePathInServer}`);
-      
-      const result = await createserverfile(serverName, finalRelativePathInServer, fileContent);
-
-      if (typeof result === 'string') {
-        return reply.code(400).send({ success: false, error: result });
-      }
-      return reply.send({ success: true, data: result });
-
-    } catch (error) {
-      fastify.log.error(`Error subiendo archivo: ${error.message}`, error);
-       if (error.validation) {
-           reply.code(400).send({ success: false, error: `Error de validación: ${error.message}` });
-       } else if (error.message.includes('Request file too large') || error.code === 'FST_REQ_FILE_TOO_LARGE') {
-            reply.code(413).send({ success: false, error: 'El archivo es demasiado grande.' });
-       } else {
-          reply.code(500).send({ success: false, error: 'Error interno al subir el archivo.' });
-       }
-    }
-  });
-
-  // Ruta para subir múltiples archivos
-  fastify.post('/upload/files', async (request, reply) => {
-    const { server: rawServer, path: rawRelativePathInServer } = request.query;
-
-    if (!request.isMultipart()) {
-      return reply.code(400).send({ success: false, error: "Se esperaba una petición multipart/form-data." });
-    }
-    
-    const results = [];
-    let filesReceivedCount = 0;
-
-    try {
-      const serverName = sanitizePathInput(rawServer);
-      const relativePathInServer = sanitizePathInput(rawRelativePathInServer) || '';
-
-      if (!serverName) {
-        return reply.code(400).send({ success: false, error: "Parámetro 'server' es requerido/inválido." });
-      }
-
-      const parts = request.files();
-      for await (const part of parts) {
-        filesReceivedCount++;
-        const originalFileName = sanitizePathInput(part.filename);
-
-        if (!originalFileName) {
-          fastify.log.warn(`Archivo omitido (nombre inválido): ${part.filename}`);
-          results.push({ filename: part.filename, success: false, error: 'Nombre de archivo inválido.' });
-          continue;
-        }
-
-        const fileContent = await part.toBuffer();
-        const finalRelativePathInServer = path.join(relativePathInServer, originalFileName);
-        
-        try {
-          fastify.log.info(`Subiendo (múltiple) a server: ${serverName}, ruta en server: ${finalRelativePathInServer}`);
-          const opResult = await createserverfile(serverName, finalRelativePathInServer, fileContent);
-          if (typeof opResult === 'string') {
-            results.push({ filename: originalFileName, success: false, error: opResult });
-          } else {
-            results.push({ filename: originalFileName, success: true, data: opResult });
-          }
-        } catch (fileError) {
-          fastify.log.error(`Error subiendo ${originalFileName}: ${fileError.message}`);
-          results.push({ filename: originalFileName, success: false, error: fileError.message });
-        }
-      }
-
-      if (filesReceivedCount === 0) {
-          return reply.code(400).send({ success: false, error: "No se recibieron archivos válidos." });
-      }
-      return reply.send({ success: true, results });
-
-    } catch (error) {
-      fastify.log.error(`Error en subida múltiple: ${error.message}`, error);
-       if (error.validation) {
-           reply.code(400).send({ success: false, error: `Error de validación: ${error.message}` });
-       } else if (error.code === 'FST_FILES_LIMIT' || error.code === 'FST_FIELDS_LIMIT' || error.code === 'FST_PARTS_LIMIT') {
-            reply.code(413).send({ success: false, error: `Límite excedido: ${error.message}` });
-       } else {
-          reply.code(500).send({ success: false, error: 'Error interno durante la subida múltiple.' });
-       }
-    }
-  });
-
   // Ruta para renombrar (Considerar PUT/PATCH /filemanager/servers/:serverName/path/:filePath)
   fastify.put('/rename', async (request, reply) => { // Cambiado a PUT
     const { server: rawServer, path: rawServerPath, newName: rawNewName } = request.body; // Cambiado a request.body
@@ -380,9 +266,11 @@ async function fileManagerRoutes(fastify, options) {
     }
   });
 
-  // Ruta para borrar un archivo o carpeta dentro de un servidor
-  fastify.delete('/delete', async (request, reply) => { // Cambiado a DELETE
-    const { server: rawServer, path: rawServerPath } = request.query; // Mantenido en query para simplicidad, pero body es opción
+
+  fastify.delete('/deleteFile/:serverName/:filePath(.*)', async (request, reply) => { // Cambiado a DELETE
+    const { serverName: rawServer, filePath: rawServerPath } =  request.params;
+    // EXAMPLE = DELETE /delete/serverName/pathToFileOrFolderInServer
+    console.log("deletefile", rawServer, rawServerPath);
     try {
       const serverName = sanitizePathInput(rawServer);
       const pathInServerToDelete = sanitizePathInput(rawServerPath);

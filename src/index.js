@@ -15,7 +15,7 @@ import uploadRouter from './routers/uploadRouter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
-  logger: false
+  logger: true
 });
 
 // Register CORS plugin
@@ -45,9 +45,9 @@ fastify.register(multipart, {
   // También hay onFieldsLimit, onFilesLimit, onPartsLimit
 });
 // Register routes
+fastify.register(filesRouter, { prefix: '/api' });
 fastify.register(authRouter, { prefix: '/auth' });
 fastify.register(dicoverRouter, { prefix: '/network' });
-fastify.register(filesRouter, { prefix: '/api' });
 fastify.register(serverRouter, { prefix: '/api' });
 fastify.register(hardwareRouter, { prefix: '/api' });
 fastify.register(taskRouter, { prefix: '/api' });
