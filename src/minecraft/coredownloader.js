@@ -74,7 +74,7 @@ const getAllMinecraftVersions = async () => {
 };
 
 const getVanillaCore = async () => {
-    let cachedData = readCoresFile(coresFilePath);
+    let cachedData = readCoresFile(); // Ya no necesita path
     if (cachedData && isDataRecent(cachedData)) {
         logger.log("Usando datos cacheados");
         return Object.keys(cachedData.versions).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -82,7 +82,7 @@ const getVanillaCore = async () => {
 
     logger.log("Obteniendo datos de la red");
     const allVersions = await getAllMinecraftVersions();
-    writeCoresFile(coresFilePath, { lastUpdated: new Date().toISOString(), versions: allVersions });
+    writeCoresFile({ lastUpdated: new Date().toISOString(), versions: allVersions }); // Ya no necesita path
     return Object.keys(allVersions).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 };
 

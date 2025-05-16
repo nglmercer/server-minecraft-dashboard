@@ -1,6 +1,5 @@
 import fs from "fs";
 import path, { join } from "path";
-import https from 'https';
 import axios from "axios";
 import colors from "colors";
 import stripAnsi from "strip-ansi";
@@ -11,7 +10,11 @@ const require = createRequire(import.meta.url);
 const packageJSON = require("../../package.json");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const CORES_CACHE_FILE_PATH = path.join(process.cwd(), "data", "cores.json"); // Más organizado en 'data'
+const cacheDir = path.dirname(CORES_CACHE_FILE_PATH);
+if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+}
 class StorageManager {
   /**
    * Crea una instancia del StorageManager.
@@ -241,26 +244,6 @@ console.log(storage.keys());          // ["123", "algo"] */
 // Limpiar el almacenamiento
 //storage.clear();
 //console.log(storage.getAll());          // []
-const getDataByURL = async (url, cb) => {
-  if (cb) {
-    axios
-    .get(url)
-    .then(function (response) {
-        cb(response.data);
-    })
-    .catch(function (error) {
-        cb(false);
-        return console.error(error.data);
-    });
-  }
-  try {
-      const response = await axios.get(url);
-      return response.data;
-  } catch (error) {
-      logger.warning(`Failed to fetch data from ${url}:`, error.message);
-      return null;
-  }
-};
 
 class Logger {
     constructor() {
@@ -337,6 +320,27 @@ class Logger {
         console.log("");
     }
 }
+const getDataByURL = async (url, cb) => {
+  if (cb) {
+    axios
+    .get(url)
+    .then(function (response) {
+        cb(response.data);
+    })
+    .catch(function (error) {
+        cb(false);
+        return console.error(error.data);
+    });
+  }
+  try {
+      const response = await axios.get(url);
+      return response.data;
+  } catch (error) {
+      logger.warning(`Failed to fetch data from ${url}:`, error.message);
+      return null;
+  }
+};
+
 const isObjectsValid = (...objects) => {
   let validCount = 0;
   let summCount = objects.length;
@@ -507,29 +511,42 @@ const getSafeFilename = (url) => {
 const fileExists = (filePath) => {
     return fs.existsSync(filePath);
 };
-const fetchData = (url) => {
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            let data = '';
-            res.on('data', (chunk) => data += chunk);
-            res.on('end', () => resolve(JSON.parse(data)));
-        }).on('error', (err) => reject(err));
-    });
+const fetchData = async (url, config = {}) => {
+  try {
+      const response = await axios.get(url, config);
+      return response.data;
+  } catch (error) {
+      logger.warning(`Fallo al obtener datos de ${url}:`, error.isAxiosError ? error.message : error);
+      // Podrías querer devolver null, undefined, o relanzar un error más específico
+      return null;
+  }
 };
-const isDataRecent = (data) => {
-    const now = new Date();
-    const lastUpdated = new Date(data.lastUpdated);
-    const oneDayInMs = 24 * 60 * 60 * 1000;
-    return (now - lastUpdated) < oneDayInMs;
+const readCoresFile = () => {
+  if (fs.existsSync(CORES_CACHE_FILE_PATH)) {
+      try {
+          const fileContent = fs.readFileSync(CORES_CACHE_FILE_PATH, "utf-8");
+          return JSON.parse(fileContent);
+      } catch (error) {
+          logger.error(`Error al leer el archivo de caché de cores (${CORES_CACHE_FILE_PATH}):`, error);
+          return null;
+      }
+  }
+  return null;
 };
-const writeCoresFile = (coresFilePath, data) => {
-    storage.JSONset(coresFilePath, data);
+
+const writeCoresFile = (data) => {
+  try {
+      fs.writeFileSync(CORES_CACHE_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error) {
+      logger.error(`Error al escribir en el archivo de caché de cores (${CORES_CACHE_FILE_PATH}):`, error);
+  }
 };
-const readCoresFile = (coresFilePath) => {
-    if (storage.JSONget(coresFilePath)) {
-        return storage.JSONget(coresFilePath);
-    }
-    return null;
+
+const isDataRecent = (data, maxAgeInMs = 24 * 60 * 60 * 1000) => { // 1 día por defecto
+  if (!data || !data.lastUpdated) return false;
+  const now = new Date();
+  const lastUpdated = new Date(data.lastUpdated);
+  return (now - lastUpdated) < maxAgeInMs;
 };
 async function getFileNames(directoryPath) {
   try {
