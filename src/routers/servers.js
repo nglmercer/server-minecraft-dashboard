@@ -119,7 +119,11 @@ async function serverManagementRoutes(fastify, options) {
         }
 
         try {
-            const fileInfo = getFileInfo(serverName, fileName);
+            const fileInfo = await getFileInfo(serverName, fileName);
+            console.log("fileInfo", "fileName",{
+                fileName,
+                fileInfo
+            });
             return { success: true, data: fileInfo };
         } catch (error) {
             console.error(`Error en GET /servers/${serverName}/${fileName}: ${error.message}`);
