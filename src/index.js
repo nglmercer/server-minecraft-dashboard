@@ -1,6 +1,5 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors'
-import authRouter from './authRouter.js';
 import filesRouter from './routers/fileManager.js';
 import serverRouter from './routers/servers.js';
 import hardwareRouter from './routers/hardware.js';
@@ -46,7 +45,6 @@ fastify.register(multipart, {
 });
 // Register routes
 fastify.register(filesRouter, { prefix: '/api' });
-fastify.register(authRouter, { prefix: '/auth' });
 fastify.register(dicoverRouter, { prefix: '/network' });
 fastify.register(serverRouter, { prefix: '/api' });
 fastify.register(hardwareRouter, { prefix: '/api' });

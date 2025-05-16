@@ -267,30 +267,33 @@ async function fileManagerRoutes(fastify, options) {
   });
 
 
-  fastify.delete('/deleteFile/:serverName/:filePath(.*)', async (request, reply) => { // Cambiado a DELETE
-    const { serverName: rawServer, filePath: rawServerPath } =  request.params;
-    // EXAMPLE = DELETE /delete/serverName/pathToFileOrFolderInServer
+  fastify.delete('/deleteFile/:serverName/*', async (request, reply) => {
+    const { serverName: rawServer } = request.params;
+    const rawServerPath = request.params['*']; // Captura todo el path restante
+  
     console.log("deletefile", rawServer, rawServerPath);
+  
     try {
       const serverName = sanitizePathInput(rawServer);
       const pathInServerToDelete = sanitizePathInput(rawServerPath);
-
+  
       if (!serverName || !pathInServerToDelete) {
         return reply.code(400).send({ success: false, error: "Parámetros server y path son requeridos/inválidos." });
       }
-      // deletefile(serverName, pathToFileOrFolderInServer)
+  
       const result = await deletefile(serverName, pathInServerToDelete);
       
       if (result === false || (typeof result === 'string' && result.includes("no existe"))) {
         return reply.code(404).send({ success: false, error: result || 'Elemento no encontrado para borrar.' });
       }
-      return reply.send({ success: true, data: { message: "Elemento borrado exitosamente."} }); // result es true/false/error
+  
+      return reply.send({ success: true, data: { message: "Elemento borrado exitosamente."} });
     } catch (error) {
       fastify.log.error(`Error borrando ${rawServerPath} en ${rawServer}: ${error.message}`);
       reply.code(500).send({ success: false, error: error.message || 'Error al borrar.' });
     }
   });
-
+  
   // Ruta para borrar un servidor completo
   fastify.delete('/servers/:serverName', async (request, reply) => {
     const { serverName: rawServerName } = request.params;
