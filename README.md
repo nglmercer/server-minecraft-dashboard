@@ -36,35 +36,6 @@ Start after installation
 npm start
 ```
 
-
-
-## Use Docker container
-
-If you know all the ports you need to use, you can run Kubek in Docker using a command like this. In this example, port 3000 is used for the panel itself, and 25565 for the server
-Replace YOUR_DIRECTORY with your folder path
-
-```
-docker run -d --name kubek \
-            --restart unless-stopped \
-			-p 3000:3000 \
-			-p 25565:25565 \
-			-v /YOUR_DIRECTORY/servers:/usr/kubek/servers \
-			-v /YOUR_DIRECTORY/logs:/usr/kubek/logs \
-			-v /YOUR_DIRECTORY/binaries:/usr/kubek/binaries \
-			-v /YOUR_DIRECTORY/config.json:/usr/kubek/config.json \
-			nglmercer/server-minecraft-dashboard
-```
-
-If you want to open all ports, then use the command below (with it, Kubek will always work on port 3000, port remapping is not available)
-```
-docker run -d --name kubek --network host \
-            --restart unless-stopped \
-			-v /YOUR_DIRECTORY/servers:/usr/kubek/servers \
-			-v /YOUR_DIRECTORY/logs:/usr/kubek/logs \
-			-v /YOUR_DIRECTORY/binaries:/usr/kubek/binaries \
-			-v /YOUR_DIRECTORY/config.json:/usr/kubek/config.json \
-			nglmercer/server-minecraft-dashboard
-```
 ## Use termux (Android)
 
 1. Install termux
@@ -95,13 +66,7 @@ cd server-minecraft-dashboard
 npm install
 npm run start
 ```
-#### tasks
-- add download file or folder
-- compress file and uncompress file // complete
-- add backup server // partial
-- add restore server // partial
-- add delete backup // complete
-- download backup
+
 
 
 - add delete server // partial
