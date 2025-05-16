@@ -12,3 +12,4 @@ data/tasks.json
 /src/node_modules
 data/servers.json
 data/backups.json
+data/cores.json
