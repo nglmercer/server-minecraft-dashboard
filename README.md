@@ -66,9 +66,3 @@ cd server-minecraft-dashboard
 npm install
 npm run start
 ```
-
-
-
-- add delete server // partial
-- fix reload langs to select
-- add usermanagement
