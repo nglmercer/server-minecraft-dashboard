@@ -32,7 +32,7 @@ async function serverManagementRoutes(fastify, options) {
     fastify.get('/servers', async (req, reply) => {
         try {
             const servers = getallfolderinfo();
-
+    
             if (servers.files) {
                 servers.files.forEach(server => {
                     try {
@@ -42,12 +42,38 @@ async function serverManagementRoutes(fastify, options) {
                     }
                 });
             }
-            return { success: true, data: servers, message: ServerStore.store };
+    
+            // ServerStore.store = objetos de servidores adicionales
+            const mapServers = Object.entries(ServerStore.store).map(([key, value]) => ({
+                name: key,
+                ...value
+            }));
+    
+            // Crear un mapa para evitar duplicados por `name`
+            const mergedFilesMap = new Map();
+    
+            // Agregar primero los de servers.files
+            servers.files?.forEach(file => {
+                mergedFilesMap.set(file.name, file);
+            });
+    
+            // Agregar o reemplazar con los de mapServers
+            mapServers.forEach(server => {
+                mergedFilesMap.set(server.name, server);
+            });
+    
+            const ServersData = {
+                ...servers,
+                files: Array.from(mergedFilesMap.values())
+            };
+    
+            return { success: true, data: ServersData, message: ServerStore.store };
         } catch (error) {
             console.error(`Error en GET /servers: ${error.message}`);
             reply.code(500).send({ success: false, error: 'Error al obtener la lista de servidores.' });
         }
     });
+    
 
     fastify.get('/servers/:serverName', async (req, reply) => {
         const { serverName } = req.params;

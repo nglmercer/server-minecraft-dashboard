@@ -4,18 +4,18 @@ import { createGzip, createGunzip } from 'zlib';
 import * as tar from 'tar';
 
 // --- Constants from original main file ---
-export const ALLOWED_EXTENSIONS =
-[
+export const ALLOWED_EXTENSIONS = [
     ".txt", ".log", ".json", ".yaml", ".yml", ".ini", ".conf",
     ".properties", ".env", ".csv", ".tsv", ".md", ".xml", ".mcfunction",
-    ".sh", ".bash",".bat", ".zsh", ".ps1"
-  ];
+    ".sh", ".bash", ".bat", ".zsh", ".ps1",
+    "jpg", "png", "jar", ".gz" 
+];
 
 // --- Base Path Constants (as defined in your original fileutils.js) ---
 // These are used for initialization and as defaults/references in the functions.
-const serverPathBase = path.resolve(process.cwd(), 'servers');
-const backupPathBase = path.resolve(process.cwd(), 'backups');
-const dataPathBase = path.resolve(process.cwd(), 'data'); // For StorageManager default
+export const serverPathBase = path.resolve(process.cwd(), 'servers');
+export const backupPathBase = path.resolve(process.cwd(), 'backups');
+export const dataPathBase = path.resolve(process.cwd(), 'data'); // For StorageManager default
 
 // --- Initialize Base Directories ---
 if (!fs.existsSync(serverPathBase)) {
@@ -24,71 +24,59 @@ if (!fs.existsSync(serverPathBase)) {
 if (!fs.existsSync(backupPathBase)) {
     fs.mkdirSync(backupPathBase, { recursive: true });
 }
-// StorageManager handles its own path creation, but ensuring './data' exists if used as default.
 if (!fs.existsSync(dataPathBase)) {
     fs.mkdirSync(dataPathBase, { recursive: true });
 }
+
 
 // --- Error Handling Interceptor ---
 export function function_with_error_handling(fn) {
     return async (...args) => {
         try {
-            // Ensure basePath argument is resolved if provided as relative
-            if (args.length > 0 && typeof args[0] === 'string' && !path.isAbsolute(args[0])) {
-                // This heuristic might need adjustment based on function signatures.
-                // Assuming the first string arg *could* be a basePath that needs resolving.
-                // For most functions here, basePath is the first arg.
-                // args[0] = path.resolve(process.cwd(), args[0]);
-            }
             const result = await fn(...args);
             return { success: true, data: result, error: null };
         } catch (error) {
             console.error(`Error in ${fn.name || 'operation'}: ${error.message}`);
-            // console.error(error.stack); // Uncomment for full stack trace
             return { success: false, data: null, error: error.message, originalError: error };
         }
     };
 }
-
 // --- Internal Helper ---
-function _isValidExtensionInternal(rawExtension) { // rawExtension es lo que viene de path.extname().slice(1)
-    const extLower = rawExtension.toLowerCase();
+function _isValidExtensionInternal(rawExtension) {
+    if (!rawExtension) return false;
+    const extLower = rawExtension.toLowerCase().startsWith('.') ? rawExtension.toLowerCase() : `.${rawExtension.toLowerCase()}`;
     return ALLOWED_EXTENSIONS.some(allowed => {
-        const allowedLower = allowed.toLowerCase();
-        if (allowedLower.startsWith('.')) {
-            return `.${extLower}` === allowedLower;
-        } else { 
-            return extLower === allowedLower;
-        }
+        const allowedLower = allowed.toLowerCase().startsWith('.') ? allowed.toLowerCase() : `.${allowed.toLowerCase()}`;
+        return extLower === allowedLower;
     });
 }
-async function checkFileValidity(filePath, options = {}) {
+
+export async function checkFileValidity(filePath, options = {}) {
     // Opciones por defecto
     const defaultOptions = {
-      allowedExtensions: [
-        ".txt", ".log", ".json", ".yaml", ".yml", ".ini", ".conf",
-        ".properties", ".env", ".csv", ".tsv", ".md", ".xml", ".mcfunction",
-        ".sh", ".bash",".bat", ".zsh", ".ps1"
-      ],
+      allowedExtensions: ALLOWED_EXTENSIONS, // Usar la lista global actualizada
       maxSize: 1024 * 1024, // 1 MB en bytes
       checkContent: true
     };
     const { allowedExtensions, maxSize, checkContent } = { ...defaultOptions, ...options };
   
-    // Objeto de resultados inicial
     const results = {
-      isValid: true, // Será false si alguna verificación falla
+      isValid: true,
       details: {
         extension: { valid: false, message: '' },
         size: { valid: false, message: '' },
-        content: { valid: true, message: '' } // Por defecto true si no se verifica contenido
+        content: { valid: true, message: '' }
       }
     };
   
     try {
-      // 1. Verificación de la extensión
-      const ext = path.extname(filePath).toLowerCase();
-      if (!allowedExtensions.includes(ext)) {
+      const ext = path.extname(filePath).toLowerCase(); // ext con punto: ".txt"
+      const isAllowed = allowedExtensions.some(allowedExt => {
+        const normalizedAllowedExt = allowedExt.startsWith('.') ? allowedExt.toLowerCase() : `.${allowedExt.toLowerCase()}`;
+        return ext === normalizedAllowedExt;
+      });
+
+      if (!isAllowed) {
         results.details.extension.valid = false;
         results.details.extension.message = `Extensión no permitida: ${ext}`;
         results.isValid = false;
@@ -97,7 +85,6 @@ async function checkFileValidity(filePath, options = {}) {
         results.details.extension.message = `Extensión permitida: ${ext}`;
       }
   
-      // 2. Verificación del tamaño
       const stats = fs.statSync(filePath);
       if (stats.size > maxSize) {
         results.details.size.valid = false;
@@ -108,10 +95,9 @@ async function checkFileValidity(filePath, options = {}) {
         results.details.size.message = `Tamaño dentro del límite: ${stats.size} bytes <= ${maxSize} bytes`;
       }
   
-      // 3. Verificación del contenido (opcional)
       if (checkContent) {
         const buffer = fs.readFileSync(filePath, { encoding: null });
-        const sample = buffer.slice(0, 1024).toString('utf8'); // Lee primeros 1024 bytes
+        const sample = buffer.slice(0, 1024).toString('utf8');
         if (!/^[\x20-\x7E\n\r\t]*$/.test(sample)) {
           results.details.content.valid = false;
           results.details.content.message = 'El archivo no parece ser texto plano';
@@ -123,14 +109,12 @@ async function checkFileValidity(filePath, options = {}) {
       }
   
     } catch (error) {
-      // Manejo de errores (ej. archivo no existe)
       results.isValid = false;
       results.details.error = `Error al verificar el archivo: ${error.message}`;
     }
   
     return results;
   }
-
 // --- File Operation Utilities ---
 
 const _createFileLogic = (basePath, folderName, fileName, content = '') => {
@@ -139,9 +123,9 @@ const _createFileLogic = (basePath, folderName, fileName, content = '') => {
         fs.mkdirSync(folderPath, { recursive: true });
     }
 
-    const ext = path.extname(fileName).slice(1);
+    const ext = path.extname(fileName).slice(1); // Extensión sin el punto
     if (!_isValidExtensionInternal(ext)) {
-        throw new Error(`Extensión no permitida. Extensiones válidas: ${ALLOWED_EXTENSIONS.join(', ')}`);
+        throw new Error(`Extensión no permitida '${ext}'. Extensiones válidas: ${ALLOWED_EXTENSIONS.join(', ')}`);
     }
 
     const filePath = path.join(folderPath, fileName);
@@ -160,23 +144,20 @@ const _readFileLogic = (basePath, folderName, fileName) => {
 export const readFile = function_with_error_handling(_readFileLogic);
 
 const _renameFileLogic = (basePath, folderName, fileName, newName) => {
-    const currentFolderPath = path.join(basePath, folderName); // Path to the containing folder of 'fileName'
-    const oldFilePath = path.join(currentFolderPath, fileName); // fileName might include subdirs e.g. "subdir/old.txt"
+    const currentFolderPath = path.join(basePath, folderName);
+    const oldFilePath = path.join(currentFolderPath, fileName); // fileName puede tener subdirectorios
 
     if (!fs.existsSync(oldFilePath)) {
         throw new Error(`El archivo '${fileName}' no existe en la carpeta '${folderName}'.`);
     }
     
-    // Construct the new file path. newName is just the new base name.
-    const fileDirWithinFolderName = path.dirname(fileName); // e.g., "subdir" or "." if no subdir
+    const fileDirWithinFolderName = path.dirname(fileName); // "subdir" o "."
     const newFilePath = path.join(currentFolderPath, fileDirWithinFolderName, newName);
-
 
     if (fs.existsSync(newFilePath)) {
         throw new Error(`El archivo '${newName}' ya existe en '${path.join(folderName, fileDirWithinFolderName)}'.`);
     }
     
-    // Ensure directory for new file path exists if fileName contained subdirectories
     const newFileDirPath = path.dirname(newFilePath);
     if (!fs.existsSync(newFileDirPath)) {
         fs.mkdirSync(newFileDirPath, { recursive: true });
@@ -750,12 +731,13 @@ export const PathUtils = {
     getFileExtension,
     isAllowedFileType,
     validateFileAttributes,
-    serverPath: serverPathBase, // Use the initialized constant
-    backupPath: backupPathBase, // Use the initialized constant
+    serverPath: serverPathBase, 
+    backupPath: backupPathBase, 
     binariesPath: path.resolve(process.cwd(), 'binaries'),
+    dataPath: dataPathBase,
+    dataPathBase,
     checkFileValidity
 };
-
 // Ensure binariesPath also exists if needed by application logic
 const binariesPathConst = PathUtils.binariesPath;
 if (!fs.existsSync(binariesPathConst)) {
