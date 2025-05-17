@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><meta name="generator" content="Astro v5.7.11"><title>Astro Basics</title><link rel="stylesheet" href="/global.css"><script type="module" src="/_astro/Layout.astro_astro_type_script_index_0_lang.pSVWt9eE.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="/materialSymbols.css"><style>html,body{margin:0;width:100%;height:100%}
+</style>
+<link rel="stylesheet" href="/_astro/new.B7ns2A3x.css"><script>/** @license Copyright 2020 Google LLC (BSD-3-Clause) */
+/** Bundled JS generated from "@astrojs/lit/client-shim.js" */
+var N = Object.defineProperty;
+var i = (t, n) => () => (t && (n = t((t = 0))), n);
+var b = (t, n) => {
+	for (var a in n) N(t, a, { get: n[a], enumerable: !0 });
+};
+function s() {
+	if (d === void 0) {
+		let t = document.createElement('div');
+		(t.innerHTML = '<div><template shadowrootmode="open"></template></div>'),
+			(d = !!t.firstElementChild.shadowRoot);
+	}
+	return d;
+}
+var d,
+	m = i(() => {});
+var p,
+	c,
+	f,
+	u = i(() => {
+		(p = (t) => t.parentElement === null),
+			(c = (t) => t.tagName === 'TEMPLATE'),
+			(f = (t) => t.nodeType === Node.ELEMENT_NODE);
+	});
+var h,
+	E = i(() => {
+		m();
+		u();
+		h = (t) => {
+			var n;
+			if (s()) return;
+			let a = [],
+				e = t.firstElementChild;
+			for (; e !== t && e !== null; )
+				if (c(e)) a.push(e), (e = e.content);
+				else if (e.firstElementChild !== null) e = e.firstElementChild;
+				else if (f(e) && e.nextElementSibling !== null) e = e.nextElementSibling;
+				else {
+					let o;
+					for (; e !== t && e !== null; )
+						if (p(e)) {
+							o = a.pop();
+							let r = o.parentElement,
+								l = o.getAttribute('shadowroot');
+							if (((e = o), l === 'open' || l === 'closed')) {
+								let y = o.hasAttribute('shadowrootdelegatesfocus');
+								try {
+									r.attachShadow({ mode: l, delegatesFocus: y }).append(o.content);
+								} catch {}
+							} else o = void 0;
+						} else {
+							let r = e.nextElementSibling;
+							if (r != null) {
+								(e = r), o !== void 0 && o.parentElement.removeChild(o);
+								break;
+							}
+							let l =
+								(n = e.parentElement) === null || n === void 0 ? void 0 : n.nextElementSibling;
+							if (l != null) {
+								(e = l), o !== void 0 && o.parentElement.removeChild(o);
+								break;
+							}
+							(e = e.parentElement), o !== void 0 && (o.parentElement.removeChild(o), (o = void 0));
+						}
+				}
+		};
+	});
+var w = i(() => {
+	E();
+});
+var v = {};
+b(v, { hasNativeDeclarativeShadowRoots: () => s, hydrateShadowRoots: () => h });
+var S = i(() => {
+	m();
+	w();
+});
+async function g() {
+	let { hydrateShadowRoots: t } = await Promise.resolve().then(() => (S(), v));
+	window.addEventListener('DOMContentLoaded', () => t(document.body), { once: true });
+}
+var x = Document.parseHTMLUnsafe(
+	'<p><template shadowrootmode="open"></template></p>'
+).querySelector('p');
+(!x || !x.shadowRoot) && g();
+</script></head> <body data-astro-cid-sckkx6r4>  <link rel="stylesheet" href="/src/components/newserver/steps/step.css"> <script type="module" src="/_astro/new.astro_astro_type_script_index_0_lang.BcBGKXXQ.js"></script> <task-notifications id="notificaciones"></task-notifications> <div class="step-form" data-astro-cid-gzomwv2w> <div class="container" data-astro-cid-gzomwv2w> <h1 class="title" data-astro-cid-gzomwv2w>Crear un nuevo Servidor de Minecraft</h1> <div class="step-indicator" data-astro-cid-euto42iz> <div class="step-indicator-item" data-step="1" data-astro-cid-euto42iz> <div class="step-icon-container" data-astro-cid-euto42iz> <span class="step-icon material-symbols-rounded" data-astro-cid-euto42iz> radio_button_unchecked </span> <span class="step-check material-symbols-rounded" data-astro-cid-euto42iz>
+check_circle
+</span> <span class="step-number" data-astro-cid-euto42iz>1</span> </div> <span class="step-name" data-astro-cid-euto42iz>Nombre del servidor</span> <div class="step-connector" data-astro-cid-euto42iz></div> </div><div class="step-indicator-item" data-step="2" data-astro-cid-euto42iz> <div class="step-icon-container" data-astro-cid-euto42iz> <span class="step-icon material-symbols-rounded" data-astro-cid-euto42iz> radio_button_unchecked </span> <span class="step-check material-symbols-rounded" data-astro-cid-euto42iz>
+check_circle
+</span> <span class="step-number" data-astro-cid-euto42iz>2</span> </div> <span class="step-name" data-astro-cid-euto42iz>Seleccionar núcleo del servidor</span> <div class="step-connector" data-astro-cid-euto42iz></div> </div><div class="step-indicator-item" data-step="3" data-astro-cid-euto42iz> <div class="step-icon-container" data-astro-cid-euto42iz> <span class="step-icon material-symbols-rounded" data-astro-cid-euto42iz> radio_button_unchecked </span> <span class="step-check material-symbols-rounded" data-astro-cid-euto42iz>
+check_circle
+</span> <span class="step-number" data-astro-cid-euto42iz>3</span> </div> <span class="step-name" data-astro-cid-euto42iz>Configuración Final</span>  </div> </div>  <div class="step-content-container" data-astro-cid-gzomwv2w>  <div class="step-content"> <div class="form-container"> <label> <c-input type="text" id="serverName" style="background-color: #222c3a;  border-radius: 4px; color: white; font-size: 15pt;" name="server-name-input" placeholder="{{newServerWizard.serverNameInput}}" value="NombreServidor" pattern="[a-zA-Z0-9]*" required></c-input> </label> </div> </div> <div class="step-content"> <div class="form-container"> <div class="tabbed-content-wrapper" data-initial-tab="0" id="tabbed-content-fbd6e218" data-active-class="btn btn-primary p-6" data-astro-cid-ar3hbnha> <div class="tab-buttons flex btn-container-1 gap-6" role="tablist" data-astro-cid-ar3hbnha> <button type="button" role="tab" aria-selected="true" aria-controls="tabbed-content-fbd6e218-panel-0" id="tabbed-content-fbd6e218-tab-0" class="tab-button btn btn-primary p-6 w-full btn btn-primary p-6" data-tab-index="0" data-astro-cid-ar3hbnha> Seleccionar de la lista </button><button type="button" role="tab" aria-selected="false" aria-controls="tabbed-content-fbd6e218-panel-1" id="tabbed-content-fbd6e218-tab-1" class="tab-button btn btn-primary p-6 w-full" data-tab-index="1" data-astro-cid-ar3hbnha> Subir tu archivo </button> </div> <div class="tab-content-panels" data-astro-cid-ar3hbnha> <div role="tabpanel" id="tabbed-content-fbd6e218-panel-0" aria-labelledby="tabbed-content-fbd6e218-tab-0" class="tab-content-panel flex gap-6" data-panel-index="0" data-astro-cid-ar3hbnha> <div data-astro-cid-ar3hbnha><div class="w-full"> <grid-selector class="selectcore w-full" id="coreName"></grid-selector> <p>select version</p> <list-selector class="coreVersion" id="coreVersion"></list-selector> </div></div> </div><div role="tabpanel" id="tabbed-content-fbd6e218-panel-1" aria-labelledby="tabbed-content-fbd6e218-tab-1" class="tab-content-panel flex gap-6 hidden" data-panel-index="1" data-astro-cid-ar3hbnha> <div data-astro-cid-ar3hbnha><div> <c-input class="fileName" id="fileName" type="file" darkmode="true"></c-input> </div></div> </div> </div> </div> <script type="module" src="/_astro/TabbedContent.astro_astro_type_script_index_0_lang.BlFfuK72.js"></script>  </div> </div> <div class="step-content"> <div class="form-container"> <span>Selecciona tu version de java</span> <div class="form-group"> <c-input class="javaVersion" id="javaVersion" type="select"></c-input> </div> <div class="form-group"> <div class="form-group"> <span>selecciona Ram</span> <c-input class="Ramsize" id="Ramsize" type="number" value="4" placeholder="GB memoria" min="0.5" step="0.5"></c-input> </div> <div class="form-group"> <span>serverPort</span> <c-input type="number" min="1025" step="1" max="60000" value="25565" id="serverPort" placeholder="puerto"></c-input> </div> <div class="form-group"> <span> Aplicar optimizaciones </span> <c-input class="optiFlags" id="optiflags" type="checkbox" label="Aplicar optimizaciones" placeholder="Aplicar optimizaciones"></c-input> </div> </div> </div></div>  </div> <div class="step-navigation" data-astro-cid-wkeecl3j> <button class="step-prev" disabled data-astro-cid-wkeecl3j> <span class="material-symbols-rounded nav-icon" data-astro-cid-wkeecl3j>arrow_back</span>
+Previous
+</button> <button class="step-next" data-astro-cid-wkeecl3j>
+Next
+<span class="material-symbols-rounded nav-icon" data-astro-cid-wkeecl3j>arrow_forward</span> </button> </div>  <script type="module">document.addEventListener("DOMContentLoaded",()=>{const t=document.querySelector(".step-next"),e=t?.querySelector(".nav-icon");t&&new MutationObserver(o=>{o.forEach(n=>{n.type==="attributes"&&n.attributeName==="class"&&(t.classList.contains("submit-button")&&e?e.textContent="check":e&&(e.textContent="arrow_forward"))})}).observe(t,{attributes:!0})});</script> </div> </div>  <script type="module">document.addEventListener("DOMContentLoaded",()=>{let e=1;const l=document.querySelectorAll(".step-content").length,c=()=>{document.querySelectorAll(".step-content").forEach((t,n)=>{n+1===e?t.classList.add("active"):t.classList.remove("active")}),document.querySelectorAll(".step-indicator-item").forEach((t,n)=>{n+1<e?(t.classList.add("completed"),t.classList.remove("active")):n+1===e?(t.classList.add("active"),t.classList.remove("completed")):t.classList.remove("active","completed")});const s=document.querySelector(".step-prev"),o=document.querySelector(".step-next");s&&(e===1?s.setAttribute("disabled","disabled"):s.removeAttribute("disabled")),o&&(e===l?(o.innerHTML=a("storage")+"crear server",o.classList.add("submit-button")):(o.textContent="Next",o.classList.remove("submit-button")))};function a(s){return`<span class="material-symbols-outlined">${s}</span>`}const r=document.querySelector(".step-prev"),i=document.querySelector(".step-next");r&&r.addEventListener("click",()=>{e>1&&(e--,c())}),i&&i.addEventListener("click",()=>{if(e<l)e++,c();else{console.log("Form submitted!");const s=new CustomEvent("formSubmit");document.dispatchEvent(s)}c()}),c()});</script>  </body></html> <script type="module" src="/_astro/new.astro_astro_type_script_index_1_lang.D6q5IZxP.js"></script>

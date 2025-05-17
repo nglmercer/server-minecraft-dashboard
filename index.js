@@ -1,27 +1,32 @@
 import Fastify from 'fastify';
-import cors from '@fastify/cors'
-import filesRouter from './routers/fileManager.js';
-import serverRouter from './routers/servers.js';
-import hardwareRouter from './routers/hardware.js';
-import dicoverRouter from './routers/discover.js';
-import taskRouter from './routers/task.js';
-import langRouters from './routers/langRouters.js';
-import coresRouter from './routers/minecraft/cores.js';
-import javaVersionsRouter from './routers/minecraft/javaversions.js';
-import pluginMCRouter from './routers/minecraft/plugins.js';
-import backupsRouter from './routers/backup.js';
-import uploadRouter from './routers/uploadRouter.js';
+import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
+import { fileURLToPath } from 'node:url';
+import filesRouter from './src/routers/fileManager.js';
+import serverRouter from './src/routers/servers.js';
+import hardwareRouter from './src/routers/hardware.js';
+import dicoverRouter from './src/routers/discover.js';
+import taskRouter from './src/routers/task.js';
+import langRouters from './src/routers/langRouters.js';
+import coresRouter from './src/routers/minecraft/cores.js';
+import javaVersionsRouter from './src/routers/minecraft/javaversions.js';
+import pluginMCRouter from './src/routers/minecraft/plugins.js';
+import backupsRouter from './src/routers/backup.js';
+import uploadRouter from './src/routers/uploadRouter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
   logger: true
-});
-
-// Register CORS plugin
-fastify.register(cors, {
+})
+.register(cors, {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE']
-});
+})
+.register(fastifyStatic, {
+  root: fileURLToPath(new URL('./dist', import.meta.url)),
+})
+
+// Register CORS plugin
 fastify.register(multipart, {
   attachFieldsToBody: true,
   limits: {
@@ -55,6 +60,7 @@ fastify.register(pluginMCRouter, { prefix: '/api' });
 fastify.register(langRouters, { prefix: '/api' });
 fastify.register(backupsRouter, { prefix: '/api/backups' });
 fastify.register(uploadRouter, { prefix: '/upload' }); // Register the new router with prefix
+
 // Start server
 const start = async () => {
   try {
