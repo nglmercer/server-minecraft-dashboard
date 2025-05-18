@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import treekill from 'tree-kill';
 import si from 'systeminformation';
-
+import { emitter } from '../sockets/Emitter.js';
 class MinecraftServer {
   constructor(serverName, serverFolderPath, config = {}) {
     this.serverName = serverName;
@@ -91,7 +91,7 @@ class MinecraftServer {
       cwd: this.serverFolderPath,
       shell: true
     });
-
+    emitter.emit('server:start', this.serverName);
     // Una vez iniciado, se asume que pasará a 'running' al recibir la salida adecuada
     this.status = 'running';
     this.attachProcessListeners();
@@ -117,7 +117,7 @@ class MinecraftServer {
       this.status = 'stopped';
       this.log += `\nProceso cerrado con código ${code}`;
       console.log(`Servidor ${this.serverName} detenido con código ${code}\n`);
-      
+      emitter.emit('server:close', this.serverName, code);
       // Limpiar el intervalo de métricas al cerrarse el proceso
       if (this._metricsInterval) {
         clearInterval(this._metricsInterval);
@@ -131,10 +131,9 @@ class MinecraftServer {
 
   // Maneja la salida (stdout y stderr) del proceso
   handleOutput(data) {
-    // Código existente
     this.log += data;
     console.log(`[${this.serverName}] ${data}`);
-    
+    emitter.emit('server:output', this.serverName, data);
     // Analizar la salida para detectar eventos y actualizar métricas
     
     // Detectar conexión de jugadores
@@ -181,6 +180,7 @@ class MinecraftServer {
 
   // Envía un comando al proceso a través de su entrada estándar
   sendCommand(command) {
+    emitter.emit('server:command', this.serverName, command);
     if (this.process && this.process.stdin.writable) {
       this.process.stdin.write(command + "\n");
       this.log += `Comando enviado: ${command}\n`;
@@ -248,6 +248,7 @@ class MinecraftServer {
   }
   // Mata el proceso de forma forzosa usando "tree-kill"
   kill() {
+    emitter.emit('server:kill', this.serverName);
     if (this.process && this.process.pid) {
       treekill(this.process.pid, (err) => {
         if (err) {
@@ -316,6 +317,7 @@ class ServerManager {
       //console.error(`El servidor ${serverName} ya existe.`);
       return;
     }
+    emitter.emit('server:add', serverName);
     const server = new MinecraftServer(serverName, serverFolderPath, config);
     this.servers.set(serverName, server);
     console.log(`Servidor ${serverName} agregado.`);
@@ -324,6 +326,7 @@ class ServerManager {
   // Remueve un servidor (y opcionalmente lo mata si está en ejecución)
   removeServer(serverName) {
     if (this.servers.has(serverName)) {
+      emitter.emit('server:remove', serverName);
       const server = this.servers.get(serverName);
       if (server.status !== 'stopped') {
         server.kill();

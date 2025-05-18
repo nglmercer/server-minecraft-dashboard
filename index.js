@@ -13,6 +13,9 @@ import javaVersionsRouter from './src/routers/minecraft/javaversions.js';
 import pluginMCRouter from './src/routers/minecraft/plugins.js';
 import backupsRouter from './src/routers/backup.js';
 import uploadRouter from './src/routers/uploadRouter.js';
+import fastifyWebsocket from '@fastify/websocket'; 
+import WebSocketManager from './src/sockets/ws.js'; 
+import { emitter } from './src/sockets/Emitter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
@@ -48,7 +51,25 @@ fastify.register(multipart, {
   },
   // También hay onFieldsLimit, onFilesLimit, onPartsLimit
 });
-// Register routes
+await fastify.register(fastifyWebsocket, {
+  options: {
+    maxPayload: 1048576, // 1 MiB
+    clientTracking: true, // Crucial for .clients to be populated
+    // perMessageDeflate: true, // Optional: enable compression
+  }
+});
+// ------------------------------------------------------------------------
+
+// --- Inicialización del WebSocketManager ---
+const wsManager = new WebSocketManager(fastify, '/ws');
+wsManager.init();
+emitter.on('*', (event, data) => {
+  console.log("Evento recibido:", event, data);
+  wsManager.broadcast({
+    event,
+    data
+  });
+});
 fastify.register(filesRouter, { prefix: '/api' });
 fastify.register(dicoverRouter, { prefix: '/network' });
 fastify.register(serverRouter, { prefix: '/api' });
