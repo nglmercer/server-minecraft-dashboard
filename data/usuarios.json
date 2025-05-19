@@ -1,23 +1,4 @@
 {
     "users": {
-      "123@gmail.com": {
-        "username": "123@gmail.com",
-        "email": "123@gmail.com",
-        "password": "$2b$10$HLKAjEmOtr6FszTh8r4hoOmPZnweKBhWc19.0SgHQrRskO2P7aqpa"
-      },
-      "testuser": {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "$2b$10$6cvSd3v69tui/pQbivRryud9uXufXtomzdlUDB/tXLi5TQ4pLJUF6",
-        "permissions": [],
-        "roles": []
-      },
-      "elpepe": {
-        "username": "elpepe",
-        "email": "2@gmail.com",
-        "password": "$2b$10$/9r/vrgPcnJoSawEO.CXfepGsx0sj8R8nkLWwXkpr.pMA1X4Lb96q",
-        "permissions": [],
-        "roles": []
-      }
     }
   }

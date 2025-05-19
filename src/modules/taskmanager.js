@@ -6,6 +6,7 @@ import decompress from "decompress";
 import colors from "colors";
 import { v4 as uuidv4 } from 'uuid';
 import { logger, Logger, StorageManager } from "../utils/utils.js";
+import { emitter } from '../sockets/Emitter.js';
 const tasklogger = new Logger();
 const taskStorage = new StorageManager('tasks.json', './data');
 const PREDEFINED = {
@@ -46,6 +47,7 @@ class TaskManager {
     }
 
     addNewTask(data) {
+        emitter.emit('tasks:add', data);
         const newTaskID = this.getNewTaskID();
         this.tasks[newTaskID] = {
             ...data,
@@ -59,7 +61,7 @@ class TaskManager {
 
     updateTask(taskID, data) {
         if (!this.tasks[taskID]) return false;
-    
+        emitter.emit('tasks:update', taskID);
         this.tasks[taskID] = {
             ...this.tasks[taskID],
             ...data,
@@ -113,6 +115,7 @@ class TaskManager {
 const TASK_MANAGER = new TaskManager();
 
 function updateDownloadProgress(taskID, chunkLength) {
+    emitter.emit('tasks:update', taskID);
     const task = TASK_MANAGER.tasks[taskID];
     if (!task || !task.size) return;
 
@@ -126,6 +129,7 @@ function updateDownloadProgress(taskID, chunkLength) {
 
 async function addDownloadTask(downloadURL, filePath) {
     logger.log(`Descargando archivo desde ${downloadURL} a ${filePath}`);
+    let dlTaskID
     try {
         // Extraer la carpeta destino
         const directoryPath = path.dirname(filePath);
@@ -147,7 +151,7 @@ async function addDownloadTask(downloadURL, filePath) {
             throw new Error("Invalid content length");
         }
 
-        const dlTaskID = TASK_MANAGER.addNewTask({
+        dlTaskID = TASK_MANAGER.addNewTask({
             type: PREDEFINED.TASKS_TYPES.DOWNLOADING,
             progress: 0,
             size: { total: contentLength, current: 0 },
@@ -156,7 +160,7 @@ async function addDownloadTask(downloadURL, filePath) {
             filename: path.basename(filePath),
             status: PREDEFINED.TASK_STATUS.IN_PROGRESS
         });
-
+        emitter.emit('tasks:add', TASK_MANAGER.tasks[dlTaskID]);
         const writeStream = fs.createWriteStream(filePath);
         response.data.on('data', (chunk) => updateDownloadProgress(dlTaskID, chunk.length));
 
