@@ -31,8 +31,8 @@ async function serverManagementRoutes(fastify, options) {
 
     fastify.get('/servers', async (req, reply) => {
         try {
-            const servers = getallfolderinfo();
-    
+            const servers = await getallfolderinfo();
+            console.log("servers", servers);
             if (servers.files) {
                 servers.files.forEach(server => {
                     try {
