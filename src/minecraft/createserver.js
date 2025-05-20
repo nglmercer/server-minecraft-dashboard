@@ -116,7 +116,7 @@ function generateStartScript(platformInfo, javaPath, coreFileName, parameters) {
   }
 
   const formattedParameters = formatStartParameters(parameters, platformInfo);
-  const fullParams = `${formattedParameters} -jar "${coreFileName}" nogui`;
+  const fullParams = `${formattedParameters} -Dfile.encoding=UTF-8 -jar "${coreFileName}" nogui`;
 
   if (platformInfo.isWindows) {
     return `@echo off\ncd /d "%~dp0"\n${finalJavaCmd} ${fullParams}\npause`;
