@@ -262,23 +262,27 @@ async function serverManagementRoutes(fastify, options) {
     fastify.get('/servermanager/:serverName/:action', async (req, reply) => {
         const { serverName, action } = req.params;
         const cmd = req.query.cmd;
-
-        const validActions = ['start', 'stop', 'restart', 'send', 'log', 'info', 'players', 'metrics', 'kill'];
+        const cmdArray = req.query.cmds ? JSON.parse(req.query.cmds) : null;
+        const validActions = ['start', 'stop', 'restart', 'send', 'sendMultiple', 'log', 'info', 'players', 'metrics', 'kill'];
+        
         if (!validActions.includes(action)) {
             return reply.code(400).send({ success: false, error: "La acción no es válida." });
         }
-
+        
         if (action === 'send' && !cmd) {
             return reply.code(400).send({ success: false, error: "El parámetro 'cmd' es requerido para la acción 'send'." });
         }
-
+        
+        if (action === 'sendMultiple' && !cmdArray) {
+            return reply.code(400).send({ success: false, error: "El parámetro 'cmds' es requerido para la acción 'sendMultiple'." });
+        }
+        
         try {
             const serverPath = path.join(serversBaseDir, serverName);
             manager.addServer(serverName, serverPath, { stopCommand: "stop" });
-
             let data = null;
             let message = `Acción '${action}' ejecutada para el servidor '${serverName}'.`;
-
+            
             switch (action) {
                 case 'start':
                     await manager.startServer(serverName);
@@ -294,6 +298,17 @@ async function serverManagementRoutes(fastify, options) {
                 case 'send':
                     await manager.sendCommand(serverName, cmd);
                     message = `Comando '${cmd}' enviado al servidor '${serverName}'.`;
+                    break;
+                case 'sendMultiple':
+                    const sentCommands = [];
+                    await Promise.all(
+                        cmdArray.map(async (command) => {
+                            await manager.sendCommand(serverName, command);
+                            sentCommands.push(command);
+                        })
+                    );
+                    message = `Comandos [${sentCommands.join(', ')}] enviados al servidor '${serverName}'.`;
+                    data = { sentCommands };
                     break;
                 case 'log':
                     data = await manager.getServerLogs(serverName);
@@ -316,9 +331,8 @@ async function serverManagementRoutes(fastify, options) {
                     message = `Se intentó terminar forzosamente el servidor '${serverName}'.`;
                     break;
             }
-
+            
             return { success: true, message: message, ...(data !== null && { data }) };
-
         } catch (error) {
             console.error(`Error en /servermanager/${serverName}/${action}: ${error.message}`, error);
             reply.code(500).send({ success: false, error: error.message || `Error al ejecutar la acción '${action}' en el servidor '${serverName}'.` });
