@@ -293,7 +293,7 @@ async function serverManagementRoutes(fastify, options) {
 
             if (fileData && (!coreVersion || !coreName)) {
                 const fileBuffer = await fileData.toBuffer();
-                createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
+                await createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
                 
                 const serverResult = await new Promise((resolve, reject) => {
                     startJavaServerbyFile(serverConfig, (result) => {
@@ -313,7 +313,7 @@ async function serverManagementRoutes(fastify, options) {
                 
                 return { success: true, data: serverConfig, message: serverResult };
             } else {
-                new Promise((resolve, reject) => {
+                await new Promise((resolve, reject) => {
                     startJavaServerGeneration(serverConfig, result => {
                         if (result) {
                             console.info(`Generación de servidor ${serverName} completada (o en progreso).`);
@@ -329,7 +329,8 @@ async function serverManagementRoutes(fastify, options) {
                 
                 return reply.send({
                     message: 'Servidor configurado exitosamente!',
-                    data: serverConfig
+                    data: serverConfig,
+                    success: true,
                 });
             }
             
