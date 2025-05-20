@@ -114,9 +114,9 @@ function generateStartScript(platformInfo, javaPath, coreFileName, parameters) {
       console.warn(`Advertencia: No se pudo acceder a javaExecutablePath '${normalizedJavaPath}'. Error: ${e.message}. Se usará 'java' del PATH.`);
     }
   }
-
+  const encondingParams = "-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8";
   const formattedParameters = formatStartParameters(parameters, platformInfo);
-  const fullParams = `${formattedParameters} -Dfile.encoding=UTF-8 -jar "${coreFileName}" nogui`;
+  const fullParams = `${formattedParameters} ${encondingParams} -jar "${coreFileName}" nogui`;
 
   if (platformInfo.isWindows) {
     return `@echo off\ncd /d "%~dp0"\n${finalJavaCmd} ${fullParams}\npause`;
