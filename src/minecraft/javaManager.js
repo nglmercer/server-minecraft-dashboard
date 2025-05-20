@@ -48,28 +48,25 @@ const getArchitecture = () => {
 // Instalar Java en Termux
 const installJavaTermux = async (version) => {
     const arch = getArchitecture();
-    if (!arch) throw new Error('Arquitectura no soportada');
+    if (!arch) {
+        throw new Error('Arquitectura no soportada para Termux');
+    }
+    logger.info(`Attempting to install openjdk-${version} on Termux (arch: ${arch})`);
 
-    const packagesUrl = `https://packages.termux.org/apt/termux-main/dists/stable/main/binary-${arch}/Packages`;
-    const packagesData = execSync(`curl -sL ${packagesUrl}`).toString();
-    const packageBlock = packagesData.split('\n\n').find(block => 
-        block.includes(`Package: openjdk-${version}`)
-    );
-
-    if (!packageBlock) throw new Error(`OpenJDK ${version} no está disponible`);
-
-    const filename = packageBlock.split('\n')
-        .find(line => line.startsWith('Filename: '))
-        .split(' ')[1];
-
-    const debUrl = `https://packages.termux.org/apt/termux-main/${filename}`;
-    execSync(`curl -LO ${debUrl}`, { stdio: 'inherit' });
-    execSync(`dpkg -i ${filename.split('/').pop()}`, { stdio: 'inherit' });
-    execSync('apt-get install -f -y', { stdio: 'inherit' });
-
-    return await verifyJavaInstallation(version);
+    // Check if package is available via pkg search first, as it's simpler
+    try {
+        execSync(`pkg install -y openjdk-${version}`, { stdio: 'inherit' });
+        logger.info(`Successfully ran 'pkg install openjdk-${version}'.`);
+        // Verification will be done by prepareJavaForServer after this call
+        return true; // Indicates the command was attempted
+    } catch (error) {
+        logger.error(`'pkg install openjdk-${version}' failed: ${error.message}. Falling back to manual dpkg method if necessary (or just failing).`);
+        // You could implement the more complex curl/dpkg method here as a fallback if desired
+        // For now, we'll assume 'pkg install' is the primary method.
+        // If 'pkg install' fails, it often means the package doesn't exist for that version in the repos.
+        throw new Error(`Failed to install openjdk-${version} using 'pkg install'. Error: ${error.message}`);
+    }
 };
-
 // Verificar si una versión específica de Java está instalada en Termux
 const checkJavaVersionTermux = (version) => {
     try {
@@ -244,55 +241,156 @@ const getJavaPath = (javaVersion) => {
 };
 
 // Verificar si Java está instalado y es funcional
-const verifyJavaInstallation = async (version) => {
-    const javaPath = getJavaPath(version);
-    if (!javaPath) return false;
+const verifyJavaInstallation = async (version, javaExecutablePathToVerify) => {
+    // If javaExecutablePathToVerify is not provided, use getJavaPath
+    const javaPath = javaExecutablePathToVerify || getJavaPath(version);
+    if (!javaPath) {
+        // logger.debug(`verifyJavaInstallation: Java path for version ${version} not found.`);
+        return false;
+    }
+
+    if (!fs.existsSync(javaPath)) {
+        logger.warn(`verifyJavaInstallation: Java executable path ${javaPath} does not exist.`);
+        return false;
+    }
 
     try {
-        execSync(`"${javaPath}" -version`);
-        return true;
+        // logger.debug(`Verifying Java at: "${javaPath}" for version ${version}`);
+        const output = execSync(`"${javaPath}" -version 2>&1`).toString();
+        // More robust version checking:
+        // For Oracle/OpenJDK: version "17.0.1" 2021-10-19 or openjdk version "11.0.12"
+        const versionRegex = /(?:java|openjdk)\sversion\s"(\d+)(?:\.\d+)?(?:\.\d+)?(?:_\d+)?/;
+        const match = output.match(versionRegex);
+        
+        if (match && match[1]) {
+            const installedMajorVersion = parseInt(match[1]);
+            const requiredMajorVersion = parseInt(String(version).split('.')[0]); // Get major from '17' or '11.0.2'
+            if (installedMajorVersion === requiredMajorVersion) {
+                // logger.debug(`Java version ${installedMajorVersion} matches required ${requiredMajorVersion} at ${javaPath}.`);
+                return true;
+            } else {
+                logger.warn(`Java version mismatch at ${javaPath}. Expected major ${requiredMajorVersion}, found ${installedMajorVersion}. Full output: ${output}`);
+                return false;
+            }
+        } else {
+            logger.warn(`Could not parse Java version from output at ${javaPath}. Output: ${output}`);
+            return false;
+        }
     } catch (error) {
+        logger.error(`Error verifying Java installation at ${javaPath}: ${error.message}`);
         return false;
     }
 };
+
 async function prepareJavaForServer(javaVersion) {
     if (typeof javaVersion !== 'string') javaVersion = String(javaVersion ?? '');
+    logger.info(`Preparing Java version: ${javaVersion}`);
+
     try {
-        let javaExecutablePath = "";
-        let javaDownloadURL = "";
-        let isJavaNaN = isNaN(parseInt(javaVersion));
-
-        if (isJavaNaN && fs.existsSync(javaVersion)) {
-            return javaVersion;
-        }
-
-        if (!isJavaNaN) {
-            javaExecutablePath = getJavaPath(javaVersion);
-            if (!javaExecutablePath) {
-                let javaVerInfo = getJavaInfoByVersion(javaVersion);
-                javaDownloadURL = javaVerInfo.url;
-                console.log(javaDownloadURL, javaVerInfo);
-
-                const javaDlResult = await addDownloadTask(javaDownloadURL, javaVerInfo.downloadPath);
-                if (!javaDlResult) {
-                    logger.warning( "{{console.javaDownloadFailed}");
-                    return false;
+        // Handle Termux separately for installation
+        if (isTermux()) {
+            let javaPath = getJavaPath(javaVersion); // Checks if already installed and correct version
+            if (javaPath && await verifyJavaInstallation(javaVersion, javaPath)) { // verifyJavaInstallation needs to accept path
+                logger.info(`Java ${javaVersion} (Termux) already installed and verified at ${javaPath}`);
+                return { success: true, path: javaPath };
+            } else {
+                logger.info(`Java ${javaVersion} (Termux) not found or not correct version. Attempting installation...`);
+                try {
+                    const installSuccess = await installJavaTermux(javaVersion); // installJavaTermux should return true on success
+                    if (installSuccess) {
+                        javaPath = getJavaPath(javaVersion); // Re-check path after install
+                        if (javaPath && await verifyJavaInstallation(javaVersion, javaPath)) {
+                             logger.info(`Java ${javaVersion} (Termux) installed successfully at ${javaPath}`);
+                            return { success: true, path: javaPath };
+                        } else {
+                            throw new Error("Java installed for Termux, but verification failed or path not found post-install.");
+                        }
+                    } else {
+                         throw new Error(`Failed to install OpenJDK ${javaVersion} on Termux.`);
+                    }
+                } catch (error) {
+                    logger.error(`Error installing Java ${javaVersion} on Termux: ${error.message}`);
+                    return { success: false, error: `Termux Java ${javaVersion} installation failed: ${error.message}` };
                 }
-
-                const javaUnpackResult = await unpackArchive(javaVerInfo.downloadPath, javaVerInfo.unpackPath, true);
-                if (!javaUnpackResult) {
-                    logger.warning( "{{console.javaUnpackFailed}}");
-                    return false;
-                }
-
-                javaExecutablePath = getJavaPath(javaVersion);
             }
-            return javaExecutablePath;
         }
-        return javaExecutablePath;
+
+        // Non-Termux (Adoptium download logic)
+        let javaInfo = getJavaInfoByVersion(javaVersion);
+        if (!javaInfo || !javaInfo.url) { // Check if javaInfo is valid for download
+            return { success: false, error: `Could not get download info for Java ${javaVersion}. Platform/arch unsupported?` };
+        }
+
+        // Check if already downloaded and unpacked correctly
+        let existingExecutablePath = getJavaPath(javaVersion); // This uses your existing getJavaPath
+        if (existingExecutablePath && await verifyJavaInstallation(javaVersion, existingExecutablePath)) {
+             logger.info(`Java ${javaVersion} already prepared and verified at ${existingExecutablePath}`);
+            return { success: true, path: existingExecutablePath };
+        }
+        
+        logger.info(`Java ${javaVersion} not found locally or not verified. Proceeding with download from ${javaInfo.url}`);
+
+        // Ensure download and unpack directories exist
+        const downloadDir = path.dirname(javaInfo.absoluteDownloadPath);
+        const unpackDir = javaInfo.absoluteUnpackPath;
+        if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
+        if (!fs.existsSync(unpackDir)) fs.mkdirSync(unpackDir, { recursive: true });
+
+
+        logger.info(`Downloading Java ${javaVersion} to ${javaInfo.absoluteDownloadPath}...`);
+        const javaDlResult = await addDownloadTask(javaInfo.url, javaInfo.absoluteDownloadPath, `Downloading Java ${javaVersion}`);
+        // Assuming addDownloadTask throws on error or returns an object with a success flag
+        if (javaDlResult && typeof javaDlResult.success === 'boolean' && !javaDlResult.success) {
+            const errorMsg = `Java ${javaVersion} download failed: ${javaDlResult.error || 'Unknown error'}`;
+            logger.warning(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+        if (!fs.existsSync(javaInfo.absoluteDownloadPath)){ // Fallback check if addDownloadTask doesn't throw/return status
+             const errorMsg = `Java ${javaVersion} download failed (file not found after download attempt).`;
+            logger.warning(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+        logger.info(`Java ${javaVersion} downloaded. Unpacking to ${javaInfo.absoluteUnpackPath}...`);
+
+
+        const javaUnpackResult = await unpackArchive(javaInfo.absoluteDownloadPath, javaInfo.absoluteUnpackPath, true); // true to remove archive after
+         // Assuming unpackArchive throws on error or returns an object with a success flag
+        if (javaUnpackResult && typeof javaUnpackResult.success === 'boolean' && !javaUnpackResult.success) {
+            const errorMsg = `Java ${javaVersion} unpack failed: ${javaUnpackResult.error || 'Unknown error'}`;
+            logger.warning(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+        logger.info(`Java ${javaVersion} unpacked.`);
+
+        // Attempt to find the executable path again using getJavaPath, which is more robust
+        let finalJavaExecutablePath = getJavaPath(javaVersion);
+
+        if (!finalJavaExecutablePath) {
+            // Fallback: try constructing from javaInfo.javaBinPath if getJavaPath fails
+            // This is because getJavaInfoByVersion already tries to find the 'bin' dir
+            if (javaInfo.javaBinPath && fs.existsSync(javaInfo.javaBinPath)) {
+                const exeName = process.platform === 'win32' ? 'java.exe' : 'java';
+                const potentialPath = path.join(javaInfo.javaBinPath, exeName);
+                if (fs.existsSync(potentialPath)) {
+                    finalJavaExecutablePath = potentialPath;
+                }
+            }
+        }
+        
+        if (finalJavaExecutablePath && await verifyJavaInstallation(javaVersion, finalJavaExecutablePath)) {
+            logger.info(`Java ${javaVersion} prepared and verified successfully at ${finalJavaExecutablePath}`);
+            return { success: true, path: finalJavaExecutablePath };
+        } else {
+            const errorMsg = `Java ${javaVersion} prepared, but verification failed or executable not found post-unpack. Checked path: ${finalJavaExecutablePath || 'not found'}. Bin dir: ${javaInfo.javaBinPath}`;
+            logger.warning(errorMsg);
+            // Clean up potentially corrupted unpack directory? Maybe too aggressive.
+            // fs.rmSync(javaInfo.absoluteUnpackPath, { recursive: true, force: true });
+            return { success: false, error: errorMsg };
+        }
+
     } catch (error) {
-        console.error("Error in prepareJavaForServer:", error);
-        return false;
+        logger.error(`Critical error in prepareJavaForServer for version ${javaVersion}: ${error.message}`, error.stack);
+        return { success: false, error: error.message };
     }
 }
 const isJavaVersionCompatible = (requiredVersion, installedVersions) => {

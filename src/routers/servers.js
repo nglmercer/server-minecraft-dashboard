@@ -14,7 +14,7 @@ import {
     MinecraftServer,
     ServerManager
 } from "../minecraft/servermanager.js"; 
-import { startJavaServerGeneration, startJavaServerbyFile } from "../minecraft/createserver.js"; 
+import { startJavaServerGeneration, startJavaServerbyFile, ensureJavaVersionReady } from "../minecraft/createserver.js"; 
 import { PathUtils } from '../fileutils.js';
 import path from 'path';
 
@@ -135,88 +135,6 @@ async function serverManagementRoutes(fastify, options) {
         }
     });
 
-    fastify.post('/createserver', async (req, reply) => {
-        const keys = ["serverName", "core", "coreVersion", "startParameters", "javaVersion", "port", "fileName", "formData"];
-        const reqData = getreqData(req, keys);
-        const { serverName, core, coreVersion, startParameters, javaVersion, port, formData } = reqData;
-
-        if (!serverName || !core || !startParameters || !javaVersion || !port) {
-            console.warn('Faltan campos requeridos en /createserver', { received: reqData });
-            return reply.code(400).send({
-                success: false,
-                error: "Campos requeridos: serverName, core, startParameters, javaVersion, port."
-            });
-        }
-
-        const mapedServerInfo = {
-            existsfolder: existsfolder(serverName),
-            fileName: formData?.fileName || `${core}-${coreVersion}.jar`,
-            core,
-            coreVersion,
-            startParameters,
-            javaVersion,
-            port,
-            serverPort: port,
-            serverName
-        };
-
-        try {
-            if (formData) {
-                console.info(`Creando servidor ${serverName} usando core subido: ${mapedServerInfo.fileName}`);
-                
-                const serverResult = await new Promise((resolve, reject) => {
-                    startJavaServerbyFile(mapedServerInfo, (result) => {
-                        if (result) {
-                            if (result.success === false) {
-                                console.error(`Error (callback) al crear servidor con archivo ${serverName}: ${result.error}`);
-                                reject(new Error(result.error || 'Error reportado por startJavaServerbyFile'));
-                            } else {
-                                resolve(result);
-                            }
-                        } else {
-                            console.error(`Error inesperado (callback vacío) al crear servidor con archivo ${serverName}`);
-                            reject(new Error('Error desconocido durante la creación del servidor (callback vacío).'));
-                        }
-                    });
-                });
-                return { success: true, data: mapedServerInfo, message: serverResult };
-
-            } else if (!mapedServerInfo.existsfolder) {
-                console.info(`Iniciando generación y descarga para servidor ${serverName} (core: ${mapedServerInfo.core})`);
-                
-                new Promise((resolve, reject) => {
-                    startJavaServerGeneration(mapedServerInfo, result => {
-                        if (result) {
-                            console.info(`Generación de servidor ${serverName} completada (o en progreso).`);
-                            resolve(result);
-                        } else {
-                            console.error(`Error en la generación de servidor ${serverName} (callback).`);
-                            reject(new Error('Error durante la generación del servidor (callback).'));
-                        }
-                    });
-                }).catch(err => {
-                    console.error(`Error en background de startJavaServerGeneration para ${serverName}: ${err.message}`);
-                });
-
-                return {
-                    success: true,
-                    data: mapedServerInfo,
-                    message: "Solicitud de creación de servidor recibida. La descarga y configuración se ejecutan en segundo plano."
-                };
-
-            } else {
-                console.info(`Intento de crear servidor ${serverName}, pero ya existe.`);
-                return {
-                    success: true,
-                    data: mapedServerInfo,
-                    message: "El servidor ya existe."
-                };
-            }
-        } catch (error) {
-            console.error(`Error general en POST /createserver para ${serverName}: ${error.message}`, error);
-            reply.code(500).send({ success: false, error: error.message || 'Error interno al procesar la creación del servidor.' });
-        }
-    });
 
     fastify.post('/newserver', async (req, reply) => {
         try {
@@ -290,7 +208,7 @@ async function serverManagementRoutes(fastify, options) {
             }
 
             console.info('Configuración final a procesar:', serverConfig,{ isValidServerPath, serverPath});
-
+            if (javaVersion) await ensureJavaVersionReady(javaVersion);
             if (fileData && (!coreVersion || !coreName)) {
                 const fileBuffer = await fileData.toBuffer();
                 await createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
@@ -329,8 +247,7 @@ async function serverManagementRoutes(fastify, options) {
                 
                 return reply.send({
                     message: 'Servidor configurado exitosamente!',
-                    data: serverConfig,
-                    success: true,
+                    data: serverConfig
                 });
             }
             
