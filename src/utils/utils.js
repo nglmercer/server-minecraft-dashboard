@@ -352,46 +352,96 @@ const isObjectsValid = (...objects) => {
   return summCount === validCount;
 };
 const downloadFileFromUrl = (fileConfig) => {
-  const {server, url, filePath, cb } =fileConfig;
+  const { url, filePath, cb } = fileConfig;
+
+  // This function will either call the provided cb or resolve/reject the promise
+  let resolvePromise, rejectPromise;
+  let promise;
+
+  if (typeof cb !== 'function') {
+    promise = new Promise((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
+    });
+  }
+
+  const handleResult = (success, messageOrError) => {
+    if (typeof cb === 'function') {
+      cb(success, messageOrError);
+    } else if (promise) { // If cb is not a function, we are in promise mode
+      if (success) {
+        resolvePromise({ success: true, message: messageOrError === true ? "File downloaded successfully." : messageOrError });
+      } else {
+        rejectPromise({ success: false, message: messageOrError instanceof Error ? messageOrError.message : messageOrError });
+      }
+    } else {
+      // Fallback if neither cb nor promise (should not happen with current logic but good for safety)
+      if (success) {
+        console.log("Download successful (no callback/promise handler):", messageOrError);
+      } else {
+        console.error("Download error (no callback/promise handler):", messageOrError);
+      }
+    }
+  };
+
   try {
-      // Validación de parámetros
-      if (!isObjectsValid(server, url, filePath)) {
-          return cb(false, "Parámetros inválidos");
-      }
+    // Validación de parámetros
+    if (!isObjectsValid(url, filePath)) {
+      handleResult(false, "Parámetros inválidos");
+      return promise; // Return the promise if in promise mode, otherwise undefined (cb was called)
+    }
 
-      // Validación de URL
-      if (!isValidUrl(url)) {
-          return cb(false, "URL inválida");
-      }
+    // Validación de URL
+    if (!isValidUrl(url)) {
+      handleResult(false, "URL inválida");
+      return promise;
+    }
 
-      // Construir ruta completa
-      const uploadPath = path.join("./servers", server, filePath);
 
-      // Crear directorio si no existe
-      fs.mkdirSync(path.dirname(uploadPath), { recursive: true });
+    // fs.mkdirSync can throw, so it's better to wrap it or handle its potential error
+    try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    } catch (dirError) {
+        handleResult(false, `Error creando directorio: ${dirError.message}`);
+        return promise;
+    }
 
-      // Descargar archivo
-      axios({
-          method: "get",
-          url: url,
-          responseType: "stream"
-      })
-      .then(response => {
-          const writer = fs.createWriteStream(uploadPath);
-          response.data.pipe(writer);
 
-          writer.on("finish", () => cb(true));
-          writer.on("error", err => {
-              fs.unlink(uploadPath, () => cb(false, err.message));
-          });
-      })
-      .catch(error => {
-          cb(false, error.message);
+    // Descargar archivo
+    axios({
+      method: "get",
+      url: url,
+      responseType: "stream"
+    })
+    .then(response => {
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      writer.on("finish", () => {
+        handleResult(true, true); // true indicates generic success
       });
+      writer.on("error", err => {
+        // Attempt to delete the partially downloaded file, but don't let this error mask the original
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            // Log the unlink error, but report the original write error
+            console.error(`Error al intentar eliminar ${filePath} después de un error de escritura: ${unlinkErr.message}`);
+          }
+          handleResult(false, `Error de escritura: ${err.message}`);
+        });
+      });
+    })
+    .catch(error => {
+      // This catch is for axios request errors (e.g., network issue, 404)
+      handleResult(false, `Error en la descarga: ${error.message}`);
+    });
 
   } catch (error) {
-      cb(false, error.message);
+    // This catch is for synchronous errors in the try block (e.g., path.join, initial validations if not returned)
+    handleResult(false, `Error inesperado: ${error.message}`);
   }
+
+  return promise; // If cb was provided, promise is undefined. If not, it's the Promise object.
 };
 export const isValidUrl = (url) => {
   if (!url || typeof url !== "string") {

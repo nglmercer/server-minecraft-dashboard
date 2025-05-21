@@ -345,14 +345,17 @@ async function fileManagerRoutes(fastify, options) {
            return reply.code(400).send({ success: false, error: "No se pudo determinar un nombre de archivo válido desde la URL." });
         }
 
-        const relativeDestPathInServer = path.join(pathInServer, safeFileName);
-
+        const relativeDestPathInServer = path.join(PathUtils.serverPath, rawServer, pathInServer, safeFileName);
+        console.log("relativeDestPathInServer",relativeDestPathInServer,{
+          rawServer,
+          pathInServer,
+          safeFileName
+        });
         fastify.log.info(`Iniciando descarga de ${url} a server: ${serverName}, ruta en server: ${relativeDestPathInServer}`);
         
         // Aquí downloadFileFromUrl es llamado. Asumimos que es asíncrono y devuelve un resultado
         // similar a las otras funciones (o una promesa que resuelva a eso).
         const downloadResult = await downloadFileFromUrl({
-          server: serverName,
           url,
           filePath: relativeDestPathInServer, // Ruta relativa DENTRO del servidor
           // cb: (status) => fastify.log.info("Download status:", status) // Si tu cb devuelve algo útil
@@ -360,7 +363,7 @@ async function fileManagerRoutes(fastify, options) {
 
         // Suponiendo que downloadFileFromUrl ahora devuelve { success, data/error }
         if (downloadResult && downloadResult.success) {
-            return reply.send({ success: true, message: "Descarga completada.", data: downloadResult.data });
+            return reply.send({ success: true, message: "Descarga completada.", data: downloadResult });
         } else {
             return reply.code(500).send({ success: false, error: downloadResult.error || 'Error durante la descarga.' });
         }
