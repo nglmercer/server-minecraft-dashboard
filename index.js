@@ -19,7 +19,7 @@ import { emitter } from './src/sockets/Emitter.js';
 //@fastify/multipart
 import multipart from '@fastify/multipart';
 const fastify = Fastify({
-  logger: true
+  logger: false
 })
 .register(cors, {
   origin: '*',
@@ -85,8 +85,12 @@ fastify.register(uploadRouter, { prefix: '/upload' }); // Register the new route
 // Start server
 const start = async () => {
   try {
-    await fastify.listen({port:process.env.PORT || 3000});
-    console.log(`Servidor corriendo en http://localhost:${fastify.server.address().port}`);
+    await fastify.listen({
+      port: process.env.PORT || 3000,
+      host: '0.0.0.0' // <--- AÑADE ESTA LÍNEA
+    });
+    const address = fastify.server.address();
+    console.log(`Servidor corriendo en http://${address.address}:${address.port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

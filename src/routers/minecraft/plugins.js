@@ -1,46 +1,45 @@
 import path from 'path';
 import {
-  // Importa solo las funciones necesarias aquí
   getfolderinfo,
-  readfilebypath,
-  // Las otras no se usan en estas rutas, pero las dejamos comentadas por si acaso
-  // createserverfolder,
-  // createserverfile,
-  // createsubfolder,
-  // updatefolderinfo,
-  // writeFilebyName
-} from '../../modules/servers.js'; // Verifica la ruta
+  renamefile
+} from '../../modules/servers.js';
+import { PathUtils } from '../../fileutils.js';
 
-// Importamos las utilidades de validación de archivos
-import { PathUtils } from '../../fileutils.js'; // Ajusta la ruta según tu estructura
-
-// --- Funciones Helper ---
-
-// Función para filtrar archivos .jar o .zip
 function isPluginORMod(item) {
-  // Asegura que item.name exista si es un objeto
-  const itemName = typeof item === 'object' && item !== null && typeof item.name === 'string'
+  const itemName = (typeof item === 'object' && item !== null && typeof item.name === 'string')
     ? item.name
-    : typeof item === 'string'
-    ? item
-    : ''; // Devuelve cadena vacía si no es objeto con name ni string
+    : (typeof item === 'string' ? item : '');
 
-  return PathUtils.isAllowedFileType(itemName, ['jar', 'zip']);
+  if (!itemName) return null;
+
+  const isDisabled = itemName.endsWith('.jar.dis') || itemName.endsWith('.zip.dis');
+  let baseName = itemName;
+  if (isDisabled) {
+    baseName = itemName.substring(0, itemName.length - 4);
+  }
+
+  if (PathUtils.isAllowedFileType(baseName, ['jar', 'zip'])) {
+    const type = baseName.substring(baseName.lastIndexOf('.') + 1);
+    return {
+      name: itemName,
+      baseName: baseName,
+      type: type,
+      status: isDisabled ? 'disabled' : 'active',
+    };
+  }
+  return null;
 }
 
-// Helper para sanitizar nombres/rutas (Mejorado con validaciones de fileutils)
 function sanitizePathInput(input) {
   if (!input || typeof input !== 'string') return null;
   
-  // Primero hacemos la sanitización básica
   const sanitized = input.replace(/\.\.\//g, '').replace(/\.\./g, '').replace(/^\//, '');
   
-  // Verificamos si el input ha sido modificado
   if (sanitized !== input) {
-    console.warn(`Sanitización aplicada: "${input}" -> "${sanitized}"`);
+    // Consider removing this log if strict "no console output" is required for "clean code"
+    // console.warn(`Sanitization applied: "${input}" -> "${sanitized}"`);
   }
   
-  // Validamos el formato del nombre según el patrón esperado para archivos
   if (!PathUtils.isValidFilenamePattern(sanitized)) {
     return null;
   }
@@ -48,91 +47,31 @@ function sanitizePathInput(input) {
   return sanitized;
 }
 
-// --- Definición del Plugin Fastify ---
 async function pluginModRoutes(fastify, options) {
 
-  const serversBaseDir = PathUtils.serverPath; // Usamos la constante de fileutils
-
-  // Función helper para construir y validar rutas seguras
-  const getValidatedServerSubPath = (serverName, subDirectory, fileName = null) => {
+  const getValidatedServerSubPath = (serverName, subDirectory) => {
     const sanitizedServer = sanitizePathInput(serverName);
-    const sanitizedSubDir = sanitizePathInput(subDirectory); // 'plugins' o 'mods'
-    
-    // Verificamos si los subdirectorios permitidos son correctos
-    if (!['plugins', 'mods'].includes(sanitizedSubDir)) {
+
+    if (!['plugins', 'mods'].includes(subDirectory)) {
       throw new Error('Subdirectorio no permitido.');
     }
-    
-    let sanitizedFileName = null;
-    
-    // Si se proporciona un nombre de archivo, validamos también su extensión
-    if (fileName) {
-      sanitizedFileName = sanitizePathInput(fileName);
-      
-      // Verificamos si es un tipo de archivo permitido (.jar o .zip)
-      if (sanitizedFileName && !PathUtils.isAllowedFileType(sanitizedFileName, ['jar', 'zip'])) {
-        throw new Error('Tipo de archivo no permitido. Solo se permiten archivos .jar o .zip');
-      }
+
+    if (!sanitizedServer) {
+      throw new Error('Nombre de servidor inválido.');
     }
-
-    if (!sanitizedServer || !sanitizedSubDir) {
-      throw new Error('Nombre de servidor o subdirectorio inválido.');
-    }
-
-    const pathSegments = [serversBaseDir, sanitizedServer, sanitizedSubDir];
-    if (sanitizedFileName) {
-      pathSegments.push(sanitizedFileName);
-    }
-
-    const resolvedPath = path.resolve(...pathSegments);
-
-    // Validación CRUCIAL: Asegura que la ruta esté dentro de 'servers/serverName/subDirectory'
-    const expectedBasePath = path.resolve(serversBaseDir, sanitizedServer, sanitizedSubDir);
-    if (!resolvedPath.startsWith(expectedBasePath)) {
-      const attemptedPath = path.join(...pathSegments.slice(1)); // Ruta relativa intentada
-      throw new Error(`Acceso prohibido fuera del directorio esperado: ${attemptedPath}`);
-    }
-
-    // Verificamos que la ruta existe (si es un directorio)
-    if (!sanitizedFileName && !PathUtils.pathExists(resolvedPath)) {
-      throw new Error(`El directorio ${resolvedPath} no existe.`);
-    }
-
-    // Si es un archivo, verificamos que existe y que es realmente un archivo
-    if (sanitizedFileName) {
-      const validation = PathUtils.validateFileAttributes(
-        resolvedPath,
-        ['jar', 'zip'],
-        { checkPathExists: true, checkIsFile: true }
-      );
-      
-      if (!validation.isValid) {
-        throw new Error(`Archivo inválido: ${validation.errors.join(' ')}`);
-      }
-    }
-
-    // Devuelve la ruta absoluta validada
-    return resolvedPath;
+    return path.join(sanitizedServer, subDirectory);
   };
 
-
-  // --- Rutas ---
-
-  // GET /plugins/:serverName (Listar plugins)
   fastify.get('/plugins/:serverName', async (request, reply) => {
     const { serverName: rawServerName } = request.params;
 
     try {
-      // Construye y valida la ruta a la carpeta de plugins
       const pluginsPath = getValidatedServerSubPath(rawServerName, 'plugins');
+      const serverInfo = await getfolderinfo(pluginsPath);
 
-      // Llama a getfolderinfo
-      const serverInfo = getfolderinfo(pluginsPath);
-
-      // Verifica que serverInfo y serverInfo.files existan
       const files = serverInfo?.files ?? [];
-      const allplugins = files.filter(isPluginORMod);
-
+      const allplugins = files.map(isPluginORMod).filter(p => p !== null);
+      
       return { success: true, data: allplugins };
 
     } catch (error) {
@@ -152,17 +91,15 @@ async function pluginModRoutes(fastify, options) {
     }
   });
 
-  // GET /mods/:serverName (Listar mods)
   fastify.get('/mods/:serverName', async (request, reply) => {
     const { serverName: rawServerName } = request.params;
 
     try {
-      // Construye y valida la ruta a la carpeta de mods
       const modsPath = getValidatedServerSubPath(rawServerName, 'mods');
-
-      const serverInfo = getfolderinfo(modsPath);
+      const serverInfo = await getfolderinfo(modsPath);
+      
       const files = serverInfo?.files ?? [];
-      const allmods = files.filter(isPluginORMod);
+      const allmods = files.map(isPluginORMod).filter(p => p !== null);
 
       return { success: true, data: allmods };
 
@@ -183,81 +120,71 @@ async function pluginModRoutes(fastify, options) {
     }
   });
 
-  // GET /plugins/:serverName/:pluginName (Leer contenido de un plugin específico)
-  fastify.get('/plugins/:serverName/:pluginName', async (request, reply) => {
-    const { serverName: rawServerName, pluginName: rawPluginName } = request.params;
+  async function handleItemToggle(request, reply, subDirectory) {
+    const { serverName, itemName: baseItemNameFromReq, operation } = request.params;
+
+    const sanitizedServerName = sanitizePathInput(serverName);
+    const sanitizedBaseItemName = sanitizePathInput(baseItemNameFromReq);
+
+    if (!sanitizedServerName || !sanitizedBaseItemName) {
+      return reply.code(400).send({ success: false, error: 'Nombre de servidor o elemento inválido.' });
+    }
+
+    if (!PathUtils.isAllowedFileType(sanitizedBaseItemName, ['jar', 'zip'])) {
+      return reply.code(400).send({
+        success: false,
+        error: `Nombre de elemento base inválido: '${sanitizedBaseItemName}'. Debe terminar en .jar o .zip.`,
+      });
+    }
+
+    if (!['enable', 'disable'].includes(operation)) {
+      return reply.code(400).send({ success: false, error: 'Operación no válida. Use "enable" o "disable".' });
+    }
+
+    let currentFileNameOnDisk;
+    let newFileNameOnDisk;
+
+    if (operation === 'enable') {
+      currentFileNameOnDisk = sanitizedBaseItemName + '.dis';
+      newFileNameOnDisk = sanitizedBaseItemName;
+    } else { // operation === 'disable'
+      currentFileNameOnDisk = sanitizedBaseItemName;
+      newFileNameOnDisk = sanitizedBaseItemName + '.dis';
+    }
+
+    const sourceFileRelativePath = path.join(subDirectory, currentFileNameOnDisk);
 
     try {
-      // Construye y valida la ruta al archivo del plugin
-      const filePath = getValidatedServerSubPath(rawServerName, 'plugins', rawPluginName);
+      const renameResult = await renamefile(sanitizedServerName, sourceFileRelativePath, newFileNameOnDisk);
 
-      // En lugar de leer directamente, consideramos enviar el archivo:
-      if (request.query.download === 'true') {
-        return reply.sendFile(path.basename(filePath), path.dirname(filePath));
-      }
-      
-      // Si no se solicita descargar, procedemos con la lógica original (leer contenido)
-      const result = readfilebypath(filePath);
-      
-      fastify.log.warn(`Leyendo contenido completo de ${filePath} a memoria para JSON. Considera alternativas.`);
-      return { success: true, data: result };
-
-    } catch (error) {
-      fastify.log.error(`Error leyendo plugin ${rawPluginName} para ${rawServerName}: ${error.message}`);
-      
-      if (error.message.includes('ENOENT') || error.message.includes('no existe') || 
-          error.message.toLowerCase().includes('not found') || error.message.includes('inválido') || 
-          error.message.includes('Archivo inválido')) {
-        reply.code(404).send({ 
-          success: false, 
-          error: `Plugin '${rawPluginName}' no encontrado en servidor '${rawServerName}' o ruta inválida.` 
+      if (renameResult) {
+        return reply.send({
+          success: true,
+          message: `${subDirectory.slice(0, -1)} '${sanitizedBaseItemName}' ${operation}d successfully. New name: '${newFileNameOnDisk}'.`,
         });
-      } else if (error.message.includes('Acceso prohibido') || error.message.includes('no permitido')) {
-        reply.code(403).send({ success: false, error: 'Acceso denegado.' });
       } else {
-        reply.code(500).send({ success: false, error: 'Error al leer el archivo del plugin.' });
+        return reply.code(404).send({
+          success: false,
+          error: `No se pudo ${operation} el ${subDirectory.slice(0, -1)} '${sanitizedBaseItemName}'. Asegúrese que '${currentFileNameOnDisk}' exista en la carpeta '${subDirectory}' del servidor '${sanitizedServerName}'.`,
+        });
       }
+    } catch (error) {
+      fastify.log.error(`Error al cambiar estado de ${subDirectory.slice(0, -1)} ${sanitizedBaseItemName} para ${sanitizedServerName}: ${error.message}`);
+      if (error.code === 'ENOENT') {
+           return reply.code(404).send({ success: false, error: `Archivo '${currentFileNameOnDisk}' no encontrado para la operación ${operation}.` });
+      }
+      return reply.code(500).send({ success: false, error: `Error interno del servidor al intentar ${operation} el ${subDirectory.slice(0, -1)}.` });
     }
+  }
+
+  fastify.get('/plugin/:serverName/:itemName/:operation', async (request, reply) => {
+    return handleItemToggle(request, reply, 'plugins');
   });
 
-  // GET /mods/:serverName/:modName (Leer contenido de un mod específico)
-  fastify.get('/mods/:serverName/:modName', async (request, reply) => {
-    const { serverName: rawServerName, modName: rawModName } = request.params;
-
-    try {
-      // Construye y valida la ruta al archivo del mod
-      const filePath = getValidatedServerSubPath(rawServerName, 'mods', rawModName);
-
-      // En lugar de leer directamente, consideramos enviar el archivo:
-      if (request.query.download === 'true') {
-        return reply.sendFile(path.basename(filePath), path.dirname(filePath));
-      }
-      
-      // Si no se solicita descargar, procedemos con la lógica original
-      const result = readfilebypath(filePath);
-      
-      fastify.log.warn(`Leyendo contenido completo de ${filePath} a memoria para JSON. Considera alternativas.`);
-      return { success: true, data: result };
-
-    } catch (error) {
-      fastify.log.error(`Error leyendo mod ${rawModName} para ${rawServerName}: ${error.message}`);
-      
-      if (error.message.includes('ENOENT') || error.message.includes('no existe') || 
-          error.message.toLowerCase().includes('not found') || error.message.includes('inválido') || 
-          error.message.includes('Archivo inválido')) {
-        reply.code(404).send({ 
-          success: false, 
-          error: `Mod '${rawModName}' no encontrado en servidor '${rawServerName}' o ruta inválida.` 
-        });
-      } else if (error.message.includes('Acceso prohibido') || error.message.includes('no permitido')) {
-        reply.code(403).send({ success: false, error: 'Acceso denegado.' });
-      } else {
-        reply.code(500).send({ success: false, error: 'Error al leer el archivo del mod.' });
-      }
-    }
+  fastify.get('/mod/:serverName/:itemName/:operation', async (request, reply) => {
+    return handleItemToggle(request, reply, 'mods');
   });
-
 }
 
-// Exporta la función del plugin
+//NO MANEJAMOS NI LECTURA NI DESCARGA YA QUE ESO SE ENCARGA OTRO MODULO ROUTER
 export default pluginModRoutes;
