@@ -26,7 +26,7 @@
 Clone repository and install libs
 **Node.js >= 20 required!**
 ```
-git clone https://github.com/nglmercer/server-minecraft-dashboard.git
+git clone https://github.com/nglmercer/server-minecraft-dashboard
 cd server-minecraft-dashboard
 npm install
 ```
