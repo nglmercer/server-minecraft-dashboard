@@ -1,1 +1,0 @@
-import{w as n}from"./socketManager.Dp7svpr6.js";n.connect({onOpen:e=>{console.log("Conexión WS establecida desde el componente.",e)},onMessage:(e,o)=>{console.log("Mensaje recibido desde el componente:",e,o)},onClose:e=>{console.log("Conexión WS cerrada desde el componente:",e)}});
