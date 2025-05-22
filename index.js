@@ -1,100 +1,158 @@
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import fastifyStatic from '@fastify/static';
-import { fileURLToPath } from 'node:url';
-import filesRouter from './src/routers/fileManager.js';
-import serverRouter from './src/routers/servers.js';
-import hardwareRouter from './src/routers/hardware.js';
-import dicoverRouter from './src/routers/discover.js';
-import taskRouter from './src/routers/task.js';
-import langRouters from './src/routers/langRouters.js';
-import coresRouter from './src/routers/minecraft/cores.js';
-import javaVersionsRouter from './src/routers/minecraft/javaversions.js';
-import pluginMCRouter from './src/routers/minecraft/plugins.js';
-import backupsRouter from './src/routers/backup.js';
-import uploadRouter from './src/routers/uploadRouter.js';
-import fastifyWebsocket from '@fastify/websocket'; 
-import WebSocketManager from './src/sockets/ws.js'; 
+// index.js (en la raíz)
+import os from 'os';
+import { v4 as uuidv4 } from 'uuid';
+
+// Configuración
+import {
+    P2P_INSTANCE_NAME_PREFIX,
+    API_PORT,
+    API_HOST
+} from './config.js';
+
+// Lógica P2P
+import { peerManager } from './src/p2p/peerManager.js';
+import { startDiscovery, stopDiscovery } from './src/p2p/discovery.js';
+import {
+    createTcpServer,
+    closeAllConnections as closeP2PConnections
+} from './src/p2p/communication.js';
+
+// Lógica de Fastify
+import { buildFastify } from './main.js';
+
+// Emitter global (para puentear eventos P2P a WebSockets si es necesario)
 import { emitter } from './src/sockets/Emitter.js';
-//@fastify/multipart
-import multipart from '@fastify/multipart';
-const fastify = Fastify({
-  logger: false
-})
-.register(cors, {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
-})
-.register(fastifyStatic, {
-  root: fileURLToPath(new URL('./dist', import.meta.url)),
-})
 
-// Register CORS plugin
-fastify.register(multipart, {
-  attachFieldsToBody: true,
-  limits: {
-    fieldNameSize: 100, // Max field name size in bytes
-    fieldSize: 1024 * 1024 * 50, // Max field value size in bytes (ej: 5MB)
-    fields: 10,         // Max number of non-file fields
-    fileSize: 1024 * 1024 * 500, // Max file size in bytes (ej: 100MB) - ¡AUMENTA ESTE!
-    files: 5,           // Max number of file fields
-    headerPairs: 5000,  // Max number of header pairs
-    parts: 2000,        // Max number of parts (fields + files)
-  },
-  // Para manejar el error de "file too large" específicamente:
-  onFileSizeLimit: function (part) {
-    // part es el stream del archivo que excedió el límite
-    // Importante: DEBES consumir el stream del archivo aquí o el request se colgará.
-    // Simplemente drenándolo es una opción.
-    fastify.log.warn(`File size limit exceeded for fieldname: ${part.fieldname}, filename: ${part.filename}`);
-    part.file.resume();
-  },
-  // También hay onFieldsLimit, onFilesLimit, onPartsLimit
-});
-await fastify.register(fastifyWebsocket, {
-  options: {
-    maxPayload: 1048576, // 1 MiB
-    clientTracking: true, // Crucial for .clients to be populated
-    // perMessageDeflate: true, // Optional: enable compression
-  }
-});
-// ------------------------------------------------------------------------
 
-// --- Inicialización del WebSocketManager ---
-const wsManager = new WebSocketManager(fastify, '/ws');
-wsManager.init();
-emitter.on('*', (event, data) => {
-  console.log("Evento recibido:", event, data);
-  wsManager.broadcast({
-    event,
-    data
-  });
-});
-fastify.register(filesRouter, { prefix: '/api' });
-fastify.register(dicoverRouter, { prefix: '/network' });
-fastify.register(serverRouter, { prefix: '/api' });
-fastify.register(hardwareRouter, { prefix: '/api' });
-fastify.register(taskRouter, { prefix: '/api' });
-fastify.register(coresRouter, { prefix: '/api/cores' });
-fastify.register(javaVersionsRouter, { prefix: '/api/java' });
-fastify.register(pluginMCRouter, { prefix: '/api' });
-fastify.register(langRouters, { prefix: '/api' });
-fastify.register(backupsRouter, { prefix: '/api/backups' });
-fastify.register(uploadRouter, { prefix: '/upload' }); // Register the new router with prefix
+let p2pTcpServerInstance = null;
+let p2pTcpPort = 0; // Puerto en el que escucha el servidor TCP P2P
+const p2pInstanceName = `${P2P_INSTANCE_NAME_PREFIX}${os.hostname().replace(/\./g, '_')}_${uuidv4().substring(0, 6)}`;
 
-// Start server
-const start = async () => {
-  try {
-    await fastify.listen({
-      port: process.env.PORT || 3000,
-      host: '0.0.0.0' // <--- AÑADE ESTA LÍNEA
+let fastifyInstance = null;
+
+function handleP2PIncomingMessage(socket, message, socketId) {
+    const senderInfo = message.senderInstanceName || `Desconocido(${socketId})`;
+    console.log(`[P2P MSG IN] De ${senderInfo}: ${message.text}`);
+    // Emitir al sistema global de eventos para que los WebSockets puedan recogerlo
+    emitter.emit('p2p_message_received', {
+        from: senderInfo,
+        message: message.text,
+        timestamp: message.timestamp
     });
-    const address = fastify.server.address();
-    console.log(`Servidor corriendo en http://${address.address}:${address.port}`);
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
+}
 
-start();
+function handleP2PClientConnected(socket, socketId) {
+    console.log(`[P2P SYS] Cliente conectado a nuestro servidor TCP: ${socketId}`);
+    emitter.emit('p2p_client_connected', { socketId });
+}
+
+function handleP2PClientDisconnected(socket, socketId) {
+    console.log(`[P2P SYS] Cliente desconectado de nuestro servidor TCP: ${socketId}`);
+    emitter.emit('p2p_client_disconnected', { socketId });
+}
+
+
+async function main() {
+    console.log(`[MAIN] Iniciando instancia P2P: ${p2pInstanceName}`);
+
+    try {
+        // 1. Iniciar servidor TCP P2P para escuchar mensajes entrantes
+        const { server, port } = await createTcpServer(
+            handleP2PIncomingMessage,
+            handleP2PClientConnected,
+            handleP2PClientDisconnected
+        );
+        p2pTcpServerInstance = server;
+        p2pTcpPort = port;
+        console.log(`[MAIN] Servidor TCP P2P escuchando en el puerto: ${p2pTcpPort}`);
+
+        // 2. Iniciar descubrimiento mDNS (anunciarse y encontrar otros)
+        startDiscovery(p2pInstanceName, p2pTcpPort);
+        console.log(`[MAIN] Descubrimiento mDNS iniciado para ${p2pInstanceName} en puerto ${p2pTcpPort}`);
+
+        // 3. Construir e iniciar el servidor Fastify
+        fastifyInstance = await buildFastify({ logger: true }); // Pasa opciones si es necesario
+
+        // Decorar Fastify con información P2P para que los routers la usen
+        fastifyInstance.decorate('p2pInfo', {
+            instanceName: p2pInstanceName,
+            p2pPort: p2pTcpPort
+        });
+
+        await fastifyInstance.listen({ port: API_PORT, host: API_HOST });
+        // fastifyInstance.log.info(`Servidor Fastify escuchando en ${fastifyInstance.server.address().address}:${fastifyInstance.server.address().port}`);
+        // La línea anterior puede dar error si el logger está desactivado. `buildFastify` ya lo loguea.
+
+
+        // Conectar eventos de PeerManager al emitter global
+        peerManager.on('peerUp', (service) => {
+            console.log(`[P2P SYS] Peer ARRIBA: ${service.name}`);
+            emitter.emit('p2p_peer_up', { name: service.name, host: service.host, port: service.port, fqdn: service.fqdn });
+        });
+        peerManager.on('peerDown', (service) => {
+            console.log(`[P2P SYS] Peer ABAJO: ${service.name}`);
+            emitter.emit('p2p_peer_down', { name: service.name, fqdn: service.fqdn });
+        });
+
+
+    } catch (error) {
+        console.error('[MAIN] Fallo al inicializar la aplicación:', error);
+        await gracefulShutdown(1);
+    }
+}
+
+async function gracefulShutdown(exitCode = 0) {
+    console.log('\n[MAIN] Cerrando aplicación...');
+
+    // 1. Detener Fastify
+    if (fastifyInstance) {
+        try {
+            await fastifyInstance.close();
+            console.log('[MAIN] Servidor Fastify cerrado.');
+        } catch (err) {
+            console.error('[MAIN] Error cerrando Fastify:', err);
+        }
+    }
+
+    // 2. Detener Descubrimiento P2P
+    try {
+        await stopDiscovery();
+    } catch (err) {
+        console.error('[MAIN] Error deteniendo descubrimiento P2P:', err);
+    }
+
+
+    // 3. Detener Servidor TCP P2P
+    if (p2pTcpServerInstance) {
+        await new Promise(resolve => {
+            p2pTcpServerInstance.close(() => {
+                console.log('[MAIN] Servidor TCP P2P cerrado.');
+                resolve();
+            });
+            closeP2PConnections(); // Forzar cierre de sockets P2P
+            setTimeout(resolve, 2000); // Timeout por si acaso
+        });
+    } else {
+        closeP2PConnections(); // Si el servidor no se inició, al menos cerrar conexiones salientes
+    }
+
+    console.log('[MAIN] Aplicación finalizada.');
+    process.exit(exitCode);
+}
+
+process.on('SIGINT', () => gracefulShutdown());
+process.on('SIGTERM', () => gracefulShutdown());
+// process.on('uncaughtException', async (err) => {
+// console.error('[MAIN] Excepción no capturada:', err);
+// await gracefulShutdown(1);
+// });
+// process.on('unhandledRejection', async (reason, promise) => {
+// console.error('[MAIN] Rechazo de promesa no manejado:', reason);
+// await gracefulShutdown(1);
+// });
+
+
+main().catch(async err => {
+    console.error("[MAIN] Error no manejado en la ejecución principal:", err);
+    await gracefulShutdown(1);
+});
