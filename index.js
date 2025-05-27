@@ -107,7 +107,7 @@ async function gracefulShutdown(exitCode = 0) {
     // 1. Detener Fastify
     if (fastifyInstance) {
         try {
-            await fastifyInstance.close();
+             fastifyInstance.close();
             console.log('[MAIN] Servidor Fastify cerrado.');
         } catch (err) {
             console.error('[MAIN] Error cerrando Fastify:', err);
@@ -116,7 +116,7 @@ async function gracefulShutdown(exitCode = 0) {
 
     // 2. Detener Descubrimiento P2P
     try {
-        await stopDiscovery();
+         stopDiscovery();
     } catch (err) {
         console.error('[MAIN] Error deteniendo descubrimiento P2P:', err);
     }
@@ -124,7 +124,7 @@ async function gracefulShutdown(exitCode = 0) {
 
     // 3. Detener Servidor TCP P2P
     if (p2pTcpServerInstance) {
-        await new Promise(resolve => {
+         new Promise(resolve => {
             p2pTcpServerInstance.close(() => {
                 console.log('[MAIN] Servidor TCP P2P cerrado.');
                 resolve();
