@@ -1,5 +1,5 @@
-import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Console.D9uhudQV.js";import"./files.C6dDSqY-.js";import"./PluginsUI.C1TnRTCn.js";import{i as $,r as w,t as k}from"./custom-element.rv7pTUKK.js";import{x as n}from"./lit-html.Cs9YtZST.js";import{n as u}from"./property.Bn3N06vY.js";import{r as x}from"./state.V2Q47cpK.js";import{f as S}from"./fetchapi.CJFM1Xyd.js";import"./map.DiiNQ3pp.js";var P=Object.defineProperty,C=Object.getOwnPropertyDescriptor,f=(e,t,r,i)=>{for(var o=i>1?void 0:i?C(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&P(t,r,o),o};let m=class extends w{constructor(){super(...arguments),this.serverId=window.selectedServer||"",this._properties=[],this._isLoading=!1,this._error=null}connectedCallback(){super.connectedCallback(),this._loadProperties()}updated(e){e.has("serverId")&&this.serverId&&this._loadProperties()}_getValueType(e){if(e===null)return"null";const t=typeof e;return t==="boolean"||t==="number"?t:"string"}_parseValueByType(e,t){switch(t){case"null":return e===""?null:String(e);case"boolean":return e==="true"||e===!0;case"number":const r=Number(e);return isNaN(r)?0:r;default:return String(e)}}async _loadProperties(){const e=this.serverId||window.localStorage.getItem("selectedServer");if(!e){this._error="Server ID not provided.",this._properties=[];return}this._isLoading=!0,this._error=null;try{const r="http://localhost:3000/api/"+`servers/${e}/server.properties`;console.log("url",r);const i=await fetch(r);if(!i.ok)throw new Error(`HTTP error! status: ${i.status}`);const o=await i.json();let a=o.data;typeof o.data=="string"&&(a=o.data.split(`
-`).reduce((d,c)=>{if(!c.startsWith("#")&&c.includes("=")){const[y,g]=c.split("=");d[y.trim()]=g.trim()}return d},{}));const s=[];for(const[d,c]of Object.entries(a)){let y=this._getValueType(c),g=c;y==="null"&&(g=""),d==="server-ip"&&y!=="string"&&(y="string"),s.push({key:d,value:c,originalType:y,displayValue:g})}this._properties=s}catch(t){console.error("Error loading properties:",t),this._error=`Error loading properties: ${t instanceof Error?t.message:String(t)}`,this._properties=[]}finally{this._isLoading=!1}}_renderInput(e){switch(e.originalType){case"boolean":return n`
+import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Console.D9uhudQV.js";import"./files.C6dDSqY-.js";import"./PluginsUI.C1TnRTCn.js";import{i as v,r as $,t as w}from"./custom-element.rv7pTUKK.js";import{x as n}from"./lit-html.Cs9YtZST.js";import{n as u}from"./property.Bn3N06vY.js";import{r as k}from"./state.V2Q47cpK.js";import{f as _}from"./fetchapi.YOzFDDwZ.js";import"./map.DiiNQ3pp.js";var S=Object.defineProperty,P=Object.getOwnPropertyDescriptor,y=(e,t,r,i)=>{for(var o=i>1?void 0:i?P(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&S(t,r,o),o};const C=typeof window<"u"?window.location.origin:"",T=C;let m=class extends ${constructor(){super(...arguments),this.serverId=window.selectedServer||"",this._properties=[],this._isLoading=!1,this._error=null}connectedCallback(){super.connectedCallback(),this._loadProperties()}updated(e){e.has("serverId")&&this.serverId&&this._loadProperties()}_getValueType(e){if(e===null)return"null";const t=typeof e;return t==="boolean"||t==="number"?t:"string"}_parseValueByType(e,t){switch(t){case"null":return e===""?null:String(e);case"boolean":return e==="true"||e===!0;case"number":const r=Number(e);return isNaN(r)?0:r;default:return String(e)}}async _loadProperties(){const e=this.serverId||window.localStorage.getItem("selectedServer");if(!e){this._error="Server ID not provided.",this._properties=[];return}this._isLoading=!0,this._error=null;try{const t=T+`/api/servers/${e}/server.properties`;console.log("url",t);const r=await fetch(t);if(!r.ok)throw new Error(`HTTP error! status: ${r.status}`);const i=await r.json();let o=i.data;typeof i.data=="string"&&(o=i.data.split(`
+`).reduce((s,d)=>{if(!d.startsWith("#")&&d.includes("=")){const[p,f]=d.split("=");s[p.trim()]=f.trim()}return s},{}));const a=[];for(const[s,d]of Object.entries(o)){let p=this._getValueType(d),f=d;p==="null"&&(f=""),s==="server-ip"&&p!=="string"&&(p="string"),a.push({key:s,value:d,originalType:p,displayValue:f})}this._properties=a}catch(t){console.error("Error loading properties:",t),this._error=`Error loading properties: ${t instanceof Error?t.message:String(t)}`,this._properties=[]}finally{this._isLoading=!1}}_renderInput(e){switch(e.originalType){case"boolean":return n`
                     <label class="switch">
                         <input 
                             type="checkbox" 
@@ -28,7 +28,7 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
                         data-key=${e.key}
                         data-type=${e.originalType}
                     >`}}_getPropertiesToSave(){const e={};return this.shadowRoot?.querySelectorAll("input[data-key]")?.forEach(r=>{const i=r,o=i.dataset.key,a=i.dataset.type;let s;i.type==="checkbox"?s=i.checked:s=i.value,e[o]=this._parseValueByType(s,a)}),e}async _emitPropertiesChange(){const e=this._getPropertiesToSave(),t=this.serverId||window.localStorage.getItem("selectedServer");if(Object.keys(e).length===0&&!this._properties.length){console.log("No properties to save or loaded.");return}this.dispatchEvent(new CustomEvent("save-success",{bubbles:!0,composed:!0,detail:{server:t,result:e}})),console.log("save-success emitted with:",{server:t,result:e});try{const r=Object.entries(e).map(([o,a])=>`${o}=${a}`).join(`
-`),i=await S.writeFile({directoryname:t,filename:"server.properties",content:r});console.log("result",i)}catch(r){console.error("Error saving properties:",r)}}render(){return this._isLoading?n`<div class="loading-message">Loading properties...</div>`:this._error?n`<div class="error-message">${this._error}</div>`:!this._properties.length&&!this.serverId&&!window.localStorage.getItem("selectedServer")?n`<p>Please provide a 'server-id' attribute or set 'selectedServer' in localStorage.</p>`:this._properties.length?n`
+`),i=await _.writeFile({directoryname:t,filename:"server.properties",content:r});console.log("result",i)}catch(r){console.error("Error saving properties:",r)}}render(){return this._isLoading?n`<div class="loading-message">Loading properties...</div>`:this._error?n`<div class="error-message">${this._error}</div>`:!this._properties.length&&!this.serverId&&!window.localStorage.getItem("selectedServer")?n`<p>Please provide a 'server-id' attribute or set 'selectedServer' in localStorage.</p>`:this._properties.length?n`
             <table>
                 <thead>
                     <tr>
@@ -53,7 +53,7 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
             >
                 Save Properties
             </button>
-        `:n`<p>No properties found or loaded for server: ${this.serverId||window.localStorage.getItem("selectedServer")}.</p>`}};m.styles=$`
+        `:n`<p>No properties found or loaded for server: ${this.serverId||window.localStorage.getItem("selectedServer")}.</p>`}};m.styles=v`
         :host {
             width: 100%;
             border-radius: 8px;
@@ -144,7 +144,7 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
             padding: 10px;
             text-align: center;
         }
-    `;f([u({type:String,attribute:"server-id"})],m.prototype,"serverId",2);f([x()],m.prototype,"_properties",2);f([x()],m.prototype,"_isLoading",2);f([x()],m.prototype,"_error",2);m=f([k("server-properties")],m);var T=Object.defineProperty,I=Object.getOwnPropertyDescriptor,h=(e,t,r,i)=>{for(var o=i>1?void 0:i?I(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&T(t,r,o),o};let p=class extends w{constructor(){super(...arguments),this.value=0,this.centerColor="transparent",this.bgColor="#e0e0e0",this.activeColor="#007bff",this.radius=100,this.strokeWidth=10,this.text=""}firstUpdated(){this.setAttribute("role","progressbar"),this.style.width=`${this.radius}px`,this.style.height=`${this.radius}px`}updated(e){e.has("radius")&&(this.style.width=`${this.radius}px`,this.style.height=`${this.radius}px`)}getCircumference(){return(this.radius/2-this.strokeWidth/2)*2*Math.PI}calculateStrokeDashArray(e){const t=this.getCircumference(),r=t*e/100;return`${r} ${t-r}`}getValue(){return this.value}setValue(e,t=!0){this.value=e,t&&(this.text=e+"%")}setText(e){this.text=e}getText(){return this.text}setActiveColor(e){this.activeColor=e}setCenterColor(e){this.centerColor=e}setBgColor(e){this.bgColor=e}setStrokeWidth(e){this.strokeWidth=e}render(){const e=this.radius/2-this.strokeWidth/2;this.getCircumference();const t=this.calculateStrokeDashArray(this.value),r=this.radius/2;return n`
+    `;y([u({type:String,attribute:"server-id"})],m.prototype,"serverId",2);y([k()],m.prototype,"_properties",2);y([k()],m.prototype,"_isLoading",2);y([k()],m.prototype,"_error",2);m=y([w("server-properties")],m);var I=Object.defineProperty,B=Object.getOwnPropertyDescriptor,h=(e,t,r,i)=>{for(var o=i>1?void 0:i?B(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&I(t,r,o),o};let c=class extends ${constructor(){super(...arguments),this.value=0,this.centerColor="transparent",this.bgColor="#e0e0e0",this.activeColor="#007bff",this.radius=100,this.strokeWidth=10,this.text=""}firstUpdated(){this.setAttribute("role","progressbar"),this.style.width=`${this.radius}px`,this.style.height=`${this.radius}px`}updated(e){e.has("radius")&&(this.style.width=`${this.radius}px`,this.style.height=`${this.radius}px`)}getCircumference(){return(this.radius/2-this.strokeWidth/2)*2*Math.PI}calculateStrokeDashArray(e){const t=this.getCircumference(),r=t*e/100;return`${r} ${t-r}`}getValue(){return this.value}setValue(e,t=!0){this.value=e,t&&(this.text=e+"%")}setText(e){this.text=e}getText(){return this.text}setActiveColor(e){this.activeColor=e}setCenterColor(e){this.centerColor=e}setBgColor(e){this.bgColor=e}setStrokeWidth(e){this.strokeWidth=e}render(){const e=this.radius/2-this.strokeWidth/2;this.getCircumference();const t=this.calculateStrokeDashArray(this.value),r=this.radius/2;return n`
       <div class="container">
         <svg width="100%" height="100%" viewBox="0 0 ${this.radius} ${this.radius}">
           <!-- Center circle (can be transparent) -->
@@ -180,7 +180,7 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
         </svg>
         <span class="text">${this.text||this.value+"%"}</span>
       </div>
-    `}};p.styles=$`
+    `}};c.styles=v`
     :host {
       display: inline-block;
       position: relative;
@@ -200,14 +200,14 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
       font-weight: bold;
       pointer-events: none;
     }
-  `;h([u({type:Number})],p.prototype,"value",2);h([u({type:String,attribute:"center-color"})],p.prototype,"centerColor",2);h([u({type:String,attribute:"bg-color"})],p.prototype,"bgColor",2);h([u({type:String,attribute:"active-color"})],p.prototype,"activeColor",2);h([u({type:Number})],p.prototype,"radius",2);h([u({type:Number})],p.prototype,"strokeWidth",2);h([u({type:String})],p.prototype,"text",2);p=h([k("circle-progress")],p);var B=Object.defineProperty,N=Object.getOwnPropertyDescriptor,_=(e,t,r,i)=>{for(var o=i>1?void 0:i?N(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&B(t,r,o),o};function b(e,t=!1,r=1){if(e==null)return"N/A";if(e===0)return"0 Bytes";const i=t?1e3:1024;if(Math.abs(e)<i)return e+" B";const o=t?["kB","MB","GB","TB","PB","EB","ZB","YB"]:["KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB"];let a=-1;const s=10**r;let d=e;do d/=i,++a;while(Math.round(Math.abs(d)*s)/s>=i&&a<o.length-1);return d.toFixed(r)+" "+o[a]}function O(e){if(e==null)return"N/A";if(e===0)return"0 seconds";const t=Math.floor(e/(3600*24)),r=Math.floor(e%(3600*24)/3600),i=Math.floor(e%3600/60),o=Math.floor(e%60),a=[];return t>0&&a.push(t+(t===1?" day":" days")),r>0&&a.push(r+(r===1?" hour":" hours")),i>0&&a.push(i+(i===1?" minute":" minutes")),(o>0||a.length===0)&&a.push(o+(o===1?" second":" seconds")),a.join(", ")}const l={osSectionTitle:"System Information",osName:"Operating System",osBuild:"OS Build",totalRam:"Total RAM",Uptime:"System Uptime",cpuModel:"CPU Model",cpuCores:"CPU Cores",cpuSpeed:"CPU Speed",environmentSectionTitle:"Environment Variables",networkInterfacesSectionTitle:"Network Interfaces",disksSectionTitle:"Disk Usage",diskUnit:"Unit",diskUsed:"Used",diskFree:"Free",diskTotal:"Total",diskPercent:"Usage %",noData:"No system data available.",loadingData:"Loading system data...",errorData:"Error loading system data."};let v=class extends w{constructor(){super(...arguments),this.systemInfo=null}render(){if(!this.systemInfo)return n`<div class="status-message">${l.loadingData}</div>`;if(!this.systemInfo.success||!this.systemInfo.data)return n`<div class="status-message">${this.systemInfo.success===!1?l.errorData:l.noData}</div>`;const e=this.systemInfo.data,t=e.platform||{},r=e.cpu||{},i=e.enviroment||{},o=e.networkInterfaces||{},a=e.rawdisks?e.rawdisks.map(s=>({...s,mountPoint:s.mount||s.fs})):(e.disks||[]).map(s=>({...s,mountPoint:s.filesystem}));return n`
+  `;h([u({type:Number})],c.prototype,"value",2);h([u({type:String,attribute:"center-color"})],c.prototype,"centerColor",2);h([u({type:String,attribute:"bg-color"})],c.prototype,"bgColor",2);h([u({type:String,attribute:"active-color"})],c.prototype,"activeColor",2);h([u({type:Number})],c.prototype,"radius",2);h([u({type:Number})],c.prototype,"strokeWidth",2);h([u({type:String})],c.prototype,"text",2);c=h([w("circle-progress")],c);var N=Object.defineProperty,O=Object.getOwnPropertyDescriptor,x=(e,t,r,i)=>{for(var o=i>1?void 0:i?O(t,r):t,a=e.length-1,s;a>=0;a--)(s=e[a])&&(o=(i?s(t,r,o):s(o))||o);return i&&o&&N(t,r,o),o};function g(e,t=!1,r=1){if(e==null)return"N/A";if(e===0)return"0 Bytes";const i=t?1e3:1024;if(Math.abs(e)<i)return e+" B";const o=t?["kB","MB","GB","TB","PB","EB","ZB","YB"]:["KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB"];let a=-1;const s=10**r;let d=e;do d/=i,++a;while(Math.round(Math.abs(d)*s)/s>=i&&a<o.length-1);return d.toFixed(r)+" "+o[a]}function A(e){if(e==null)return"N/A";if(e===0)return"0 seconds";const t=Math.floor(e/(3600*24)),r=Math.floor(e%(3600*24)/3600),i=Math.floor(e%3600/60),o=Math.floor(e%60),a=[];return t>0&&a.push(t+(t===1?" day":" days")),r>0&&a.push(r+(r===1?" hour":" hours")),i>0&&a.push(i+(i===1?" minute":" minutes")),(o>0||a.length===0)&&a.push(o+(o===1?" second":" seconds")),a.join(", ")}const l={osSectionTitle:"System Information",osName:"Operating System",osBuild:"OS Build",totalRam:"Total RAM",Uptime:"System Uptime",cpuModel:"CPU Model",cpuCores:"CPU Cores",cpuSpeed:"CPU Speed",environmentSectionTitle:"Environment Variables",networkInterfacesSectionTitle:"Network Interfaces",disksSectionTitle:"Disk Usage",diskUnit:"Unit",diskUsed:"Used",diskFree:"Free",diskTotal:"Total",diskPercent:"Usage %",noData:"No system data available.",loadingData:"Loading system data...",errorData:"Error loading system data."};let b=class extends ${constructor(){super(...arguments),this.systemInfo=null}render(){if(!this.systemInfo)return n`<div class="status-message">${l.loadingData}</div>`;if(!this.systemInfo.success||!this.systemInfo.data)return n`<div class="status-message">${this.systemInfo.success===!1?l.errorData:l.noData}</div>`;const e=this.systemInfo.data,t=e.platform||{},r=e.cpu||{},i=e.enviroment||{},o=e.networkInterfaces||{},a=e.rawdisks?e.rawdisks.map(s=>({...s,mountPoint:s.mount||s.fs})):(e.disks||[]).map(s=>({...s,mountPoint:s.filesystem}));return n`
             <div class="system-monitor">
                 <div class="system-info">
                     <h3>${l.osSectionTitle}</h3>
                     <p>${l.osName}: ${t.name??"N/A"} ${t.version??""} <sup>${t.arch??""}</sup></p>
                     <p>${l.osBuild}: ${t.release??"N/A"}</p>
-                    <p>${l.totalRam}: ${e.totalmem?b(e.totalmem*1024*1024):"N/A"}</p>
-                    <p>${l.Uptime}: ${O(e.uptime)}</p>
+                    <p>${l.totalRam}: ${e.totalmem?g(e.totalmem*1024*1024):"N/A"}</p>
+                    <p>${l.Uptime}: ${A(e.uptime)}</p>
                     <p>${l.cpuModel}: ${r.model??"N/A"}</p>
                     <p>${l.cpuCores}: ${r.cores??"N/A"} cores</p>
                     <p>${l.cpuSpeed}: ${r.speed?`${r.speed} GHz`:"N/A"}</p>
@@ -243,8 +243,8 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
                                 <tr class="network-ips">
                                     <th>${s}</th>
                                     <td>
-                                        ${(d||[]).map(c=>n`
-                                            <span>${c.address??"N/A"} <sup>${c.family??""}</sup></span><br>
+                                        ${(d||[]).map(p=>n`
+                                            <span>${p.address??"N/A"} <sup>${p.family??""}</sup></span><br>
                                         `)}
                                     </td>
                                 </tr>
@@ -276,9 +276,9 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
                             ${a.map(s=>n`
                                 <tr>
                                     <th>${s.mountPoint??s.fs??s.filesystem??"N/A"}</th>
-                                    <td>${b(s.used)}</td>
-                                    <td>${b(s.available)}</td>
-                                    <td>${b(s.total??s.size)}</td>
+                                    <td>${g(s.used)}</td>
+                                    <td>${g(s.available)}</td>
+                                    <td>${g(s.total??s.size)}</td>
                                     <td>${typeof s.use=="number"?`${s.use.toFixed(1)}%`:s.use??"N/A"}</td>
                                 </tr>
                             `)}
@@ -286,7 +286,7 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
                     </table>
                 `:""}
             </div>
-        `}};v.styles=$`
+        `}};b.styles=v`
         :host {
             display: block;
             font-family: Arial, sans-serif;
@@ -355,4 +355,4 @@ import"./barstatus.CLr0Fo_F.js";import"./serveritem.DCN3syWx.js";import"./Consol
             text-align: center;
             font-style: italic;
         }
-    `;_([u({type:Object})],v.prototype,"systemInfo",2);v=_([k("system-monitor-lit")],v);
+    `;x([u({type:Object})],b.prototype,"systemInfo",2);b=x([w("system-monitor-lit")],b);
