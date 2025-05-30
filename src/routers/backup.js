@@ -10,8 +10,9 @@ async function backupRoutes(fastify, options) {
   const backupsDir = PathUtils.backupPath;
 
   fastify.post('/create', async (request, reply) => {
-    const { folderName, outputFilename } = request.body;
-    
+    const { serverName } = request.body;
+    const folderName = request.body.folderName || serverName;
+    const outputFilename = request.body.outputFilename || `${serverName}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
     if (!folderName || !outputFilename) {
       return reply.code(400).send({ error: 'Faltan parámetros: folderName y outputFilename son requeridos.' });
     }
