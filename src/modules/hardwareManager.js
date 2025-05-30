@@ -20,7 +20,8 @@ const isAndroid = process.platform === 'android' || process.env.TERMUX_VERSION !
 
 // --- Cache para Hardware Info ---
 let cachedHardwareInfo = null;
-let hardwareInfoPromise = null; // Para manejar llamadas concurrentes mientras se obtiene la info por primera vez
+let hardwareInfoPromise = null;
+
 
 // --- Funciones de obtención de datos ---
 
@@ -49,9 +50,31 @@ const fetchCpuAndMemoryLoad = async () => {
 
   return { cpuLoad, memInfo };
 };
+/**
+ * Obtiene datos dinámicos que siempre deben actualizarse (uptime y networkInterfaces)
+ */
+const fetchDynamicData = async () => {
+  logger.log('Fetching dynamic data (uptime and network interfaces)');
+  
+  let timeInfo = {};
+  
+  try {
+    timeInfo = await si.time();
+    logger.debug('Time data:', timeInfo);
+  } catch (e) {
+    logger.error('Error fetching time info:', e.message);
+  }
+
+  const networkInterfaces = os.networkInterfaces();
+  
+  return {
+    uptime: timeInfo.uptime ? Math.round(timeInfo.uptime) : 0,
+    networkInterfaces
+  };
+};
 
 /**
- * Obtiene datos estáticos de hardware (discos, CPU, tiempo, batería, gráficos).
+ * Obtiene datos estáticos de hardware (discos, CPU, batería, gráficos).
  * Estos datos son más propensos a ser cacheados.
  */
 const fetchStaticHardwareData = async () => {
@@ -121,7 +144,6 @@ const fetchStaticHardwareData = async () => {
 
   return { disks, cpuInfo, timeInfo, batteryInfo, graphicsInfo };
 };
-
 // --- Funciones exportadas ---
 
 /**
@@ -170,17 +192,32 @@ export const getResourcesUsage = async () => {
 
 /**
  * Obtiene información detallada del hardware.
- * Utiliza un sistema de caché para devolver datos previamente obtenidos si están disponibles.
+ * Utiliza un sistema de caché para devolver datos previamente obtenidos si están disponibles,
+ * pero siempre actualiza uptime y networkInterfaces ya que son datos dinámicos.
  */
 export const getHardwareInfo = async () => {
+  // Siempre obtener datos dinámicos (uptime y networkInterfaces)
+  const dynamicData = await fetchDynamicData();
+  
   if (cachedHardwareInfo) {
-    logger.log('Returning cached hardware info');
-    return cachedHardwareInfo;
+    logger.log('Returning cached hardware info with updated dynamic data');
+    // Actualizar solo los campos dinámicos en la info cacheada
+    return {
+      ...cachedHardwareInfo,
+      uptime: dynamicData.uptime,
+      networkInterfaces: dynamicData.networkInterfaces
+    };
   }
 
   if (hardwareInfoPromise) {
     logger.log('Waiting for ongoing hardware info fetch');
-    return hardwareInfoPromise;
+    const hardwareInfo = await hardwareInfoPromise;
+    // Actualizar los datos dinámicos después de obtener la info
+    return {
+      ...hardwareInfo,
+      uptime: dynamicData.uptime,
+      networkInterfaces: dynamicData.networkInterfaces
+    };
   }
 
   logger.log('Fetching hardware info (first time or after reset)');
@@ -274,7 +311,14 @@ export const getHardwareInfo = async () => {
     // porque la próxima llamada encontrará cachedHardwareInfo primero.
   })();
 
-  return hardwareInfoPromise;
+  const hardwareInfo = await hardwareInfoPromise;
+  
+  // Actualizar con los datos dinámicos más recientes
+  return {
+    ...hardwareInfo,
+    uptime: dynamicData.uptime,
+    networkInterfaces: dynamicData.networkInterfaces
+  };
 };
 
 /**
