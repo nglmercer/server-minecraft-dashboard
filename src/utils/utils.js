@@ -309,7 +309,9 @@ class Logger {
     error(...text) {
         return this.logMessage("ERR", colors.red, ...text);
     }
-
+    info(...text) {
+        return this.logMessage("INFO", colors.blue, ...text);
+    }
     // Mostrar mensaje de bienvenida
     WelcomeMessage() {
         console.log("");
