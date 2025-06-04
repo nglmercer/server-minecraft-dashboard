@@ -21,6 +21,7 @@ import multipart from '@fastify/multipart';
 export async function buildFastify(options = {}) {
   const fastify = Fastify({
       logger: options.logger !== undefined ? options.logger : false, // Permite pasar logger desde index.js
+      bodyLimit: 1048576 * 1000, // 1GB limit
       ...options.fastifyOptions // Otras opciones de Fastify
   })
 .register(cors, {

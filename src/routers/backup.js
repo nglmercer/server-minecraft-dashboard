@@ -4,7 +4,8 @@ import { createReadStream } from 'fs';
 import { PathUtils } from '../fileutils.js';
 import path from 'path';
 import fs from 'fs';
-
+import util from 'util';
+const stat = util.promisify(fs.stat);
 async function backupRoutes(fastify, options) {
   // Use PathUtils constants for paths
   const backupsDir = PathUtils.backupPath;
@@ -107,45 +108,97 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  fastify.get('/download/:filename', async (request, reply) => {
-    const { filename } = request.params;
-    
-    // Validate filename using PathUtils
+  fastify.get('/download/:filename(.*)', async (request, reply) => {
+    console.log('DOWNLOAD HANDLER - Entry. URL:', request.url);
+    const filename = request.params.filename;
+    console.log('DOWNLOAD HANDLER - Filename extracted:', filename);
+  
+    // Tu validación existente...
+    console.log('DOWNLOAD HANDLER - Using backupsDir:', backupsDir);
+    if (typeof backupsDir !== 'string' || backupsDir.trim() === '') {
+      console.error('DOWNLOAD HANDLER - CRITICAL: backupsDir is invalid:', backupsDir);
+      return reply.code(500).send({ error: 'Server configuration error: backup directory not set.' });
+    }
+  
     if (!filename || !PathUtils.isValidFilenamePattern(filename)) {
+      console.log('DOWNLOAD HANDLER - Condition: Invalid filename pattern. Filename:', filename);
       return reply.code(400).send({ message: 'Nombre de archivo inválido.' });
     }
-    
+    console.log('DOWNLOAD HANDLER - Checkpoint: Filename pattern VALID.');
+  
     const filePath = path.join(backupsDir, filename);
-    
-    // Additional security check
+    console.log('DOWNLOAD HANDLER - Constructed filePath:', filePath);
+  
     const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(backupsDir)) {
-      console.warn(`Intento de acceso fuera del directorio de backups denegado: ${filePath}`);
+    const resolvedBackupsDir = path.resolve(backupsDir);
+    console.log('DOWNLOAD HANDLER - Resolved filePath:', resolvedPath);
+    console.log('DOWNLOAD HANDLER - Resolved backupsDir:', resolvedBackupsDir);
+  
+    if (!resolvedPath.startsWith(resolvedBackupsDir)) {
+      console.warn(`DOWNLOAD HANDLER - Condition: Path traversal attempt. ResolvedPath: ${resolvedPath}, ResolvedBackupsDir: ${resolvedBackupsDir}`);
       return reply.code(403).send({ message: 'Acceso prohibido.' });
     }
-    
-    // Use PathUtils to check file existence and type
+    console.log('DOWNLOAD HANDLER - Checkpoint: Path traversal check PASSED.');
+  
     if (!PathUtils.pathExists(filePath)) {
-      return reply.code(404).send({ message: 'Archivo de backup no encontrado' });
+      console.log('DOWNLOAD HANDLER - Condition: Path does not exist for filePath:', filePath);
+      return reply.code(404).send({ message: 'Archivo de backup no encontrado (handler check)' });
     }
-    
+    console.log('DOWNLOAD HANDLER - Checkpoint: Path exists check PASSED for filePath:', filePath);
+  
     if (!PathUtils.isFile(filePath)) {
+      console.log('DOWNLOAD HANDLER - Condition: Path is not a file for filePath:', filePath);
       return reply.code(400).send({ message: 'La ruta no corresponde a un archivo.' });
     }
-    
+    console.log('DOWNLOAD HANDLER - Checkpoint: Path is file check PASSED for filePath:', filePath);
+  
     try {
-      // Verify file permissions
+      console.log('DOWNLOAD HANDLER - TRY block: Attempting fs.access for filePath:', filePath);
       await fs.promises.access(filePath, fs.constants.R_OK);
+      console.log('DOWNLOAD HANDLER - TRY block: fs.access SUCCEEDED for filePath:', filePath);
+  
+      // Obtener información del archivo
+      const stats = await stat(filePath);
+      const fileSize = stats.size;
+      console.log('DOWNLOAD HANDLER - File size:', fileSize, 'bytes');
+  
+      // Configurar headers para descarga
+      reply.header('Content-Type', 'application/octet-stream');
+      reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+      reply.header('Content-Length', fileSize);
+      reply.header('Cache-Control', 'no-cache');
       
-      // Use Fastify's reply.download for efficient file download
-      return reply.download(filePath, filename);
-    } catch (error) {
-      console.error(`Error al procesar descarga para ${filename}:`, error);
-      
-      if (error.code === 'EACCES') {
-        reply.code(403).send({ message: 'Permiso denegado para leer el archivo' });
+      // Para archivos grandes, usar streaming
+      if (fileSize > 50 * 1024 * 1024) { // 50MB threshold
+        console.log('DOWNLOAD HANDLER - Using streaming for large file');
+        
+        // Crear stream de lectura
+        const readStream = fs.createReadStream(filePath, {
+          highWaterMark: 1024 * 1024 // 1MB chunks
+        });
+  
+        // Manejar errores del stream
+        readStream.on('error', (error) => {
+          console.error('DOWNLOAD HANDLER - Stream error:', error);
+          if (!reply.sent) {
+            reply.code(500).send({ message: 'Error al leer el archivo' });
+          }
+        });
+  
+        // Enviar el stream
+        return reply.send(readStream);
       } else {
-        reply.code(500).send({ message: 'No se pudo enviar el archivo de backup.' });
+        // Para archivos pequeños, usar reply.download
+        console.log('DOWNLOAD HANDLER - Using reply.download for small file');
+        return reply.download(filePath, filename);
+      }
+  
+    } catch (error) {
+      console.error('DOWNLOAD HANDLER - CATCH block: Error for filePath:', filePath, 'Error:', error.message, error.stack);
+      if (error.code === 'EACCES') {
+        return reply.code(403).send({ message: 'Permiso denegado para leer el archivo' });
+      } else {
+        return reply.code(500).send({ message: 'No se pudo enviar el archivo de backup.', errorDetails: error.message });
       }
     }
   });
