@@ -1,303 +1,304 @@
-import fs from 'fs';
-import path from 'path';
-import { createGzip, createGunzip } from 'zlib';
-import * as tar from 'tar';
+import {
+  compressFolder,
+  decompressFolder,
+  getFolderDetails,
+  deletePath,
+  StorageManager,
+  PathUtils,
+  function_with_error_handling,
+  serverPathBase,
+  backupPathBase
+} from '../fileutils.js';
 
-class FolderManager {
-  constructor(basePath = '.') {
-    this.basePath = path.isAbsolute(basePath) 
-        ? basePath 
-        : path.resolve(process.cwd(), basePath);
-        
-    if (!fs.existsSync(this.basePath)) {
-        fs.mkdirSync(this.basePath, { recursive: true });
-    }
-}
-
-  getFolderSize(folderPath) {
-    const stats = fs.statSync(folderPath);
-    if (stats.isDirectory()) {
-      const files = fs.readdirSync(folderPath);
-      return files.reduce((total, file) => {
-        const filePath = path.join(folderPath, file);
-        const fileStats = fs.statSync(filePath);
-        return total + (fileStats.isDirectory() ? 0 : fileStats.size); // Ignorar subdirectorios
-      }, 0);
-    }
-    return stats.size;
+class BackupManager {
+  constructor() {
+    // Usar StorageManager de fileutils.js para gestionar datos de backups
+    this.backupsData = new StorageManager("backups.json", "./data");
   }
 
-  getFolderDetails(folderName) {
-    const folderPath = path.join(this.basePath, folderName);
-    if (!fs.existsSync(folderPath)) {
-      throw new Error(`La carpeta '${folderName}' no existe.`);
-    }
-    const stats = fs.statSync(folderPath);
-    return {
-      name: folderName,
-      path: path.relative(process.cwd(), folderPath), // Ruta relativa
-      size: this.getFolderSize(folderPath),
-      modified: stats.mtime.toISOString(), // Fecha de la última modificación
-      files: this.listFilesInFolder(folderPath), // Listar archivos y subcarpetas
-    };
-  }
-
-  listFilesInFolder(folderPath) {
-    if (!fs.existsSync(folderPath)) {
-      return [];
-    }
-    
-    return fs.readdirSync(folderPath).map((item) => {
-      const itemPath = path.join(folderPath, item);
-      const stats = fs.statSync(itemPath);
-      const relativePath = path.relative(process.cwd(), itemPath);
-      const pathParts = relativePath.split(path.sep);
-      
-      if (pathParts.length >= 2) {
-        const baseSegments = pathParts.slice(0, 2);
-        const basePath = path.join(process.cwd(), ...baseSegments);
-        return {
-          name: item,
-          path: path.relative(basePath, itemPath),
-          size: stats.size,
-          modified: stats.mtime.toISOString(),
-          isDirectory: stats.isDirectory(),
-        };
-      } else {
-        return {
-          name: item,
-          path: relativePath,
-          size: stats.size,
-          modified: stats.mtime.toISOString(),
-          isDirectory: stats.isDirectory(),
-        };
-      }
-    });
-  }
-
-  async compressFolder(folderName, outputFileName = null) {
-    const folderPath = path.join(this.basePath, folderName);
-    if (!fs.existsSync(folderPath)) {
-      throw new Error(`La carpeta ${folderName} no existe.`);
-    }
-    
-    // Si no se especifica nombre de salida, se utiliza folderName.tar.gz
-    if (!outputFileName) {
-      outputFileName = folderName + '.tar.gz';
-    }
-    
-    const outputPath = path.join(this.basePath, outputFileName);
-    const outputDir = path.dirname(outputPath);
-    console.log(`Comprimiendo carpeta: ${folderPath}...`, outputPath);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(outputPath);
-      const gzip = createGzip();
-  
-      tar.c(
-        {
-          cwd: folderPath,
-          portable: true,
-        },
-        ['.']
-      )
-        .pipe(gzip)
-        .pipe(output)
-        .on('finish', () => {
-          console.log(`Carpeta comprimida en: ${outputPath}`);
-          resolve(outputPath);
-        })
-        .on('error', (err) => {
-          reject(err);
-        });
-    });
-  }
-
-  async decompressFolder(compressedFileName, outputFolderName = null) {
-    const compressedFilePath = path.join(this.basePath, compressedFileName);
-    if (!fs.existsSync(compressedFilePath)) {
-      throw new Error(`El archivo comprimido ${compressedFileName} no existe.`);
-    }
-    
-    if (!outputFolderName) {
-      outputFolderName = path.basename(compressedFileName, '.tar.gz');
-    }
-    const outputFolderPath = path.join(this.basePath, outputFolderName);
-    
-    if (!fs.existsSync(outputFolderPath)) {
-      fs.mkdirSync(outputFolderPath, { recursive: true });
-    }
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(compressedFilePath)
-        .pipe(createGunzip())
-        .pipe(
-          tar.x({
-            cwd: outputFolderPath,
-          })
-        )
-        .on('finish', () => {
-          console.log(`Archivo descomprimido en: ${outputFolderPath}`);
-          resolve(outputFolderPath);
-        })
-        .on('error', (err) => {
-          reject(err);
-        });
-    });
-  }
-
-  async deleteFile(filename) {
-    const filePath = path.join(this.basePath, filename);
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo ${filename} no existe.`);
-    }
-    
-    return new Promise((resolve, reject) => {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(true);
-        }
-      });
-    });
-  }
-
-  async downloadFile(filename) {
-    const filePath = path.join(this.basePath, filename);
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`El archivo ${filename} no existe.`);
-    }
-    
-    const outputPath = path.join(this.basePath, filename);
-    const outputDir = path.dirname(outputPath);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-    
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(filePath)
-        .pipe(fs.createWriteStream(outputPath))
-        .on('finish', () => {
-          console.log(`Archivo descargado en: ${outputPath}`);
-          resolve(outputPath);
-        })
-        .on('error', (err) => {
-          reject(err);
-        });
-    });
-  }
+  // Función para sanitizar nombres de archivos
   static sanitizeFilename(filename) {
     let sanitized = filename
       .trim()
-      .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace invalid characters with underscores
-      .replace(/^\.+|\.+$/g, '') // Remove leading/trailing dots
-      .replace(/_{2,}/g, '_'); // Replace multiple underscores with one
+      .replace(/[^a-zA-Z0-9._-]/g, '_') // Reemplazar caracteres inválidos con guiones bajos
+      .replace(/^\.+|\.+$/g, '') // Eliminar puntos al inicio/final
+      .replace(/_{2,}/g, '_'); // Reemplazar múltiples guiones bajos con uno
 
     if (sanitized === '') {
-      sanitized = 'backup'; // Default if sanitized is empty
+      sanitized = 'backup'; // Valor por defecto si el sanitizado está vacío
     }
 
     return sanitized;
   }
-}
 
-import StorageManager from '../utils.js';
-const backupsdata = new StorageManager("backups.json", "./data");
-// Se usa la carpeta base del proyecto
-const folderManager = new FolderManager('.');
+  // Obtener información de una carpeta usando fileutils
+  async getFolderInfo(folderName) {
+    const result = await getFolderDetails(serverPathBase, folderName);
+    if (!result.success) {
+      console.error('Error obteniendo información de carpeta:', result.error);
+      return null;
+    }
+    return result.data;
+  }
 
-// Para obtener información de una carpeta
-function getfolderinfo(folderName) {
-  try {
-    const files = folderManager.getFolderDetails(folderName);
-    return files;
-  } catch (error) {
-    console.error(error.message);
+  // Actualizar información de carpetas en el almacenamiento
+  async updateFolderInfo(folderName = "backups") {
+    try {
+      const folderInfo = await this.getFolderInfo(folderName);
+      if (folderInfo) {
+        this.backupsData.JSONset("backups", folderInfo);
+        return folderInfo;
+      }
+    } catch (error) {
+      console.error('Error actualizando información de carpeta:', error.message);
+    }
+    return null;
+  }
+
+  // Crear backup usando fileutils
+  async createBackup(folderName, outputFilename = null) {
+    try {
+      const sanitizedFolderName = BackupManager.sanitizeFilename(folderName);
+      const sanitizedOutputFilename = outputFilename 
+        ? BackupManager.sanitizeFilename(outputFilename) 
+        : `${sanitizedFolderName}.tar.gz`;
+      const verifyfilename = sanitizedOutputFilename.endsWith('.tar.gz') ? sanitizedOutputFilename : `${sanitizedOutputFilename}.tar.gz`;
+      // Usar compressFolder de fileutils.js
+      const result = await compressFolder(
+        serverPathBase, // Base path para servidores
+        sanitizedFolderName, // Carpeta a comprimir
+        verifyfilename // Nombre del archivo de salida
+      );
+
+      if (result.success) {
+        console.log(`Backup creado exitosamente: ${result.data}`);
+        // Actualizar información después de crear backup
+        await this.updateBackupsList();
+        return result.data;
+      } else {
+        console.error('Error creando backup:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error en createBackup:', error);
+      throw error;
+    }
+  }
+
+  // Restaurar backup usando fileutils
+  async restoreBackup(filename, outputFolderName = null) {
+    try {
+      const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+      const sanitizedOutputFolder = outputFolderName 
+        ? BackupManager.sanitizeFilename(outputFolderName) 
+        : sanitizedFilename.replace('.tar.gz', '');
+
+      // Usar decompressFolder de fileutils.js
+      const result = await decompressFolder(
+        sanitizedFilename, // Archivo comprimido en backups/
+        sanitizedOutputFolder // Carpeta de salida en servers/
+      );
+
+      if (result.success) {
+        console.log(`Backup restaurado exitosamente: ${result.data}`);
+        // Actualizar información después de restaurar
+        await this.updateFolderInfo();
+        return result.data;
+      } else {
+        console.error('Error restaurando backup:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error en restoreBackup:', error);
+      throw error;
+    }
+  }
+
+  // Obtener datos de backups
+  getBackupsData() {
+    return this.updateBackupsList() || this.backupsData.store;
+  }
+
+  // Actualizar lista de backups
+  async updateBackupsList() {
+    try {
+      const result = await getFolderDetails(backupPathBase, ".");
+      if (result.success) {
+        this.backupsData.JSONset("backupsList", result.data);
+        return result.data;
+      }
+    } catch (error) {
+      console.error('Error actualizando lista de backups:', error);
+    }
+    return null;
+  }
+
+  // Eliminar backup usando fileutils
+  async deleteBackup(filename) {
+    try {
+      const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+      
+      // Usar deletePath de fileutils.js
+      const result = await deletePath(backupPathBase, sanitizedFilename);
+      
+      if (result.success) {
+        console.log(`Backup eliminado exitosamente: ${sanitizedFilename}`);
+        // Actualizar lista después de eliminar
+        await this.updateBackupsList();
+        return true;
+      } else {
+        console.error('Error eliminando backup:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error en deleteBackup:', error);
+      throw error;
+    }
+  }
+
+  // Descargar backup (copiar a ubicación específica)
+  async downloadBackup(filename, destinationPath = null) {
+    try {
+      const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+      const sourcePath = `${sanitizedFilename}`;
+      
+      // Si no se especifica destino, usar la carpeta actual
+      const destination = destinationPath || `./${sanitizedFilename}`;
+      
+      // Verificar que el archivo existe en backups
+      const backupPath = `${backupPathBase}/${sanitizedFilename}`;
+      if (!PathUtils.pathExists(backupPath)) {
+        throw new Error(`El backup '${sanitizedFilename}' no existe.`);
+      }
+
+      // Para "descargar", podemos copiar el archivo a la ubicación deseada
+      // o simplemente retornar la ruta del archivo para que el sistema lo maneje
+      console.log(`Backup disponible para descarga: ${backupPath}`);
+      
+      await this.updateBackupsList();
+      return backupPath;
+    } catch (error) {
+      console.error('Error en downloadBackup:', error);
+      throw error;
+    }
+  }
+
+  // Listar todos los backups disponibles
+  async listBackups() {
+    try {
+      const result = await getFolderDetails(backupPathBase, ".");
+      if (result.success && result.data.files) {
+        return result.data.files.filter(file => 
+          !file.isDirectory && 
+          (file.name.endsWith('.tar.gz') || file.name.endsWith('.gz'))
+        );
+      }
+      return [];
+    } catch (error) {
+      console.error('Error listando backups:', error);
+      return [];
+    }
+  }
+
+  // Obtener información detallada de un backup específico
+  async getBackupInfo(filename) {
+    try {
+      const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+      const backups = await this.listBackups();
+      
+      return backups.find(backup => backup.name === sanitizedFilename) || null;
+    } catch (error) {
+      console.error('Error obteniendo información del backup:', error);
+      return null;
+    }
+  }
+
+  // Verificar integridad de backup
+  async verifyBackup(filename) {
+    try {
+      const backupInfo = await this.getBackupInfo(filename);
+      if (!backupInfo) {
+        return { valid: false, error: 'Backup no encontrado' };
+      }
+
+      const backupPath = `${backupPathBase}/${filename}`;
+      const exists = PathUtils.pathExists(backupPath);
+      const isFile = exists ? PathUtils.isFile(backupPath) : false;
+
+      return {
+        valid: exists && isFile && backupInfo.size > 0,
+        exists,
+        isFile,
+        size: backupInfo.size,
+        modified: backupInfo.modified
+      };
+    } catch (error) {
+      console.error('Error verificando backup:', error);
+      return { valid: false, error: error.message };
+    }
   }
 }
 
-function updatefolderinfo(folderName = "./backups") {
-  try {
-    const files = getfolderinfo(folderName);
-    backupsdata.JSONset("backups", files);
-    return files;
-  } catch (error) {
-    console.error(error.message);
-  }
+// Crear instancia singleton del BackupManager
+const backupManager = new BackupManager();
+
+// Funciones de conveniencia que mantienen la interfaz original
+export async function createbackup(folderName, outputFilename) {
+  return await backupManager.createBackup(folderName, outputFilename);
 }
 
-async function createbackup(folderName, outputFilename) {
-  try {
-    const sanitizedFolderName = FolderManager.sanitizeFilename(folderName);
-    const sanitizedOutputFilename = outputFilename 
-      ? FolderManager.sanitizeFilename(outputFilename) 
-      : `${sanitizedFolderName}.tar.gz`;
-
-    const result = await folderManager.compressFolder(
-      `servers/${sanitizedFolderName}`, 
-      `backups/${sanitizedOutputFilename}`
-    );
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
+export async function restorebackup(filename, outputFolderName) {
+  return await backupManager.restoreBackup(filename, outputFolderName);
 }
 
-async function restorebackup(filename, outputFolderName) {
-  try {
-    const sanitizedFilename = FolderManager.sanitizeFilename(filename);
-    const sanitizedOutputFolder = outputFolderName 
-      ? FolderManager.sanitizeFilename(outputFolderName) 
-      : path.basename(sanitizedFilename, '.tar.gz');
-
-    const result = await folderManager.decompressFolder(
-      `backups/${sanitizedFilename}`, 
-      `servers/${sanitizedOutputFolder}`
-    );
-    updatefolderinfo();
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
+export function getbackupsdata() {
+  return backupManager.getBackupsData();
 }
 
-function getbackupsdata() {
-  return backupsdata.JSONget("backups") || updatefolderinfo()|| backupsdata.store;
+export async function deletebackup(filename) {
+  return await backupManager.deleteBackup(filename);
 }
 
-async function deletebackup(filename) {
-  try {
-    const sanitizedFilename = FolderManager.sanitizeFilename(filename);
-    const result = await folderManager.deleteFile(`backups/${sanitizedFilename}`);
-    updatefolderinfo();
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
+export async function downloadbackup(filename) {
+  return await backupManager.downloadBackup(filename);
 }
 
-async function downloadbackup(filename) {
-  try {
-    const sanitizedFilename = FolderManager.sanitizeFilename(filename);
-    const result = await folderManager.downloadFile(`backups/${sanitizedFilename}`);
-    updatefolderinfo();
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
+// Funciones adicionales
+export async function listbackups() {
+  return await backupManager.listBackups();
 }
 
+export async function getbackupinfo(filename) {
+  return await backupManager.getBackupInfo(filename);
+}
 
-// Ejemplo de uso:
-// createbackup("test123", "test123.tar.gz");
-// restorebackup("test123.tar.gz", "test123_restore");
+export async function verifybackup(filename) {
+  return await backupManager.verifyBackup(filename);
+}
 
-export {
-  createbackup,
-  restorebackup,
-  getbackupsdata,
-  deletebackup,
-  downloadbackup
-};
+// Exportar la clase para uso directo si es necesario
+export { BackupManager };
+
+// Ejemplos de uso:
+/*
+// Crear backup
+await createbackup("mi_servidor", "mi_servidor_backup.tar.gz");
+
+// Restaurar backup
+await restorebackup("mi_servidor_backup.tar.gz", "mi_servidor_restaurado");
+
+// Listar backups
+const backups = await listbackups();
+console.log('Backups disponibles:', backups);
+
+// Obtener información de backup específico
+const info = await getbackupinfo("mi_servidor_backup.tar.gz");
+console.log('Información del backup:', info);
+
+// Verificar integridad del backup
+const verification = await verifybackup("mi_servidor_backup.tar.gz");
+console.log('Verificación:', verification);
+
+// Eliminar backup
+await deletebackup("mi_servidor_backup.tar.gz");
+*/
