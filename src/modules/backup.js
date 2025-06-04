@@ -122,8 +122,10 @@ class BackupManager {
   // Actualizar lista de backups
   async updateBackupsList() {
     try {
+      console.log("updateBackupsList");
       const result = await getFolderDetails(backupPathBase, ".");
-      if (result.success) {
+      console.log("result.data       ",result.data);
+      if (result.success || result.data) {
         this.backupsData.JSONset("backupsList", result.data);
         return result.data;
       }
@@ -187,6 +189,7 @@ class BackupManager {
   async listBackups() {
     try {
       const result = await getFolderDetails(backupPathBase, ".");
+      console.log("result.data.files",result.data.files);
       if (result.success && result.data.files) {
         return result.data.files.filter(file => 
           !file.isDirectory && 

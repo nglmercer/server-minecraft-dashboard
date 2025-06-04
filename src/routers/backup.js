@@ -72,7 +72,7 @@ async function backupRoutes(fastify, options) {
 
   fastify.get('/backupsInfo', async (request, reply) => {
     try {
-      const backups = getbackupsdata();
+      const backups = await getbackupsdata();
       return { data: backups };
     } catch (error) {
       console.error(error);

@@ -475,7 +475,21 @@ class ServerManager {
     }
   }
 }
-
+const defaultconfig = {
+    serveractions: ["start", "stop", "restart", "kill"],
+    fileactions: ["backup", "restore"],
+    onerror: "restart",
+    periodicallyrestart: false,
+    periodicallybackup: false,
+    timeout: {
+        restart: 1440,
+        backup: 1440
+    }
+}
+// timeout = t * 60 *1000
+class taskconfig {
+   
+}
 const manager = new ServerManager();
 
 export {
