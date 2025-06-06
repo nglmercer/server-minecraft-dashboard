@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import { createRequire } from 'module';
 import { readdir } from "fs/promises";
 const require = createRequire(import.meta.url);
-const packageJSON = require("../../package.json");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CORES_CACHE_FILE_PATH = path.join(process.cwd(), "data", "cores.json"); // Más organizado en 'data'
@@ -130,93 +129,6 @@ class StorageManager {
 
 // Ejemplo de uso:e
 const storage = new StorageManager('store.json', './data');
-class LanguageManager {
-    static availableLanguages = {};
-    static rawDataLanguages = [];
-    static allLanguages = [];
-  
-    // Cargar los lenguajes disponibles desde la carpeta /languages
-    static loadAvailableLanguages() {
-      const languagesPath = path.join(__dirname, "../data/languages");
-  
-      if (fs.existsSync(languagesPath)) {
-        fs.readdirSync(languagesPath).forEach(file => {
-          if (path.extname(file) === ".json") {
-            let langFile = JSON.parse(fs.readFileSync(path.join(languagesPath, file), "utf-8"));
-            // Guardamos la data original y la info de cada idioma
-            LanguageManager.rawDataLanguages = LanguageManager.allLanguages;
-            LanguageManager.allLanguages.push(langFile);
-            if (
-              typeof langFile.info.code !== "undefined" &&
-              typeof langFile.info.id !== "undefined" &&
-              typeof langFile.info.displayNameEnglish !== "undefined"
-            ) {
-              LanguageManager.availableLanguages[langFile.info.code] = langFile.info;
-            }
-          }
-        });
-        return true;
-      }
-      return false;
-    }
-  
-    // Obtener la info de un idioma dado su código
-    static getLanguageInfo(language) {
-      if (Object.keys(LanguageManager.availableLanguages).includes(language)) {
-        return LanguageManager.availableLanguages[language];
-      }
-      return false;
-    }
-  
-    // Traducir todos los marcadores de traducción en un texto
-    // Los marcadores tienen el formato {category.key} o {category.key.modificator}
-    // Y se pueden reemplazar placeholders de tipo %0%, %1%, etc.
-    static translateText(language, text, ...placers) {
-      text = text.toString();
-  
-      if (Object.keys(this.availableLanguages).includes(language)) {
-        const languagePath = path.join(__dirname, "../data/languages", language + ".json");
-        let translationFile = JSON.parse(fs.readFileSync(languagePath, "utf-8"));
-  
-        // Buscar marcadores de traducción usando expresión regular
-        let searchMatches = text.match(/\{{[0-9a-zA-Z\-_.]+\}}/gm);
-  
-        if (searchMatches != null) {
-          searchMatches.forEach(match => {
-            // Eliminar llaves y separar en partes
-            let matchClear = match.replaceAll("{", "").replaceAll("}", "");
-            let parts = matchClear.split(".");
-            if (parts.length >= 2) {
-              let category = parts[0];
-              let key = parts[1];
-              let modificator = parts[2];
-  
-              // Reemplazar si se encuentra la traducción
-              if (typeof translationFile.translations[category]?.[key] !== "undefined") {
-                let matchedTranslation = translationFile.translations[category][key];
-  
-                if (modificator === "upperCase") {
-                  matchedTranslation = matchedTranslation.toUpperCase();
-                } else if (modificator === "lowerCase") {
-                  matchedTranslation = matchedTranslation.toLowerCase();
-                }
-  
-                text = text.replaceAll(match, matchedTranslation);
-              }
-            }
-          });
-  
-          // Reemplazar los placeholders (%0%, %1%, etc.) con los valores proporcionados
-          placers.forEach((replacement, i) => {
-            text = text.replaceAll(`%${i}%`, replacement);
-          });
-        }
-        return text;
-      }
-      // Si no existe el idioma, se devuelve el texto original
-      return text;
-    }
-}
 /* // Guardar valores
 storage.set('nombre', 'Juan');
 storage.set(123, { edad: 30, ciudad: 'Madrid' });
@@ -316,9 +228,6 @@ class Logger {
     WelcomeMessage() {
         console.log("");
         console.log(colors.cyan("your logo ASCII art here"));
-        console.log("");
-        console.log(colors.inverse(`${packageJSON.name} ${packageJSON.version}`));
-        console.log(colors.inverse(packageJSON.repository.url.split("+")[1]));
         console.log("");
     }
 }
@@ -613,7 +522,6 @@ async function getFileNames(directoryPath) {
 }
 export { 
   StorageManager, 
-  LanguageManager, 
   storage, 
   getDataByURL,
   Logger,
