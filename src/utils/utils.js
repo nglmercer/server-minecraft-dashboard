@@ -371,6 +371,7 @@ export const isValidUrl = (url) => {
   }
 };
 const makeBaseDirs = (ArrayBasedirs = []) => {
+  if (!Array.isArray(ArrayBasedirs)) return [];
   ArrayBasedirs.forEach(function (dir) {
       if (!fs.existsSync("./" + dir)) {
           fs.mkdirSync("./" + dir);
@@ -379,6 +380,7 @@ const makeBaseDirs = (ArrayBasedirs = []) => {
 };
 const testForRegexArray = (text, regexArray) => {
   let testResult = false;
+  if (!regexArray || !Array.isArray(regexArray)) return text;
   regexArray.forEach((regexpItem) => {
       if (typeof regexpItem == "object" && text.match(regexpItem) !== null) {
           testResult = true;

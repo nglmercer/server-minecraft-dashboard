@@ -8,7 +8,7 @@ import { pipeline } from 'stream'; // Aún útil si part.toBuffer() no existiera
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const UPLOAD_DIR = join(__dirname, '..', 'uploads');
+const UPLOAD_DIR = join(process.cwd(), 'uploads');
 const SERVER_PATH = join(process.cwd(), 'servers');
 const BACKUP_PATH = join(process.cwd(), 'backups');
 

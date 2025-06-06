@@ -1,4 +1,3 @@
-import { StorageManager, getFileNames } from "../utils/utils.js";
 const langInstances = {};
 const allLangs = [];
 const allStores = [];
@@ -6,34 +5,7 @@ const allStores = [];
 async function initializeLangs() {
   if (allLangs.length > 0) return;
 
-  try {
-    const supportLangs = await getFileNames("./data/languages");
-    
-    if (supportLangs.length === 0) {
-      console.warn("No se encontraron archivos de idioma");
-      return;
-    }
-
-    allLangs.push(...supportLangs);
-    
-    // Crear instancias de StorageManager para cada idioma
-    supportLangs.forEach(lang => {
-      try {
-        const langManager = new StorageManager(`languages/${lang}`, "./data");
-        langInstances[lang] = langManager;
-      } catch (error) {
-        console.error(`Error al inicializar idioma ${lang}:`, error);
-      }
-    });
-
-    // Llenar allStores
-    allStores.length = 0;
-    allStores.push(...allLangs.map(lang => langInstances[lang]?.store).filter(Boolean));
-    
-    console.log(`Inicializados ${allLangs.length} idiomas`);
-  } catch (error) {
-    console.error("Error al inicializar idiomas:", error);
-  }
+  return []
 }
 
 function getLangInstance(lang) {
@@ -54,7 +26,7 @@ function getAllLangs() {
 
 function translateText(lang, text, ...placers) {
   text = text.toString();
-  
+  return text;
   const store = getLangStore(lang);
   if (!store) {
     console.warn(`Store no encontrado para idioma: ${lang}`);
