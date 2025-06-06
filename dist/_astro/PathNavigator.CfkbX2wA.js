@@ -1,4 +1,4 @@
-import{d as T,p as P,c as F,o as R,q as y,g as p,t as d,i as g,b,f as z,e as A,r as x,k as _,F as W}from"./web.NUvFevpb.js";import{n as u,p as n,R as h}from"./globalSignals.xjL0ZJXr.js";var C=d("<button class=up-button>Subir Nivel (..)"),M=d(`<div class=path-navigator><div class=breadcrumb-bar></div><div class=controls></div><style>
+import{d as T,l as P,c as F,o as R,n as y,g as p,i as g,b,t as d,f as z,e as A,r as x,k as _,F as W}from"./web.DYW8A-n5.js";import{n as u,p as n,R as h}from"./globalSignals.xjL0ZJXr.js";var C=d("<button class=up-button>Subir Nivel (..)"),M=d(`<div class=path-navigator><div class=breadcrumb-bar></div><div class=controls></div><style>
         .path-navigator {
           font-family: sans-serif;
           padding: 10px;

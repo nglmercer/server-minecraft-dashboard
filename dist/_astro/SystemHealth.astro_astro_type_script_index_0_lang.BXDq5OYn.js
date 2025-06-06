@@ -21,7 +21,9 @@ import{i as d,r as f,t as u}from"./custom-element.rv7pTUKK.js";import{x as c}fro
                     </span>
                     <div class="service-details">
                       <span class="service-name">${t.name}</span>
-                      <span class="service-meta">${t.host}:${t.port}</span>
+                      <span class="service-meta">
+                      ${t.referer?`${t.referer.address}:${t.referer.port}`:`${t.host}:${t.port}`}
+                      </span>
                     </div>
                   </div>
                   <span class="status-text">
@@ -124,7 +126,7 @@ import{i as d,r as f,t as u}from"./custom-element.rv7pTUKK.js";import{x as c}fro
 
     .service-meta {
       font-size: var(--font-size-xs, 12px);
-      color: var(--color-gray-500, #6b7280);
+      color: var(--color-gray-100,rgb(206, 206, 206));
     }
 
     .status-icon {
