@@ -55,16 +55,18 @@ npm start
 	- pkg install code-server
 	- code-server --auth none --port 8080 &
 
-### install termux shell
+### install termux(pkg)/linux(apt,dnf,etc) shell 
 ```
-pkg update
+pkg update 
 pkg upgrade
 pkg install git
 pkg install nodejs
 git clone https://github.com/nglmercer/server-minecraft-dashboard
 cd server-minecraft-dashboard
-npm install
+npm install --ignore-scripts
 npm run start
 ```
+- install java `openjdk-21`
+- support build app with electron
 ###  Client Manager FrontEND
 https://github.com/nglmercer/serverMCASTRO
