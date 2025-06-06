@@ -1,0 +1,21 @@
+appId: com.melser.serverminecraft
+productName: serverminecraft
+directories:
+  output: build
+  app: "."
+files:
+  - filter:
+      - '**'
+extraResources:
+  - from: "lib"
+    to: ""
+win:
+  target:
+    - msi
+    - zip
+  icon: "./images/logo.png"
+linux:
+  target:
+    - AppImage
+  icon: "./images/logo.png"
+  category: "Utility"

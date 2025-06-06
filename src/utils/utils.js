@@ -6,6 +6,7 @@ import stripAnsi from "strip-ansi";
 import { fileURLToPath } from "url";
 import { createRequire } from 'module';
 import { readdir } from "fs/promises";
+
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,16 +16,16 @@ if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
 }
 class StorageManager {
-  /**
-   * Crea una instancia del StorageManager.
-   * @param {string} fileName - El nombre del archivo donde se almacenarán los datos (por ejemplo, 'store.json').
-   * @param {string} basePath - La ruta donde se creará o buscará el archivo. Si es relativa se usa process.cwd().
-   */
   constructor(fileName, basePath = '.') {
-    // Resuelve la ruta absoluta del directorio base.
-    this.storePath = path.isAbsolute(basePath) ? basePath : path.join(process.cwd(), basePath);
+    // Usar la función getBasePath para determinar la ruta correcta
+    const resolvedBasePath = getBasePath();
+    
+    // Resolver la ruta del almacenamiento
+    this.storePath = path.isAbsolute(basePath) 
+      ? basePath 
+      : path.join(resolvedBasePath, basePath);
 
-    // Si el directorio no existe, se crea (incluyendo subdirectorios necesarios).
+    // Crear directorio si no existe
     if (!fs.existsSync(this.storePath)) {
       fs.mkdirSync(this.storePath, { recursive: true });
     }
@@ -32,13 +33,17 @@ class StorageManager {
     this.fileName = fileName;
     this.filePath = path.join(this.storePath, this.fileName);
 
-    // Si el archivo existe, carga el contenido; de lo contrario, inicializa un objeto vacío.
+    // Cargar o inicializar el store
+    this._loadStore();
+  }
+
+  _loadStore() {
     if (fs.existsSync(this.filePath)) {
       try {
         const data = fs.readFileSync(this.filePath, { encoding: 'utf8' });
         this.store = JSON.parse(data);
       } catch (error) {
-        // Si ocurre algún error al parsear (archivo corrupto, por ejemplo), se reinicia el store.
+        console.error('Error al cargar store:', error);
         this.store = {};
         this._saveStore();
       }
@@ -48,53 +53,46 @@ class StorageManager {
     }
   }
 
-  /**
-   * Método privado para guardar el objeto store en el archivo.
-   */
   _saveStore() {
-    fs.writeFileSync(this.filePath, JSON.stringify(this.store, null, 2), { encoding: 'utf8' });
+    try {
+      fs.writeFileSync(this.filePath, JSON.stringify(this.store, null, 2), { encoding: 'utf8' });
+    } catch (error) {
+      console.error('Error al guardar store:', error);
+    }
   }
 
-  /**
-   * Asigna un valor a una clave.
-   * Si la clave ya existe, se reemplaza el valor.
-   * @param {*} key - La clave a almacenar (se convertirá a string).
-   * @param {*} value - El valor a almacenar (se convierte a string; si no es string se usa JSON.stringify,
-   *                     y si es undefined se almacena la cadena "undefined").
-   */
   set(key, value) {
     const keyStr = String(key);
-    const valueStr =
-      value === undefined ? "undefined" : (typeof value === "string" ? value : JSON.stringify(value));
-
+    const valueStr = value === undefined ? "undefined" : 
+      (typeof value === "string" ? value : JSON.stringify(value));
+    
     this.store[keyStr] = valueStr;
     this._saveStore();
   }
 
-  /**
-   * Recupera el valor asociado a la clave.
-   * @param {*} key - La clave a buscar (se convierte a string).
-   * @returns {string|undefined} - El valor almacenado o undefined si la clave no existe.
-   */
   get(key) {
     const keyStr = String(key);
     return this.store[keyStr];
   }
+
   JSONget(key) {
     const keyStr = String(key);
     if (this.store[keyStr] && typeof this.store[keyStr] === "string") {
-      return JSON.parse(this.store[keyStr]);
+      try {
+        return JSON.parse(this.store[keyStr]);
+      } catch (error) {
+        console.error('Error al parsear JSON:', error);
+        return this.store[keyStr];
+      }
     }
     return this.store[keyStr];
   }
-  JSONset(key,value){
+
+  JSONset(key, value) {
     this.store[key] = value;
     this._saveStore();
   }
-  /**
-   * Elimina la clave y su valor asociado.
-   * @param {*} key - La clave a eliminar (se convierte a string).
-   */
+
   remove(key) {
     const keyStr = String(key);
     if (Object.prototype.hasOwnProperty.call(this.store, keyStr)) {
@@ -103,30 +101,36 @@ class StorageManager {
     }
   }
 
-  /**
-   * Elimina todas las claves y valores almacenados.
-   */
   clear() {
     this.store = {};
     this._saveStore();
   }
 
-  /**
-   * Retorna un array con todas las claves almacenadas.
-   * @returns {string[]} - Array de claves.
-   */
   keys() {
     return Object.keys(this.store);
   }
+
   getAll() {
     return this.store;
   }
+
   setAll(store) {
     this.store = store;
     this._saveStore();
   }
 }
-
+function getBasePath() {
+  if (process.env.NODE_ENV === 'development') {
+    // En desarrollo, usar la ruta del proyecto
+    return process.cwd();
+  } else {
+    // En producción (build), usar la ruta de recursos de la app
+    return process.cwd();
+    return path.join(process.resourcesPath, 'app');
+    // Alternativa si los archivos están en el directorio de la app:
+    // return app.getAppPath();
+  }
+}
 // Ejemplo de uso:e
 const storage = new StorageManager('store.json', './data');
 /* // Guardar valores
@@ -511,13 +515,27 @@ const isDataRecent = (data, maxAgeInMs = 24 * 60 * 60 * 1000) => { // 1 día por
 };
 async function getFileNames(directoryPath) {
   try {
-      const files = await readdir(directoryPath, { withFileTypes: true });
-      return files
-          .filter(file => file.isFile()) // Filtrar solo archivos
-          .map(file => file.name); // Obtener los nombres de los archivos
-  } catch (error) {
-      console.error("Error al leer la carpeta:", error);
+    // Resolver la ruta absoluta basada en el entorno
+    const basePath = getBasePath();
+    const fullPath = path.isAbsolute(directoryPath) 
+      ? directoryPath 
+      : path.join(basePath, directoryPath);
+    
+    console.log(`Intentando leer directorio: ${fullPath}`);
+    
+    // Verificar si el directorio existe
+    if (!fs.existsSync(fullPath)) {
+      console.warn(`Directorio no encontrado: ${fullPath}`);
       return [];
+    }
+    
+    const files = await readdir(fullPath, { withFileTypes: true });
+    return files
+      .filter(file => file.isFile())
+      .map(file => file.name);
+  } catch (error) {
+    console.error("Error al leer la carpeta:", error);
+    return [];
   }
 }
 export { 

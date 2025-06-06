@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import filesRouter from './src/routers/fileManager.js';
 import serverRouter from './src/routers/servers.js';
 import hardwareRouter from './src/routers/hardware.js';
-import dicoverRouter from './src/routers/discover.js';
+import networkRouter from './src/routers/networkRouter.js';
 import taskRouter from './src/routers/task.js';
 import langRouters from './src/routers/langRouters.js';
 import coresRouter from './src/routers/minecraft/cores.js';
@@ -74,7 +74,7 @@ emitter.on('*', (event, data) => {
   });
 });
 fastify.register(filesRouter, { prefix: '/api' });
-fastify.register(dicoverRouter, { prefix: '/network' });
+fastify.register(networkRouter, { prefix: '/api/network' });
 fastify.register(serverRouter, { prefix: '/api' });
 fastify.register(hardwareRouter, { prefix: '/api' });
 fastify.register(taskRouter, { prefix: '/api' });
