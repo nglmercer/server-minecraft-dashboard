@@ -11,7 +11,8 @@ export default async function networkRouter(fastify, options) {
             host: p.host,
             port: p.port,
             fqdn: p.fqdn,
-            txt: p.txt || {}
+            txt: p.txt || {},
+            ...p
         }));
         return { peers };
     });
