@@ -55,7 +55,7 @@ async function main() {
             handleP2PClientDisconnected,
             {
                 preventDuplicates: true,
-                duplicateDetectionMethod: 'lockfile' // 'pidfile' || 'port' || 'lockfile'
+                duplicateDetectionMethod: 'pidfile' // 'pidfile' || 'port' || 'lockfile'
             }
         );
 
