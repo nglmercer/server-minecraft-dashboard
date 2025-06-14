@@ -64,7 +64,10 @@ class MinecraftServer {
 
     const startScript = this.getStartFilePath();
     if (!fs.existsSync(startScript)) {
-      console.error(`No se encontró el script de inicio en: ${startScript}`);
+      const notexistscriptError = `No se encontró el script de inicio en: ${startScript}`
+      console.error(notexistscriptError);
+      this.log = notexistscriptError;
+      emitter.emit('server:output', this.serverName, this.log);
       return;
     }
 
