@@ -1,19 +1,21 @@
 import { createbackup, restorebackup, getbackupsdata, deletebackup } from '../modules/backup.js';
-import { pipeline } from 'stream/promises';
-import { createReadStream } from 'fs';
+import { addBackupTask, addRestoreTask, TASK_MANAGER } from '../modules/taskmanager.js';
 import { PathUtils } from '../fileutils.js';
 import path from 'path';
 import fs from 'fs';
 import util from 'util';
 const stat = util.promisify(fs.stat);
+
 async function backupRoutes(fastify, options) {
   // Use PathUtils constants for paths
   const backupsDir = PathUtils.backupPath;
 
+  // ENDPOINT ORIGINAL - Mantiene compatibilidad total
   fastify.post('/create', async (request, reply) => {
     const { serverName } = request.body;
     const folderName = request.body.folderName || serverName;
     const outputFilename = request.body.outputFilename || `${serverName}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+    
     if (!folderName || !outputFilename) {
       return reply.code(400).send({ error: 'Faltan parámetros: folderName y outputFilename son requeridos.' });
     }
@@ -41,6 +43,42 @@ async function backupRoutes(fastify, options) {
     }
   });
 
+  // NUEVO ENDPOINT - Backup con TaskManager (mantiene compatibilidad agregando funcionalidad)
+  fastify.post('/create-async', async (request, reply) => {
+    const { serverName } = request.body;
+    const folderName = request.body.folderName || serverName;
+    const outputFilename = request.body.outputFilename || `${serverName}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+    const options = request.body.options || {};
+    
+    if (!folderName || !outputFilename) {
+      return reply.code(400).send({ error: 'Faltan parámetros: folderName y outputFilename son requeridos.' });
+    }
+    
+    // Validate folder name and output filename
+    if (!PathUtils.isValidDirectoryName(path.join(PathUtils.serverPath, folderName))) {
+      return reply.code(400).send({ error: 'Nombre de carpeta inválido.' });
+    }
+    
+    if (!PathUtils.isValidFilenamePattern(outputFilename)) {
+      return reply.code(400).send({ error: 'Nombre de archivo de salida inválido.' });
+    }
+    
+    try {
+      const taskId = await addBackupTask(folderName, outputFilename, options);
+      return { 
+        message: 'Tarea de backup iniciada correctamente',
+        taskId: taskId,
+        status: 'in_progress',
+        folderName, 
+        outputFilename 
+      };
+    } catch (error) {
+      console.error(error);
+      reply.code(500).send({ error: error.message || 'Error al iniciar la tarea de backup.' });
+    }
+  });
+
+  // ENDPOINT ORIGINAL - Mantiene compatibilidad total
   fastify.post('/restore', async (request, reply) => {
     const { filename, outputFolderName } = request.body;
     
@@ -71,6 +109,44 @@ async function backupRoutes(fastify, options) {
     }
   });
 
+  // NUEVO ENDPOINT - Restore con TaskManager (mantiene compatibilidad agregando funcionalidad)
+  fastify.post('/restore-async', async (request, reply) => {
+    const { filename, outputFolderName } = request.body;
+    
+    if (!filename || !outputFolderName) {
+      return reply.code(400).send({ error: 'Faltan parámetros: filename y outputFolderName son requeridos.' });
+    }
+    
+    // Validate backup file and output folder
+    if (!PathUtils.isValidFilenamePattern(filename)) {
+      return reply.code(400).send({ error: 'Nombre de archivo de backup inválido.' });
+    }
+    
+    if (!PathUtils.isValidDirectoryName(path.join(PathUtils.serverPath, outputFolderName))) {
+      return reply.code(400).send({ error: 'Nombre de carpeta de destino inválido.' });
+    }
+    
+    const backupFilePath = path.join(backupsDir, filename);
+    if (!PathUtils.pathExists(backupFilePath) || !PathUtils.isFile(backupFilePath)) {
+      return reply.code(404).send({ error: 'El archivo de backup no existe.' });
+    }
+    
+    try {
+      const taskId = await addRestoreTask(filename, outputFolderName);
+      return { 
+        message: 'Tarea de restauración iniciada correctamente',
+        taskId: taskId,
+        status: 'in_progress',
+        filename,
+        outputFolderName
+      };
+    } catch (error) {
+      console.error(error);
+      reply.code(500).send({ error: error.message || 'Error al iniciar la tarea de restauración.' });
+    }
+  });
+
+  // ENDPOINT ORIGINAL - Sin cambios
   fastify.get('/backupsInfo', async (request, reply) => {
     try {
       const backups = await getbackupsdata();
@@ -81,6 +157,7 @@ async function backupRoutes(fastify, options) {
     }
   });
 
+  // ENDPOINT ORIGINAL - Sin cambios
   fastify.post('/delete', async (request, reply) => {
     const { filename } = request.body;
     
@@ -108,6 +185,7 @@ async function backupRoutes(fastify, options) {
     }
   });
 
+  // ENDPOINT ORIGINAL - Sin cambios
   fastify.get('/download/:filename(.*)', async (request, reply) => {
     console.log('DOWNLOAD HANDLER - Entry. URL:', request.url);
     const filename = request.params.filename;
@@ -202,6 +280,8 @@ async function backupRoutes(fastify, options) {
       }
     }
   });
+
+
 }
 
 export default backupRoutes;
