@@ -1,16 +1,15 @@
-import { createbackup, restorebackup, getbackupsdata, deletebackup } from '../modules/backup.js';
+import { createbackup, restorebackup, getbackupsdata, deletebackup,BackupManager, updatebackupslist } from '../modules/backup.js';
 import { addBackupTask, addRestoreTask, TASK_MANAGER } from '../modules/taskmanager.js';
 import { PathUtils } from '../fileutils.js';
+import { pipeline } from 'node:stream/promises';
 import path from 'path';
 import fs from 'fs';
 import util from 'util';
 const stat = util.promisify(fs.stat);
 
 async function backupRoutes(fastify, options) {
-  // Use PathUtils constants for paths
   const backupsDir = PathUtils.backupPath;
 
-  // ENDPOINT ORIGINAL - Mantiene compatibilidad total
   fastify.post('/create', async (request, reply) => {
     const { serverName } = request.body;
     const folderName = request.body.folderName || serverName;
@@ -20,7 +19,6 @@ async function backupRoutes(fastify, options) {
       return reply.code(400).send({ error: 'Faltan parámetros: folderName y outputFilename son requeridos.' });
     }
     
-    // Validate folder name and output filename
     if (!PathUtils.isValidDirectoryName(path.join(PathUtils.serverPath, folderName))) {
       return reply.code(400).send({ error: 'Nombre de carpeta inválido.' });
     }
@@ -43,7 +41,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // NUEVO ENDPOINT - Backup con TaskManager (mantiene compatibilidad agregando funcionalidad)
   fastify.post('/create-async', async (request, reply) => {
     const { serverName } = request.body;
     const folderName = request.body.folderName || serverName;
@@ -78,7 +75,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // ENDPOINT ORIGINAL - Mantiene compatibilidad total
   fastify.post('/restore', async (request, reply) => {
     const { filename, outputFolderName } = request.body;
     
@@ -109,7 +105,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // NUEVO ENDPOINT - Restore con TaskManager (mantiene compatibilidad agregando funcionalidad)
   fastify.post('/restore-async', async (request, reply) => {
     const { filename, outputFolderName } = request.body;
     
@@ -146,7 +141,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // ENDPOINT ORIGINAL - Sin cambios
   fastify.get('/backupsInfo', async (request, reply) => {
     try {
       const backups = await getbackupsdata();
@@ -157,7 +151,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // ENDPOINT ORIGINAL - Sin cambios
   fastify.post('/delete', async (request, reply) => {
     const { filename } = request.body;
     
@@ -185,7 +178,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  // ENDPOINT ORIGINAL - Sin cambios
   fastify.get('/download/:filename(.*)', async (request, reply) => {
     console.log('DOWNLOAD HANDLER - Entry. URL:', request.url);
     const filename = request.params.filename;
@@ -280,7 +272,40 @@ async function backupRoutes(fastify, options) {
       }
     }
   });
-
+  // SUBIR/IMPORTAR BACKUPS
+  fastify.post('/upload', async (request, reply) => {
+    try {
+      // Con attachFieldsToBody: true, los archivos están en request.body
+      const fileData = request.body.file;
+      
+      if (!fileData || !fileData.file) {
+        return reply.code(400).send({ error: 'No se ha subido ningún archivo.' });
+      }
+      
+      // fileData.file es el stream
+      // fileData.filename es el nombre
+      const sanitizedFilename = BackupManager.sanitizeFilename(fileData.filename);
+      
+      if (!sanitizedFilename.endsWith('.zip') && !sanitizedFilename.endsWith('.tar.gz')) {
+        return reply.code(400).send({ error: 'Tipo de archivo no válido.' });
+      }
+      
+      const destination = path.join(backupsDir, sanitizedFilename);
+      await pipeline(fileData.file, fs.createWriteStream(destination));
+      
+      await updatebackupslist();
+      
+      return reply.code(200).send({
+        message: 'Backup importado correctamente.',
+        filename: sanitizedFilename,
+        path: destination
+      });
+      
+    } catch (error) {
+      console.error('Error:', error);
+      return reply.code(500).send({ error: 'Error interno' });
+    }
+  });
 
 }
 

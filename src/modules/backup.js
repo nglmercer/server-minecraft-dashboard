@@ -657,6 +657,9 @@ export function setBackupConfig(options) {
 export function getBackupConfig() {
   return backupManager.getBackupConfig();
 }
+export async function updatebackupslist() {
+  return await backupManager.updateBackupsList();
+}
 
 // Exportar la clase mejorada
 export { BackupManager };
