@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'node:url';
 import filesRouter from './src/routers/fileManager.js';
 import serverRouter from './src/routers/servers.js';
+import servermanagerRouter from './src/routers/servers/servermanager.js'
 import hardwareRouter from './src/routers/hardware.js';
 import networkRouter from './src/routers/networkRouter.js';
 import taskRouter from './src/routers/task.js';
@@ -76,6 +77,7 @@ emitter.on('*', (event, data) => {
 fastify.register(filesRouter, { prefix: '/api' });
 fastify.register(networkRouter, { prefix: '/api/network' });
 fastify.register(serverRouter, { prefix: '/api' });
+fastify.register(servermanagerRouter,{prefix: '/api/servermanager'})
 fastify.register(hardwareRouter, { prefix: '/api' });
 fastify.register(taskRouter, { prefix: '/api' });
 fastify.register(coresRouter, { prefix: '/api/cores' });

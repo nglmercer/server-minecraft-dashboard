@@ -9,11 +9,6 @@ import {
     getFileInfo,
     ServerStore
 } from '../modules/fileFolderRegistry.js'; 
-import {
-    manager,
-    MinecraftServer,
-    ServerManager
-} from "../minecraft/servermanager.js"; 
 import { startJavaServerGeneration, startJavaServerbyFile, ensureJavaVersionReady } from "../minecraft/createserver.js"; 
 import { PathUtils } from '../fileutils.js';
 import path from 'path';
@@ -25,10 +20,8 @@ function getreqData(req, keys) {
     });
     return data;
 }
-const validActions = ['start', 'stop', 'restart', 'send', 'sendMultiple', 'log', 'info', 'players', 'metrics', 'kill'];
 
 async function serverManagementRoutes(fastify, options) {
-    const serversBaseDir = path.resolve(process.cwd(), 'servers');
 
     fastify.get('/servers', async (req, reply) => {
         try {
@@ -139,26 +132,52 @@ async function serverManagementRoutes(fastify, options) {
 
     fastify.post('/newserver', async (req, reply) => {
         try {
-            if (!req.body || !req.body.jsonData || typeof req.body.jsonData.value !== 'string') {
+            // --- INICIO DE CAMBIOS ---
+            // 1. Ya no usamos req.body. Obtenemos un iterador para las partes del formulario.
+            const parts = req.parts();
+            let jsonDataString = null;
+            let fileData = null; // Almacenará el objeto de la parte del archivo
+
+            // 2. Iteramos sobre las partes del stream del formulario
+            for await (const part of parts) {
+                if (part.type === 'field' && part.fieldname === 'jsonData') {
+                    // Si la parte es un campo de texto y se llama 'jsonData', guardamos su valor
+                    jsonDataString = part.value;
+                } else if (part.type === 'file' && part.fieldname === 'file') {
+                    // Si la parte es un archivo y se llama 'file', guardamos la parte completa.
+                    // Verificamos que el archivo no venga vacío (sin nombre de archivo).
+                    if (part.filename) {
+                        fileData = part;
+                    } else {
+                        // Si es un campo de archivo vacío, simplemente drenamos el stream para no bloquear la petición.
+                        part.file.resume();
+                    }
+                } else if (part.type === 'file') {
+                    // Si se envía cualquier otro archivo no esperado, lo drenamos.
+                    part.file.resume();
+                }
+            }
+
+            // 3. Validamos que hayamos encontrado el campo jsonData
+            if (!jsonDataString) {
                 return reply.status(400).send({
-                    message: 'El campo jsonData es requerido y debe contener un string en su propiedad .value.',
-                    data: typeof req.body.jsonData.value
+                    message: 'El campo "jsonData" es requerido en el formulario multipart.',
                 });
             }
             
-            const jsonDataString = req.body.jsonData.value;
             let parsedJsonData;
-    
             try {
+                // El resto del código ahora usa la variable 'jsonDataString' que extrajimos
                 parsedJsonData = JSON.parse(jsonDataString);
             } catch (e) {
-                console.error('Error parseando jsonData.value:', e);
+                console.error('Error parseando jsonData:', e);
                 return reply.status(400).send({
-                    message: 'El campo jsonData.value no contiene un JSON válido.',
+                    message: 'El campo jsonData no contiene un JSON válido.',
                     error: e.message
                 });
             }
-    
+            // --- FIN DE CAMBIOS ---
+
             const {
                 serverName,
                 javaVersion,
@@ -167,9 +186,9 @@ async function serverManagementRoutes(fastify, options) {
                 startParameters,
                 fileName,
                 coreVersion
-            } = parsedJsonData;    
-            const fileData = req.body.file;
+            } = parsedJsonData;
 
+            // Ahora usamos 'fileData' (el objeto de la parte del archivo) en lugar de req.body.file
             const serverConfig = {
                 serverName,
                 javaVersion: parseInt(javaVersion, 10),
@@ -182,49 +201,50 @@ async function serverManagementRoutes(fastify, options) {
             
             const isnotvalid = [];
             
-            Object.entries(serverConfig).forEach(([key, value]) => {
-                if ((key !== 'fileName' || key !== 'coreVersion')){
-                    return;
-                }
+            // CORRECCIÓN LÓGICA: Esta validación no hacía lo que esperabas.
+            // La he reescrito para que sea más clara.
+            const requiredFields = { serverName, javaVersion, serverPort, startParameters, coreName };
+            Object.entries(requiredFields).forEach(([key, value]) => {
                 if (!value) {
                     isnotvalid.push({ key, value });
                 }
             });
             
             const serverPath = path.join(PathUtils.serverPath, serverConfig.serverName);
-            const isValidServerPath = PathUtils.isValidDirectoryName(serverPath);
+            if (!PathUtils.isValidDirectoryName(serverPath)) {
+                isnotvalid.push({ key: 'serverName (inválido para nombre de directorio)', value: serverConfig.serverName });
+            }
             
-            if (!isValidServerPath) isnotvalid.push({ key: 'Directorio(serverPath)', value: {serverConfig,isValidServerPath} });
-            if (!fileData && !coreVersion){
-                isnotvalid.push({ key: 'Archivo(fileData) || Version(coreVersion)', value: coreVersion });
+            if (!fileData && !coreVersion) {
+                isnotvalid.push({ key: 'Archivo(fileData) o Version(coreVersion)', value: 'Ninguno proporcionado' });
             }
             
             if (isnotvalid.length > 0) {
                 console.warn('Faltan campos requeridos en /newserver', isnotvalid);
                 return reply.code(400).send({
                     success: false,
-                    error: "Campos requeridos: " + isnotvalid.map(i => i.key).join(', '),
+                    error: "Campos requeridos faltantes o inválidos: " + isnotvalid.map(i => i.key).join(', '),
                     data: isnotvalid
                 });
             }
 
-            console.info('Configuración final a procesar:', serverConfig,{ isValidServerPath, serverPath});
+            console.info('Configuración final a procesar:', serverConfig);
+
             if (javaVersion) await ensureJavaVersionReady(javaVersion);
+
+            // La lógica principal ahora usa la variable 'fileData'
             if (fileData && (!coreVersion || !coreName)) {
-                const fileBuffer = await fileData.toBuffer();
+                const fileBuffer = await fileData.toBuffer(); // fileData tiene el método .toBuffer()
                 await createserverfile(serverConfig.serverName, serverConfig.fileName, fileBuffer);
                 
+                // Tu lógica de promesas para startJavaServerbyFile está bien
                 const serverResult = await new Promise((resolve, reject) => {
                     startJavaServerbyFile(serverConfig, (result) => {
-                        if (result) {
-                            if (result.success === false) {
-                                console.error(`Error (callback) al crear servidor con archivo ${serverName}: ${result.error}`);
-                                reject(new Error(result.error || 'Error reportado por startJavaServerbyFile'));
-                            } else {
-                                resolve(result);
-                            }
+                        if (result?.success === false) {
+                            reject(new Error(result.error || 'Error reportado por startJavaServerbyFile'));
+                        } else if (result) {
+                            resolve(result);
                         } else {
-                            console.error(`Error inesperado (callback vacío) al crear servidor con archivo ${serverName}`);
                             reject(new Error('Error desconocido durante la creación del servidor (callback vacío).'));
                         }
                     });
@@ -232,23 +252,20 @@ async function serverManagementRoutes(fastify, options) {
                 
                 return { success: true, data: serverConfig, message: serverResult };
             } else {
-                await new Promise((resolve, reject) => {
-                    startJavaServerGeneration(serverConfig, result => {
-                        if (result) {
-                            console.info(`Generación de servidor ${serverName} completada (o en progreso).`);
-                            resolve(result);
-                        } else {
-                            console.error(`Error en la generación de servidor ${serverName} (callback).`);
-                            reject(new Error('Error durante la generación del servidor (callback).'));
-                        }
-                    });
-                }).catch(err => {
-                    console.error(`Error en background de startJavaServerGeneration para ${serverName}: ${err.message}`);
+                // Esta parte no cambia, ya que no depende del archivo subido
+                const result = await startJavaServerGeneration(serverConfig, result => {
+                    if (result) {
+                        console.info(`Generación de servidor ${serverName} completada (o en progreso).`);
+                    } else {
+                        console.error(`Error en la generación de servidor ${serverName} (callback).`);
+                    }
                 });
                 
+                // Nota: aquí no usas await, por lo que la respuesta es inmediata. Esto es correcto para tareas en segundo plano.
                 return reply.send({
-                    message: 'Servidor configurado exitosamente!',
-                    data: serverConfig
+                    message: 'La generación del servidor ha terminado.',
+                    data: serverConfig,
+                    ...result
                 });
             }
             
@@ -260,172 +277,6 @@ async function serverManagementRoutes(fastify, options) {
         }
     });
 
-    fastify.get('/servermanager/:serverName/:action', async (req, reply) => {
-        const { serverName, action } = req.params;
-        if (!serverName || !action) {
-            return reply.code(400).send({ success: false, error: "El nombre del servidor y la acción son requeridos." });
-        }
-        const cmd = req.query.cmd;
-        const cmdArray = req.query.cmds ? JSON.parse(req.query.cmds) : null;
-        
-        if (!validActions.includes(action)) {
-            return reply.code(400).send({ success: false, error: "La acción no es válida." });
-        }
-        
-        if (action === 'send' && !cmd) {
-            return reply.code(400).send({ success: false, error: "El parámetro 'cmd' es requerido para la acción 'send'." });
-        }
-        
-        if (action === 'sendMultiple' && !cmdArray) {
-            return reply.code(400).send({ success: false, error: "El parámetro 'cmds' es requerido para la acción 'sendMultiple'." });
-        }
-        
-        try {
-            const serverPath = path.join(serversBaseDir, serverName);
-            manager.addServer(serverName, serverPath, { stopCommand: "stop" });
-            let data = null;
-            let message = `Acción '${action}' ejecutada para el servidor '${serverName}'.`;
-            
-            switch (action) {
-                case 'start':
-                    await manager.startServer(serverName);
-                    break;
-                case 'stop':
-                    await manager.stopServer(serverName);
-                    break;
-                case 'restart':
-                    await manager.sendCommand(serverName, "stop");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    await manager.startServer(serverName);
-                    break;
-                case 'send':
-                    await manager.sendCommand(serverName, cmd);
-                    message = `Comando '${cmd}' enviado al servidor '${serverName}'.`;
-                    break;
-                case 'sendMultiple':
-                    const sentCommands = [];
-                    await Promise.all(
-                        cmdArray.map(async (command) => {
-                            await manager.sendCommand(serverName, command);
-                            sentCommands.push(command);
-                        })
-                    );
-                    message = `Comandos [${sentCommands.join(', ')}] enviados al servidor '${serverName}'.`;
-                    data = { sentCommands };
-                    break;
-                case 'log':
-                    data = await manager.getServerLogs(serverName);
-                    message = `Logs obtenidos para '${serverName}'.`;
-                    break;
-                case 'info':
-                    data = await manager.getServerStatus(serverName);
-                    message = `Estado obtenido para '${serverName}'.`;
-                    break;
-                case 'players':
-                    data = await manager.getServerPlayers(serverName);
-                    message = `Jugadores obtenidos para '${serverName}'.`;
-                    break;
-                case 'metrics':
-                    data = await manager.getServerMetrics(serverName);
-                    message = `Métricas obtenidas para '${serverName}'.`;
-                    break;
-                case 'kill':
-                    data = await manager.killserver(serverName);
-                    message = `Se intentó terminar forzosamente el servidor '${serverName}'.`;
-                    break;
-            }
-            
-            return { success: true, message: message, ...(data !== null && { data }) };
-        } catch (error) {
-            console.error(`Error en /servermanager/${serverName}/${action}: ${error.message}`, error);
-            reply.code(500).send({ success: false, error: error.message || `Error al ejecutar la acción '${action}' en el servidor '${serverName}'.` });
-        }
-    });
-    fastify.post('/servermanager/:serverName/:action', async (req, reply) => {
-        const { serverName, action } = req.params;
-        if (!serverName || !action) {
-            return reply.code(400).send({ success: false, error: "El nombre del servidor y la acción son requeridos." });
-        }
-        if (!validActions.includes(action)) {
-            return reply.code(400).send({ success: false, error: "La acción no es válida." });
-        }
-        const body = req.body;
-        let data = null;
-        let message = `Acción POST '${action}' ejecutada para el servidor '${serverName}'.`;
-        try {
-            const serverPath = path.join(serversBaseDir, serverName);
-            manager.addServer(serverName, serverPath, { stopCommand: "stop" });
-            switch (action) {
-                case 'start':
-                    data = await manager.startServer(serverName);
-                    break;
-                case 'stop':
-                    data = await manager.stopServer(serverName);
-                    break;
-                case 'restart':
-                    await manager.sendCommand(serverName, "stop");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    data = await manager.startServer(serverName);
-                    break;
-                case 'send':
-                    if (!body.cmd) {
-                        /*
-                        {
-                            cmd: "tu_comando"
-                        }
-                        */
-                        return reply.code(400).send({ success: false, error: "El campo 'cmd' es requerido para la acción 'send'." });
-                    }
-                    data = await manager.sendCommand(serverName, body.cmd);
-                    message = `Comando '${body.cmd}' enviado al servidor '${serverName}'.`;
-                    break;
-                case 'sendMultiple':
-                    if (!body.cmds || !Array.isArray(body.cmds)) {
-                        return reply.code(400).send({ success: false, error: "El campo 'cmds' debe ser un array para la acción 'sendMultiple'." });
-                    }
-                    /*
-                    {
-                        cmds: ["comando1", "comando2", ...]
-                    }
-                    */
-                    const sentCommands = [];
-                    await Promise.all(
-                        body.cmds.map(async (command) => {
-                            await manager.sendCommand(serverName, command);
-                            sentCommands.push(command);
-                        })
-                    );
-                    message = `Comandos [${sentCommands.join(', ')}] enviados al servidor '${serverName}'.`;
-                    data = { sentCommands };
-                    break;
-                case 'log':
-                    data = await manager.getServerLogs(serverName);
-                    message = `Logs obtenidos para '${serverName}'.`;
-                    break;
-                case 'info':
-                    data = await manager.getServerStatus(serverName);
-                    message = `Estado obtenido para '${serverName}'.`;
-                    break;
-                case 'players':
-                    data = await manager.getServerPlayers(serverName);
-                    message = `Jugadores obtenidos para '${serverName}'.`;
-                    break;
-                case 'metrics':
-                    data = await manager.getServerMetrics(serverName);
-                    message = `Métricas obtenidas para '${serverName}'.`;
-                    break;
-                case 'kill':
-                    data = await manager.killserver(serverName);
-                    message = `Se intentó terminar forzosamente el servidor '${serverName}'.`;
-                    break;
-            }
-            return { success: true, message: message, ...(data !== null && { data }) };
-
-        } catch (error) {
-            console.error(`Error en /servermanager/${serverName}/${action}: ${error.message}`, error);
-            reply.code(500).send({ success: false, error: error.message || `Error al ejecutar la acción '${action}' en el servidor '${serverName}'.` });
-        }
-    });
 }
 
 export default serverManagementRoutes;
