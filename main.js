@@ -34,7 +34,7 @@ export async function buildFastify(options = {}) {
 
 // Register CORS plugin
 fastify.register(multipart, {
-  attachFieldsToBody: true,
+  attachFieldsToBody: false,
   limits: {
     fieldNameSize: 100, // Max field name size in bytes
     fieldSize: 1024 * 1024 * 50, // Max field value size in bytes (ej: 5MB)

@@ -43,7 +43,60 @@ function sanitizePathInput(input) {
 
   return sanitized;
 }
+function sanitizeAndNormalizePath(input) {
+  if (!input) return '';
+  
+  // Normalizar las barras a la forma del sistema operativo
+  let normalized = input.replace(/[\/\\]+/g, path.sep);
+  
+  // Remover barras al inicio y final
+  normalized = normalized.replace(/^[\/\\]+|[\/\\]+$/g, '');
+  
+  // Validar que no contenga caracteres peligrosos
+  if (normalized.includes('..') || /[<>:"|?*]/.test(normalized)) {
+    return '';
+  }
+  
+  return normalized;
+}
 
+// Solución simple y efectiva para tu caso específico
+function resolveFilePath(directoryname, filename) {
+  const normalizedDir = sanitizeAndNormalizePath(directoryname);
+  let normalizedFile = sanitizeAndNormalizePath(filename);
+  
+  console.log(`DEBUG - Input: dir="${directoryname}", file="${filename}"`);
+  console.log(`DEBUG - Normalized: dir="${normalizedDir}", file="${normalizedFile}"`);
+  
+  // Caso específico: si filename contiene separadores de ruta
+  if (normalizedFile.includes(path.sep)) {
+    // Estrategia simple: extraer solo el nombre del archivo
+    const justFileName = path.basename(normalizedFile);
+    
+    console.log(`DEBUG - Extracted filename: "${justFileName}"`);
+    
+    return {
+      directory: normalizedDir,
+      file: justFileName,
+      resolved: true,
+      debug: {
+        original: { dir: directoryname, file: filename },
+        normalized: { dir: normalizedDir, file: normalizedFile },
+        extracted: justFileName
+      }
+    };
+  }
+  
+  return {
+    directory: normalizedDir,
+    file: normalizedFile,
+    resolved: false,
+    debug: {
+      original: { dir: directoryname, file: filename },
+      normalized: { dir: normalizedDir, file: normalizedFile }
+    }
+  };
+}
 // Función helper para construir rutas seguras DENTRO de SERVERS_BASE_DIR
 // y devolver la ruta relativa al SERVERS_BASE_DIR, que es lo que esperan las funciones de 'servers.js'
 function getRelativeServerPath(...args) {
@@ -216,23 +269,44 @@ async function fileManagerRoutes(fastify, options) {
     }
   });
 
-  // Ruta para escribir/actualizar un archivo
+  // Endpoint mejorado con compatibilidad automática
   fastify.post('/write-file', async (request, reply) => {
     let { directoryname: rawDirName, filename: rawFileName, content } = request.body;
+    
     try {
-      const serverName = sanitizePathInput(rawDirName);
-      const filePathInServer = sanitizePathInput(rawFileName);
-
-      if (!serverName || !filePathInServer) {
-        return reply.code(400).send({ success: false, error: "Nombre de directorio (servidor) y archivo son requeridos/inválidos." });
-      }
-      // writeFilebyName(serverName, pathToFileInServer, content)
-      const result = await writeFilebyName(serverName, filePathInServer, content ?? '');
+      // Resolver rutas automáticamente
+      const resolved = resolveFilePath(rawDirName, rawFileName);
       
-      if (typeof result === 'string') { // Es un mensaje de error
+      if (!resolved.directory || !resolved.file) {
+        return reply.code(400).send({ 
+          success: false, 
+          error: "Nombre de directorio (servidor) y archivo son requeridos/inválidos." 
+        });
+      }
+      
+      // Log para debugging (opcional)
+      if (resolved.resolved) {
+        fastify.log.info(`Ruta resuelta automáticamente: ${rawDirName}/${rawFileName} -> ${resolved.directory}/${resolved.file}`);
+      }
+      
+      // Escribir archivo con rutas resueltas
+      const result = await writeFilebyName(resolved.directory, resolved.file, content ?? '');
+      
+      if (typeof result === 'string') {
         return reply.code(400).send({ success: false, error: result });
       }
-      return reply.send({ success: true, data: result });
+      
+      return reply.send({ 
+        success: true, 
+        data: result,
+        // Información adicional para debugging
+        pathInfo: {
+          original: { directory: rawDirName, file: rawFileName },
+          resolved: { directory: resolved.directory, file: resolved.file },
+          wasResolved: resolved.resolved
+        }
+      });
+      
     } catch (error) {
       fastify.log.error(`Error escribiendo ${rawFileName} en ${rawDirName}: ${error.message}`);
       reply.code(500).send({ success: false, error: error.message || 'Error al escribir el archivo.' });

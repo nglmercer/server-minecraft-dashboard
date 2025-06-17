@@ -147,115 +147,73 @@ async function uploadRouter(fastify, options) {
       fastify.log.warn({ msg: "getTargetDirectory failed in POST /files", err: error.message, query: request.query, requestId: request.id });
       return reply.code(400).send({ error: 'Bad Request', message: error.message });
     }
-
-    const reqBody = request.body;
+  
     const uploadedFiles = [];
     const otherFields = {};
-
-    if (!reqBody || typeof reqBody !== 'object' || Object.keys(reqBody).length === 0) {
-      fastify.log.warn({ msg: "Request body is empty or not an object for POST /files", requestId: request.id });
-      return reply.code(400).send({
-        error: 'Bad Request',
-        message: 'No data received in request body or body is not structured as expected.'
-      });
-    }
-
-    fastify.log.info({ 
-        msg: "Processing request body for file uploads", 
-        bodyKeys: Object.keys(reqBody), 
-        pathType: request.query.pathType,
-        subDirectory: request.query.subDirectory,
-        targetDir,
-        requestId: request.id 
-    });
-    
-    for (const intendedPathAsFieldname in reqBody) {
-      if (Object.prototype.hasOwnProperty.call(reqBody, intendedPathAsFieldname)) {
-        const partOrPartsArray = reqBody[intendedPathAsFieldname];
-        
-        const processPart = async (currentPartData) => {
-          if (!currentPartData || typeof currentPartData !== 'object' || !currentPartData.type ) {
-            fastify.log.warn({ msg: "Skipping malformed part or non-file/non-field part", fieldname: intendedPathAsFieldname, partType: currentPartData?.type, requestId: request.id });
-            return;
-          }
-
-          if (currentPartData.type !== 'file') {
-            fastify.log.info({ msg: "Processing non-file field", fieldname: intendedPathAsFieldname, value: currentPartData.value, requestId: request.id });
-            if (!otherFields[intendedPathAsFieldname]) otherFields[intendedPathAsFieldname] = [];
-             otherFields[intendedPathAsFieldname].push(currentPartData.value !== undefined ? currentPartData.value : currentPartData);
-            return;
-          }
-          
-          if (currentPartData.type === 'file' && typeof currentPartData.toBuffer !== 'function' && !currentPartData.file) {
-            fastify.log.warn({ msg: "File part is missing 'toBuffer' function and 'file' stream.", fieldname: intendedPathAsFieldname, requestId: request.id });
-            return;
-          }
-
-          const partForSaving = {
-            ...currentPartData,
-            filename: intendedPathAsFieldname,
-            originalBusboyFilename: currentPartData.filename 
-          };
-
+  
+    try {
+      const parts = request.parts();
+      
+      for await (const part of parts) {
+        if (part.type === 'file') {
           fastify.log.info({
-            msg: "Processing file part for saving",
-            intendedPath: intendedPathAsFieldname,
-            originalClientFilename: currentPartData.filename,
-            mimetype: currentPartData.mimetype,
-            hasToBuffer: typeof currentPartData.toBuffer === 'function',
+            msg: "Processing file part",
+            fieldname: part.fieldname,
+            filename: part.filename,
+            mimetype: part.mimetype,
             requestId: request.id
           });
-          
+  
           try {
-            const fileData = await saveFile(partForSaving, targetDir, fastify);
+            const fileData = await saveFileFromStream(part, targetDir, fastify);
             uploadedFiles.push(fileData);
           } catch (error) {
-             fastify.log.error({ msg: `Failed to save file for intended path: ${intendedPathAsFieldname}`, originalFilename: currentPartData.filename, err: error.message, requestId: request.id });
-          }
-        };
-
-        if (Array.isArray(partOrPartsArray)) {
-          fastify.log.info({ msg: `Field '${intendedPathAsFieldname}' is an array of parts. Processing each.`, count: partOrPartsArray.length, requestId: request.id });
-          for (const p of partOrPartsArray) {
-            await processPart(p);
+            fastify.log.error({ 
+              msg: `Failed to save file`, 
+              fieldname: part.fieldname,
+              filename: part.filename,
+              err: error.message, 
+              requestId: request.id 
+            });
+            // Continúa con el siguiente archivo en lugar de fallar todo
           }
         } else {
-          await processPart(partOrPartsArray);
+          // Procesar campos no-archivo
+          if (!otherFields[part.fieldname]) otherFields[part.fieldname] = [];
+          otherFields[part.fieldname].push(part.value);
+          
+          fastify.log.info({ 
+            msg: "Processing non-file field", 
+            fieldname: part.fieldname, 
+            value: part.value, 
+            requestId: request.id 
+          });
         }
       }
-    }
-
-    fastify.log.info({ msg: "Finished processing all parts from request.body", uploadedCount: uploadedFiles.length, otherFieldsCount: Object.keys(otherFields).length, requestId: request.id });
-
-    if (uploadedFiles.length === 0) {
-      const hasFilePartsInBody = Object.values(reqBody).some(val =>
-        (Array.isArray(val) && val.some(p => p && p.type === 'file')) || 
-        (val && val.type === 'file')
-      );
-
-      if (hasFilePartsInBody) {
-          fastify.log.warn({ msg: "File parts were present in body but none were successfully processed into uploadedFiles array.", requestId: request.id });
-           return reply.code(400).send({
-            error: 'Bad Request',
-            message: 'Files were received but could not be processed. Check server logs for details on individual file errors.'
-          });
-      } else {
-          fastify.log.warn({ msg: "No files parts were identified in the request.body. Sending 400.", requestId: request.id });
-          return reply.code(400).send({
-            error: 'Bad Request',
-            message: 'No files were uploaded or identified in the request.'
-          });
+  
+      if (uploadedFiles.length === 0) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'No files were successfully uploaded.'
+        });
       }
+  
+      return reply.code(200).send({
+        success: true,
+        message: `${uploadedFiles.length} file(s) processed successfully.`,
+        files: uploadedFiles,
+        fields: otherFields,
+        pathType: request.query.pathType || 'uploads',
+        subDirectory: request.query.subDirectory || null
+      });
+  
+    } catch (error) {
+      fastify.log.error({ msg: "Error processing multipart data", err: error.message, stack: error.stack, requestId: request.id });
+      return reply.code(500).send({
+        error: 'Internal Server Error',
+        message: 'Error processing uploaded files'
+      });
     }
-
-    return reply.code(200).send({
-      success: true,
-      message: `${uploadedFiles.length} file(s) processed successfully from request.body.`,
-      files: uploadedFiles,
-      fields: otherFields,
-      pathType: request.query.pathType || 'uploads',
-      subDirectory: request.query.subDirectory || null
-    });
   });
   
   fastify.addHook('onError', async (request, reply, error) => {
@@ -284,5 +242,64 @@ async function uploadRouter(fastify, options) {
     }
   });
 }
+async function saveFileFromStream(part, baseTargetDir, fastifyInstance) {
+  // Usar el fieldname como el path relativo (tu lógica actual)
+  let relativePathFromPart = normalize(part.fieldname);
+  relativePathFromPart = relativePathFromPart.replace(/^[\/\\]+/, '');
 
+  if (relativePathFromPart.includes('..') || isAbsolute(relativePathFromPart)) {
+    throw new Error(`Invalid fieldname structure: Path traversal or absolute paths are not allowed in fieldname "${part.fieldname}".`);
+  }
+  if (relativePathFromPart === '' || relativePathFromPart === '.' || relativePathFromPart === '..') {
+    throw new Error(`Invalid fieldname: Fieldname cannot be empty or just dots after normalization: "${part.fieldname}"`);
+  }
+
+  const filepath = join(baseTargetDir, relativePathFromPart);
+  const fileDir = dirname(filepath);
+
+  const resolvedBase = resolve(baseTargetDir);
+  const resolvedFilepath = resolve(filepath);
+
+  if (!resolvedFilepath.startsWith(resolvedBase)) {
+    fastifyInstance.log.warn(`Potential path traversal attempt via part.fieldname: base='${resolvedBase}', final='${resolvedFilepath}', part.fieldname='${part.fieldname}'`);
+    throw new Error('Invalid fieldname: Path attempts to go outside the allowed base directory.');
+  }
+
+  if (!fs.existsSync(fileDir)) {
+    fs.mkdirSync(fileDir, { recursive: true });
+    fastifyInstance.log.info(`Created directory for file: ${fileDir}`);
+  }
+  
+  fastifyInstance.log.info(`Streaming file to: ${filepath}. Original filename: ${part.filename}, Mimetype: ${part.mimetype}`);
+
+  try {
+    const writeStream = fs.createWriteStream(filepath);
+    await util.promisify(pipeline)(part.file, writeStream);
+    
+    const stats = fs.statSync(filepath);
+    const bytesWritten = stats.size;
+    
+    fastifyInstance.log.info(`Successfully streamed file to ${filepath}. Bytes written: ${bytesWritten}`);
+    
+    return {
+      originalName: part.filename,
+      filename: relativePathFromPart,
+      mimetype: part.mimetype,
+      filepath: resolvedFilepath,
+      directory: resolve(fileDir),
+      size: bytesWritten
+    };
+  } catch (error) {
+    fastifyInstance.log.error({ msg: `Error streaming file "${part.filename}" to "${filepath}"`, err: error.message, stack: error.stack });
+    if (fs.existsSync(filepath)) {
+      try {
+        fs.unlinkSync(filepath);
+        fastifyInstance.log.info(`Cleaned up file due to error: ${filepath}`);
+      } catch (cleanupError) {
+        fastifyInstance.log.error({ msg: `Error cleaning up file: ${filepath}`, err: cleanupError });
+      }
+    }
+    throw error;
+  }
+}
 export default uploadRouter;

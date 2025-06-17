@@ -10,6 +10,96 @@ const stat = util.promisify(fs.stat);
 async function backupRoutes(fastify, options) {
   const backupsDir = PathUtils.backupPath;
 
+  fastify.post('/restore-async', async (request, reply) => {
+    const { filename, outputFolderName } = request.body;
+    
+    if (!filename || !outputFolderName) {
+      return reply.code(400).send({ 
+        error: 'Faltan parámetros: filename y outputFolderName son requeridos.' 
+      });
+    }
+    
+    // Validate backup file
+    if (!PathUtils.isValidFilenamePattern(filename)) {
+      return reply.code(400).send({ 
+        error: 'Nombre de archivo de backup inválido.' 
+      });
+    }
+    
+    // ✅ CORRECCIÓN: Limpiar el nombre de la carpeta de destino
+    let cleanOutputFolderName = outputFolderName;
+    
+    // Si el outputFolderName es igual al filename, extraer solo el nombre base
+    if (outputFolderName === filename) {
+      cleanOutputFolderName = filename
+        .replace('.zip', '')
+        .replace('.tar.gz', '')
+        .replace('.gz', '');
+    }
+    
+    // Eliminar extensiones si las hay
+    cleanOutputFolderName = cleanOutputFolderName
+      .replace(/\.(zip|tar\.gz|gz)$/i, '');
+    
+    // Validar nombre de carpeta de destino
+    const destinationPath = path.join(PathUtils.serverPath, cleanOutputFolderName);
+    if (!PathUtils.isValidDirectoryName(destinationPath)) {
+      return reply.code(400).send({ 
+        error: 'Nombre de carpeta de destino inválido.' 
+      });
+    }
+    
+    const backupFilePath = path.join(backupsDir, filename);
+    if (!PathUtils.pathExists(backupFilePath) || !PathUtils.isFile(backupFilePath)) {
+      return reply.code(404).send({ 
+        error: 'El archivo de backup no existe.' 
+      });
+    }
+    
+    try {
+      // ✅ VERIFICAR TAMAÑO DEL ARCHIVO ANTES DE PROCEDER
+      const stats = await fs.promises.stat(backupFilePath);
+      const fileSizeMB = (stats.size / 1024 / 1024).toFixed(2);
+      
+      console.log(`📊 Iniciando restauración de ${filename} (${fileSizeMB} MB) -> ${cleanOutputFolderName}`);
+      
+      // Advertir si el archivo es muy grande
+      if (stats.size > 1024 * 1024 * 1024) { // >1GB
+        console.warn(`⚠️  Archivo muy grande detectado (${fileSizeMB} MB). La restauración puede tomar tiempo.`);
+      }
+      
+      // ✅ Usar el nombre limpio de carpeta
+      const taskId = await addRestoreTask(filename, cleanOutputFolderName);
+      
+      return {
+        message: 'Tarea de restauración iniciada correctamente',
+        taskId: taskId,
+        status: 'in_progress',
+        filename,
+        outputFolderName: cleanOutputFolderName,
+        fileSizeMB: fileSizeMB
+      };
+      
+    } catch (error) {
+      console.error('❌ Error iniciando tarea de restauración:', error);
+      
+      // Proporcionar error más específico según el tipo
+      let errorMessage = 'Error al iniciar la tarea de restauración.';
+      
+      if (error.message.includes('Array buffer allocation failed')) {
+        errorMessage = `Archivo demasiado grande para procesar (${stats ? (stats.size / 1024 / 1024).toFixed(2) + ' MB' : 'tamaño desconocido'}). Intente con un archivo más pequeño.`;
+      } else if (error.message.includes('ENOENT')) {
+        errorMessage = 'Archivo de backup no encontrado.';
+      } else if (error.message.includes('EACCES')) {
+        errorMessage = 'Sin permisos para acceder al archivo de backup.';
+      }
+      
+      reply.code(500).send({ 
+        error: errorMessage,
+        details: error.message 
+      });
+    }
+  });
   fastify.post('/create', async (request, reply) => {
     const { serverName } = request.body;
     const folderName = request.body.folderName || serverName;
@@ -105,41 +195,6 @@ async function backupRoutes(fastify, options) {
     }
   });
 
-  fastify.post('/restore-async', async (request, reply) => {
-    const { filename, outputFolderName } = request.body;
-    
-    if (!filename || !outputFolderName) {
-      return reply.code(400).send({ error: 'Faltan parámetros: filename y outputFolderName son requeridos.' });
-    }
-    
-    // Validate backup file and output folder
-    if (!PathUtils.isValidFilenamePattern(filename)) {
-      return reply.code(400).send({ error: 'Nombre de archivo de backup inválido.' });
-    }
-    
-    if (!PathUtils.isValidDirectoryName(path.join(PathUtils.serverPath, outputFolderName))) {
-      return reply.code(400).send({ error: 'Nombre de carpeta de destino inválido.' });
-    }
-    
-    const backupFilePath = path.join(backupsDir, filename);
-    if (!PathUtils.pathExists(backupFilePath) || !PathUtils.isFile(backupFilePath)) {
-      return reply.code(404).send({ error: 'El archivo de backup no existe.' });
-    }
-    
-    try {
-      const taskId = await addRestoreTask(filename, outputFolderName);
-      return { 
-        message: 'Tarea de restauración iniciada correctamente',
-        taskId: taskId,
-        status: 'in_progress',
-        filename,
-        outputFolderName
-      };
-    } catch (error) {
-      console.error(error);
-      reply.code(500).send({ error: error.message || 'Error al iniciar la tarea de restauración.' });
-    }
-  });
 
   fastify.get('/backupsInfo', async (request, reply) => {
     try {
@@ -275,35 +330,65 @@ async function backupRoutes(fastify, options) {
   // SUBIR/IMPORTAR BACKUPS
   fastify.post('/upload', async (request, reply) => {
     try {
-      // Con attachFieldsToBody: true, los archivos están en request.body
-      const fileData = request.body.file;
+      const parts = request.parts();
+      let uploadedFile = null;
       
-      if (!fileData || !fileData.file) {
-        return reply.code(400).send({ error: 'No se ha subido ningún archivo.' });
+      for await (const part of parts) {
+        if (part.type === 'file' && part.fieldname === 'file') {
+          const sanitizedFilename = BackupManager.sanitizeFilename(part.filename);
+          
+          if (!sanitizedFilename.endsWith('.zip') && !sanitizedFilename.endsWith('.tar.gz')) {
+            // Drenar el stream antes de rechazar
+            part.file.resume();
+            return reply.code(400).send({ error: 'Tipo de archivo no válido. Solo se permiten archivos .zip y .tar.gz' });
+          }
+          
+          const destination = path.join(backupsDir, sanitizedFilename);
+          
+          // Verificar que no exista ya el archivo
+          if (fs.existsSync(destination)) {
+            part.file.resume();
+            return reply.code(409).send({ error: 'El archivo ya existe.' });
+          }
+          
+          console.log(`Streaming backup file to: ${destination}`);
+          
+          // Stream directo a archivo
+          await pipeline(part.file, fs.createWriteStream(destination));
+          
+          // Verificar que el archivo se escribió correctamente
+          const stats = fs.statSync(destination);
+          console.log(`Backup file uploaded successfully. Size: ${stats.size} bytes`);
+          
+          uploadedFile = {
+            filename: sanitizedFilename,
+            path: destination,
+            size: stats.size
+          };
+          
+          break; // Solo procesamos el primer archivo válido
+        } else if (part.type === 'file') {
+          // Si hay otros archivos, drenar sus streams
+          part.file.resume();
+        }
       }
       
-      // fileData.file es el stream
-      // fileData.filename es el nombre
-      const sanitizedFilename = BackupManager.sanitizeFilename(fileData.filename);
-      
-      if (!sanitizedFilename.endsWith('.zip') && !sanitizedFilename.endsWith('.tar.gz')) {
-        return reply.code(400).send({ error: 'Tipo de archivo no válido.' });
+      if (!uploadedFile) {
+        return reply.code(400).send({ error: 'No se encontró un archivo válido en el campo "file".' });
       }
-      
-      const destination = path.join(backupsDir, sanitizedFilename);
-      await pipeline(fileData.file, fs.createWriteStream(destination));
       
       await updatebackupslist();
       
       return reply.code(200).send({
         message: 'Backup importado correctamente.',
-        filename: sanitizedFilename,
-        path: destination
+        filename: uploadedFile.filename,
+        path: uploadedFile.path,
+        size: uploadedFile.size
       });
       
     } catch (error) {
-      console.error('Error:', error);
-      return reply.code(500).send({ error: 'Error interno' });
+      console.error('Error uploading backup:', error);
+      return reply.code(500).send({ error: 'Error interno al subir el backup: ' + error.message });
     }
   });
 

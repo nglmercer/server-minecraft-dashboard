@@ -290,7 +290,7 @@ class TaskManager {
             // Comprimir
             progressCallback('Comprimiendo archivo...', currentProgress += 10);
             const pathToCompress = tempPath || sourcePath;
-            const result = await backupManager.compressFolderSafe(pathToCompress, outputFilename, config);
+            const result = await backupManager.createBackup(pathToCompress, outputFilename, config);
 
             if (!result.success) {
                 throw new Error(result.error);
@@ -347,49 +347,160 @@ class TaskManager {
         return taskID;
     }
 
-    /**
-     * Ejecutar tarea de restauración
-     * @private
-     */
-    async executeRestoreTask(taskID, filename, outputFolderName) {
-        try {
-            this.updateTask(taskID, {
-                progress: 10,
-                currentStep: 'Verificando archivo de backup...'
-            });
-
-            this.updateTask(taskID, {
-                progress: 30,
-                currentStep: 'Extrayendo archivos...'
-            });
-
-            const result = await backupManager.restoreBackup(filename, outputFolderName);
-
-            this.updateTask(taskID, {
-                progress: 90,
-                currentStep: 'Finalizando restauración...'
-            });
-
-            this.updateTask(taskID, {
-                progress: 100,
-                status: PREDEFINED.TASK_STATUS.COMPLETED,
-                currentStep: 'Restauración completada exitosamente',
-                result: result,
-                completedAt: Date.now()
-            });
-
-            tasklogger.log("Restore task completed", colors.green(taskID), colors.green(result));
-
-        } catch (error) {
-            this.updateTask(taskID, {
-                status: PREDEFINED.TASK_STATUS.FAILED,
-                error: error.message,
-                currentStep: `Error: ${error.message}`,
-                failedAt: Date.now()
-            });
-            throw error;
-        }
+/**
+ * Ejecutar tarea de restauración mejorada
+ * @private
+ */
+async executeRestoreTask(taskID, filename, outputFolderName) {
+    try {
+      this.updateTask(taskID, {
+        progress: 5,
+        currentStep: 'Verificando archivo de backup...'
+      });
+      
+      // ✅ Verificar tamaño del archivo
+      const backupPath = path.join(backupManager.constructor.backupPathBase || './backups', filename);
+      const stats = await fs.promises.stat(backupPath);
+      const fileSizeMB = (stats.size / 1024 / 1024).toFixed(2);
+      
+      this.updateTask(taskID, {
+        progress: 10,
+        currentStep: `Procesando archivo de ${fileSizeMB} MB...`,
+        fileSize: stats.size,
+        fileSizeMB: fileSizeMB
+      });
+      
+      // ✅ Verificar memoria disponible
+      const memUsage = process.memoryUsage();
+      const availableMemory = memUsage.heapTotal - memUsage.heapUsed;
+      
+      if (stats.size > availableMemory * 0.8) {
+        this.updateTask(taskID, {
+          progress: 15,
+          currentStep: 'Archivo grande detectado, usando método de streaming...'
+        });
+      }
+      
+      this.updateTask(taskID, {
+        progress: 20,
+        currentStep: 'Iniciando extracción de archivos...'
+      });
+      
+      // ✅ Configurar callback de progreso más detallado
+      const progressCallback = (step, progress, details = {}) => {
+        this.updateTask(taskID, {
+          progress: Math.min(90, 20 + progress * 0.7), // 20-90%
+          currentStep: step,
+          ...details
+        });
+      };
+      
+      // ✅ Ejecutar restauración con mejor manejo de errores
+      const result = await this.executeRestoreWithProgress(
+        filename, 
+        outputFolderName, 
+        progressCallback,
+        stats.size
+      );
+      
+      this.updateTask(taskID, {
+        progress: 95,
+        currentStep: 'Verificando archivos extraídos...'
+      });
+      
+      // ✅ Verificar que la restauración fue exitosa
+      const outputPath = path.join(backupManager.constructor.serverPathBase || './servers', outputFolderName);
+      const outputExists = fs.existsSync(outputPath);
+      
+      if (!outputExists) {
+        throw new Error('La carpeta de destino no fue creada correctamente');
+      }
+      
+      this.updateTask(taskID, {
+        progress: 100,
+        status: PREDEFINED.TASK_STATUS.COMPLETED,
+        currentStep: 'Restauración completada exitosamente',
+        result: result,
+        outputPath: outputPath,
+        completedAt: Date.now()
+      });
+      
+      tasklogger.log("Restore task completed", colors.green(taskID), colors.green(result));
+      
+    } catch (error) {
+      console.error(`❌ Error en tarea de restauración ${taskID}:`, error);
+      
+      // ✅ Categorizar errores para mejor debugging
+      let errorCategory = 'unknown';
+      let userFriendlyMessage = error.message;
+      
+      if (error.message.includes('Array buffer allocation failed')) {
+        errorCategory = 'memory';
+        userFriendlyMessage = 'Archivo demasiado grande para la memoria disponible';
+      } else if (error.message.includes('ENOENT')) {
+        errorCategory = 'file_not_found';
+        userFriendlyMessage = 'Archivo de backup no encontrado';
+      } else if (error.message.includes('ENOSPC')) {
+        errorCategory = 'disk_space';
+        userFriendlyMessage = 'Espacio en disco insuficiente';
+      } else if (error.message.includes('EACCES')) {
+        errorCategory = 'permissions';
+        userFriendlyMessage = 'Sin permisos para acceder al archivo';
+      }
+      
+      this.updateTask(taskID, {
+        status: PREDEFINED.TASK_STATUS.FAILED,
+        error: error.message,
+        errorCategory: errorCategory,
+        userFriendlyMessage: userFriendlyMessage,
+        currentStep: `Error: ${userFriendlyMessage}`,
+        failedAt: Date.now()
+      });
+      
+      throw error;
     }
+  }
+  
+  /**
+   * Ejecutar restauración con progreso detallado
+   * @private
+   */
+  async executeRestoreWithProgress(filename, outputFolderName, progressCallback, fileSize) {
+    try {
+      progressCallback('Preparando restauración...', 0, { phase: 'preparation' });
+      
+      // ✅ Determinar método de extracción basado en tamaño
+      const isLargeFile = fileSize > 500 * 1024 * 1024; // 500MB
+      const method = isLargeFile ? 'streaming' : 'memory';
+      
+      progressCallback(`Usando método ${method} para archivo de ${(fileSize / 1024 / 1024).toFixed(2)} MB...`, 10, { 
+        phase: 'method_selection',
+        method: method,
+        fileSize: fileSize
+      });
+      
+      // ✅ Configurar opciones de restauración
+      const restoreOptions = {
+        streaming: isLargeFile,
+        progressCallback: (step, progress) => {
+          progressCallback(step, 20 + progress * 0.6, { phase: 'extraction' });
+        }
+      };
+      
+      progressCallback('Ejecutando restauración...', 20, { phase: 'execution' });
+      
+      // ✅ Ejecutar restauración con opciones mejoradas
+      const result = await backupManager.restoreBackup(filename, outputFolderName, restoreOptions);
+      
+      progressCallback('Restauración completada', 100, { phase: 'completed' });
+      
+      return result;
+      
+    } catch (error) {
+      progressCallback(`Error: ${error.message}`, 0, { phase: 'error' });
+      throw error;
+    }
+  }
 }
 
 const TASK_MANAGER = new TaskManager();
