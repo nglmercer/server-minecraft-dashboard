@@ -4,20 +4,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import stream from 'node:stream';
-
-// Importamos nuestro nuevo servicio de compresión
-import * as Compression from './backups/CompressionService.js';
-
-// Asumimos que estas utilidades siguen existiendo
+import * as CompressionService from '../services/CompressionService.js';
 import { getFolderDetails, deletePath, StorageManager, serverPathBase, backupPathBase } from '../fileutils.js';
 
 const pipeline = promisify(stream.pipeline);
-
+export function sanitizeFilename(filename) {
+  if (!filename || typeof filename !== 'string') return 'invalid_name';
+  return filename.trim().replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+|\.+$/g, '').replace(/_{2,}/g, '_') || 'backup';
+}
 export class BackupManager {
   constructor(taskManager) {
-    // El taskManager se puede inyectar para emitir eventos de progreso
     this.taskManager = taskManager; 
-    
     this.backupsData = new StorageManager("backups.json", "./data");
     
     this.problematicFiles = [
@@ -31,102 +28,90 @@ export class BackupManager {
       retryDelay: 2000,
       useZip: true, // .tar.gz es generalmente más rápido
       excludeProblematicFiles: true,
-      copyBeforeCompress: true, // Muy recomendado
+      copyBeforeCompress: true, // Muy recomendado para servidores en vivo
     };
   }
   
   async createBackup(folderName, outputFilename = null, options = {}) {
     const config = { ...this.backupConfig, ...options };
-
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Detecta si 'folderName' ya es una ruta absoluta (como la que envía TaskManager)
-    const isAbsolutePath = path.isAbsolute(folderName);
+    const sourcePath = path.isAbsolute(folderName) ? folderName : path.join(serverPathBase, folderName);
     
-    // Si es una ruta absoluta, úsala directamente. Si no, úsala como nombre de carpeta.
-    const sourcePath = isAbsolutePath ? folderName : path.join(serverPathBase, folderName);
-    
-    // El nombre de la carpeta para el archivo de salida debe basarse en el nombre base, no en la ruta completa.
-    const baseFolderName = isAbsolutePath ? path.basename(folderName) : folderName;
-    const sanitizedFolderName = BackupManager.sanitizeFilename(baseFolderName);
-    // --- FIN DE LA CORRECCIÓN ---
+    const baseFolderName = path.basename(sourcePath);
+    const sanitizedFolderName = sanitizeFilename(baseFolderName);
 
-    // Verificar si la carpeta de origen existe antes de continuar
     if (!fs.existsSync(sourcePath)) {
         throw new Error(`La carpeta de origen no existe: ${sourcePath}`);
     }
 
     const extension = config.useZip ? '.zip' : '.tar.gz';
     let finalOutputFilename = outputFilename
-      ? BackupManager.sanitizeFilename(outputFilename)
+      ? sanitizeFilename(outputFilename)
       : `${sanitizedFolderName}-backup-${new Date().toISOString().replace(/[:.]/g, '-')}${extension}`;
       
     if (!finalOutputFilename.endsWith(extension)) {
       finalOutputFilename = finalOutputFilename.replace(/\.(zip|tar\.gz)$/, '') + extension;
     }
-    
+
     const outputPath = path.join(backupPathBase, finalOutputFilename);
 
-    const serverRunning = await this.isServerRunning(sourcePath);
-    if (serverRunning && !config.copyBeforeCompress) {
-        console.warn('⚠️ Servidor en ejecución. Se recomienda `copyBeforeCompress: true` para evitar corrupción.');
-    }
-    
+    // Pasar el callback de progreso correctamente a las funciones de compresión
+    const compressionOptions = {
+      progressCallback: options.progressCallback || (() => {}) // Callback vacío por defecto
+    };
+
     let tempPath = null;
-    // El resto de la función puede permanecer igual, ya que ahora 'sourcePath' es correcto.
     for (let attempt = 1; attempt <= config.retryAttempts; attempt++) {
       try {
         console.log(`🔄 Intento ${attempt}/${config.retryAttempts} de backup para ${baseFolderName}`);
 
+        // --- CORRECCIÓN CLAVE ---
+        // 'pathToCompress' almacenará la ruta que realmente se debe comprimir.
         let pathToCompress = sourcePath;
         if (config.copyBeforeCompress) {
           console.log('📁 Creando copia temporal del servidor...');
-          // Usamos 'baseFolderName' para que el nombre de la carpeta temporal sea limpio
           tempPath = path.join(process.cwd(), 'temp', `backup_${Date.now()}_${baseFolderName}`);
           await this.createTempCopyWithSkip(sourcePath, tempPath); 
-          pathToCompress = tempPath;
+          pathToCompress = tempPath; // Usar la copia temporal como origen para la compresión.
           console.log('✅ Copia temporal creada en:', pathToCompress);
         }
 
         console.log('🗜️ Iniciando compresión por stream...');
-        const ignoreList = config.excludeProblematicFiles ? this.problematicFiles : [];
         
+        // --- CORRECCIÓN CLAVE ---
+        // Usar 'pathToCompress' en lugar de 'sourcePath'
         if (config.useZip) {
-          await Compression.compressZipStream(pathToCompress, outputPath, ignoreList);
+          await CompressionService.compressZipStream(pathToCompress, outputPath, compressionOptions);
         } else {
-          await Compression.compressTarGzStream(pathToCompress, outputPath, ignoreList);
+          await CompressionService.compressTarGzStream(pathToCompress, outputPath, compressionOptions);
         }
 
         console.log(`✅ Backup creado exitosamente: ${outputPath}`);
         await this.updateBackupsList();
         
-        // Limpiamos aquí después del éxito, antes de salir del bucle
         if (tempPath) {
           console.log('🧹 Limpiando copia temporal...');
           await fs.promises.rm(tempPath, { recursive: true, force: true });
-          tempPath = null; // Evita que el finally lo borre de nuevo
         }
 
-        return { success: true, data: outputPath };
+        return { success: true, path: outputPath };
 
       } catch (error) {
         console.error(`❌ Error en intento ${attempt}:`, error.message);
-        // Limpia la copia temporal también en caso de fallo
         if (tempPath) {
           await fs.promises.rm(tempPath, { recursive: true, force: true }).catch(err => {
               console.warn('⚠️ Error limpiando copia temporal tras fallo:', err.message);
           });
-          tempPath = null;
         }
         if (attempt >= config.retryAttempts) {
           throw new Error(`Backup falló después de ${config.retryAttempts} intentos: ${error.message}`);
         }
         await new Promise(resolve => setTimeout(resolve, config.retryDelay));
-      } 
-      // El 'finally' ya no es estrictamente necesario si limpiamos en try/catch
+      }
     }
   }
-  async restoreBackup(filename, outputFolderName = null) {
-    const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+
+  async restoreBackup(filename, outputFolderName = null, options = {}) {
+    const sanitizedFilename = sanitizeFilename(filename);
     const backupPath = path.join(backupPathBase, sanitizedFilename);
 
     if (!fs.existsSync(backupPath)) {
@@ -134,7 +119,7 @@ export class BackupManager {
     }
 
     const sanitizedOutputFolder = outputFolderName
-      ? BackupManager.sanitizeFilename(outputFolderName)
+      ? sanitizeFilename(outputFolderName)
       : sanitizedFilename.replace(/\.(tar\.gz|zip)$/, '');
       
     const outputPath = path.join(serverPathBase, sanitizedOutputFolder);
@@ -142,46 +127,40 @@ export class BackupManager {
     try {
       console.log(`Restaurando '${sanitizedFilename}' en '${outputPath}'...`);
       await fs.promises.mkdir(outputPath, { recursive: true });
+      const decompressionOptions = {
+        progressCallback: options.progressCallback || (() => {}) // Callback vacío por defecto
+      };  
 
-      // Delegamos la lógica de descompresión al servicio
       if (sanitizedFilename.endsWith('.zip')) {
-        await Compression.decompressZipStream(backupPath, outputPath);
+        await CompressionService.decompressZipStream(backupPath, outputPath, decompressionOptions);
       } else if (sanitizedFilename.endsWith('.tar.gz')) {
-        await Compression.decompressTarGzStream(backupPath, outputPath);
+        await CompressionService.decompressTarGzStream(backupPath, outputPath, decompressionOptions);
       } else {
         throw new Error(`Formato de archivo no soportado: ${sanitizedFilename}`);
       }
 
       console.log(`✅ Backup restaurado exitosamente en: ${outputPath}`);
-      // await this.updateFolderInfo(); // Asumo que actualiza la lista de servidores
-      return { success: true, data: outputPath };
+      return { success: true, path: outputPath };
 
     } catch (error) {
-      // Aquí capturaríamos el error de archivo corrupto y lo reportaríamos de forma amigable.
       console.error('Error restaurando el backup:', error);
-      // Podrías verificar si el error es el que viste
-      if (error.code === 'Z_BUF_ERROR') {
+      if (error.code === 'Z_BUF_ERROR' || error.message.includes('invalid')) {
           throw new Error(`Fallo al restaurar: El archivo '${sanitizedFilename}' parece estar corrupto o incompleto.`);
       }
-      throw error; // Re-lanzar otros errores
+      throw error;
     }
   }
   // --- MÉTODOS AUXILIARES (Algunos sin cambios, otros con pequeñas mejoras) ---
-
-  static sanitizeFilename(filename) {
-    if (!filename || typeof filename !== 'string') return 'invalid_name';
-    return filename.trim().replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+|\.+$/g, '').replace(/_{2,}/g, '_') || 'backup';
+  static sanitizeFilename(filename){
+    return sanitizeFilename(filename)
   }
-
   _globToRegex(globPattern) {
     const regexString = globPattern.replace(/\./g, '\\.').replace(/\*\*/g, '(.+)').replace(/\*/g, '([^/\\\\]*)');
-    return `^${regexString}$`;
+    return new RegExp(`^${regexString}$`);
   }
   
-  // Es muy robusta para manejar archivos bloqueados.
+
   async createTempCopyWithSkip(source, dest) {
-    // Tu implementación de `createTempCopyWithSkip` es bastante robusta y puede permanecer aquí,
-    // ya que está muy ligada a la lógica de "backup". He simplificado un poco el manejo de errores.
     await fs.promises.mkdir(dest, { recursive: true });
     const entries = await fs.promises.readdir(source, { withFileTypes: true });
 
@@ -190,7 +169,7 @@ export class BackupManager {
         const destPath = path.join(dest, entry.name);
         const relativePath = path.relative(source, srcPath).replace(/\\/g, '/');
 
-        if (this.backupConfig.excludeProblematicFiles && this.problematicFiles.some(p => new RegExp(this._globToRegex(p)).test(relativePath))) {
+        if (this.backupConfig.excludeProblematicFiles && this.problematicFiles.some(p => this._globToRegex(p).test(relativePath))) {
             continue;
         }
 
@@ -198,20 +177,24 @@ export class BackupManager {
             await this.createTempCopyWithSkip(srcPath, destPath);
         } else {
             try {
-                await fs.promises.copyFile(srcPath, destPath, fs.constants.COPYFILE_FICLONE);
+                // --- CORRECCIÓN ---
+                // Se eliminó la bandera 'fs.constants.COPYFILE_FICLONE_FORCE'
+                // para asegurar la compatibilidad con todos los sistemas de archivos (como NTFS en Windows).
+                await fs.promises.copyFile(srcPath, destPath);
             } catch (error) {
                 if (['EBUSY', 'EPERM', 'ENOENT'].includes(error.code)) {
                     console.warn(`Saltando archivo bloqueado/no encontrado: ${relativePath}`);
                 } else {
-                    throw error;
+                    // Si hay otro error, lo lanzamos para que el reintento de backup pueda manejarlo.
+                    throw error; 
                 }
             }
         }
     }
-}
+  }
+
 
   
-  //<editor-fold desc="Pega aquí el resto de tus métodos sin cambiar">
   async isFileLocked(filePath) {
     try {
       if (!fs.existsSync(filePath)) return false;
@@ -227,7 +210,6 @@ export class BackupManager {
     const sessionLockPath = path.join(serverPath, 'session.lock');
     if (!fs.existsSync(sessionLockPath)) return false;
     try {
-      // Intentar abrir con 'r+' falla si está bloqueado
       const fd = fs.openSync(sessionLockPath, 'r+');
       fs.closeSync(fd);
       return false;
@@ -517,7 +499,7 @@ export class BackupManager {
 
   async deleteBackup(filename) {
     try {
-      const sanitizedFilename = BackupManager.sanitizeFilename(filename);
+      const sanitizedFilename = sanitizeFilename(filename);
       const result = await deletePath(backupPathBase, sanitizedFilename);
       
       if (result.success) {
@@ -615,7 +597,7 @@ export class BackupManager {
 }
 
 // Crear instancia singleton del BackupManager
-const backupManager = new BackupManager();
+export const backupManager = new BackupManager();
 
 // Funciones de conveniencia
 export async function createbackup(folderName, outputFilename, options = {}) {

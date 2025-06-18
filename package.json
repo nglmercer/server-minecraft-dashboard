@@ -30,6 +30,7 @@
     "mime-types": "^2.1.35",
     "minecraft-server-properties": "^1.0.0",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.1.0",
     "node-mcstatus": "^1.2.1",
     "strip-ansi": "^7.1.0",
     "systeminformation": "^5.25.11",

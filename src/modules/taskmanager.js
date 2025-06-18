@@ -8,11 +8,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger, Logger, StorageManager } from "../utils/utils.js";
 import { emitter } from '../sockets/Emitter.js';
 // Importar funciones de backup
-import { BackupManager } from '../modules/backup.js';
+import { backupManager,sanitizeFilename } from '../modules/backup.js';
 
 const tasklogger = new Logger();
 const taskStorage = new StorageManager('tasks.json', './data');
-const backupManager = new BackupManager();
 
 const PREDEFINED = {
     TASK_STATUS: {
@@ -173,7 +172,7 @@ class TaskManager {
      * @returns {Promise<string>} ID de la tarea
      */
     async addBackupTask(folderName, outputFilename = null, options = {}) {
-        const sanitizedFolderName = BackupManager.sanitizeFilename(folderName);
+        const sanitizedFolderName = sanitizeFilename(folderName);
         const finalOutputFilename = outputFilename || `${sanitizedFolderName}_backup_${Date.now()}.tar.gz`;
         
         const taskID = this.addNewTask({
@@ -208,31 +207,20 @@ class TaskManager {
         try {
             // Paso 1: Verificar servidor
             this.updateTask(taskID, {
-                progress: 10,
+                progress: 5,
                 currentStep: 'Verificando estado del servidor...'
             });
-
-            // Paso 2: Preparar backup
-            this.updateTask(taskID, {
-                progress: 20,
-                currentStep: 'Preparando backup...'
-            });
-
-            // Configurar callback de progreso personalizado
-            const progressCallback = (step, progress) => {
+            const progressCallback = (step, progress, details = {}) => {
                 this.updateTask(taskID, {
-                    progress: Math.min(95, 20 + progress * 0.7), // 20-90%
-                    currentStep: step
+                    // El progreso total será un 90% del progreso de compresión, dejando 10% para el inicio.
+                    progress: Math.min(95, 10 + Math.round(progress * 0.85)),
+                    currentStep: `${step} (${progress}%)`,
+                    ...details
                 });
-            };
+              };
+            const backupOptions = { ...options, progressCallback };
 
-            // Ejecutar backup con monitoreo de progreso
-            const result = await this.executeBackupWithProgress(
-                folderName, 
-                outputFilename, 
-                options, 
-                progressCallback
-            );
+            const result = await backupManager.createBackup(folderName, outputFilename, backupOptions);
 
             // Paso final: Completar
             this.updateTask(taskID, {
@@ -253,67 +241,6 @@ class TaskManager {
                 failedAt: Date.now()
             });
             throw error;
-        }
-    }
-
-    /**
-     * Ejecutar backup con progreso detallado
-     * @private
-     */
-    async executeBackupWithProgress(folderName, outputFilename, options, progressCallback) {
-        const config = { ...backupManager.getBackupConfig(), ...options };
-        let currentProgress = 0;
-
-        try {
-            // Verificar si el servidor está ejecutándose
-            progressCallback('Verificando servidor...', currentProgress += 10);
-            const sourcePath = path.join(backupManager.constructor.serverPathBase || './servers', folderName);
-            const serverRunning = await backupManager.isServerRunning(sourcePath);
-            
-            if (serverRunning) {
-                progressCallback('Servidor en ejecución detectado', currentProgress += 5);
-                config.copyBeforeCompress = true;
-                config.useZip = true;
-            }
-
-            // Crear copia temporal si es necesario
-            let tempPath = null;
-            const hasLockedFiles = await backupManager.hasLockedFiles(sourcePath);
-            
-            if (config.copyBeforeCompress || serverRunning || hasLockedFiles) {
-                progressCallback('Creando copia temporal...', currentProgress += 10);
-                tempPath = path.join(process.cwd(), 'temp', `backup_${Date.now()}_${folderName}`);
-                await backupManager.createTempCopyWithSkip(sourcePath, tempPath);
-                progressCallback('Copia temporal creada', currentProgress += 15);
-            }
-
-            // Comprimir
-            progressCallback('Comprimiendo archivo...', currentProgress += 10);
-            const pathToCompress = tempPath || sourcePath;
-            const result = await backupManager.createBackup(pathToCompress, outputFilename, config);
-
-            if (!result.success) {
-                throw new Error(result.error);
-            }
-
-            // Limpiar archivos temporales
-            if (tempPath) {
-                progressCallback('Limpiando archivos temporales...', currentProgress += 5);
-                try {
-                    await fs.promises.rm(tempPath, { recursive: true, force: true });
-                } catch (cleanupError) {
-                    console.warn('Error limpiando archivos temporales:', cleanupError.message);
-                }
-            }
-
-            // Actualizar lista de backups
-            progressCallback('Actualizando lista de backups...', currentProgress += 5);
-            await backupManager.updateBackupsList();
-
-            return result.data;
-
-        } catch (error) {
-            throw new Error(`Backup failed: ${error.message}`);
         }
     }
 
@@ -386,29 +313,23 @@ async executeRestoreTask(taskID, filename, outputFolderName) {
         currentStep: 'Iniciando extracción de archivos...'
       });
       
-      // ✅ Configurar callback de progreso más detallado
       const progressCallback = (step, progress, details = {}) => {
         this.updateTask(taskID, {
-          progress: Math.min(90, 20 + progress * 0.7), // 20-90%
-          currentStep: step,
-          ...details
+            // El progreso total será un 80% del progreso de extracción.
+            progress: Math.min(95, 10 + Math.round(progress * 0.85)),
+            currentStep: `${step} (${progress}%)`,
+            ...details
         });
       };
       
-      // ✅ Ejecutar restauración con mejor manejo de errores
-      const result = await this.executeRestoreWithProgress(
-        filename, 
-        outputFolderName, 
-        progressCallback,
-        stats.size
-      );
+      const restoreOptions = { progressCallback };
+      const result = await backupManager.restoreBackup(filename, outputFolderName, restoreOptions);
       
       this.updateTask(taskID, {
         progress: 95,
         currentStep: 'Verificando archivos extraídos...'
       });
       
-      // ✅ Verificar que la restauración fue exitosa
       const outputPath = path.join(backupManager.constructor.serverPathBase || './servers', outputFolderName);
       const outputExists = fs.existsSync(outputPath);
       
@@ -457,47 +378,6 @@ async executeRestoreTask(taskID, filename, outputFolderName) {
         failedAt: Date.now()
       });
       
-      throw error;
-    }
-  }
-  
-  /**
-   * Ejecutar restauración con progreso detallado
-   * @private
-   */
-  async executeRestoreWithProgress(filename, outputFolderName, progressCallback, fileSize) {
-    try {
-      progressCallback('Preparando restauración...', 0, { phase: 'preparation' });
-      
-      // ✅ Determinar método de extracción basado en tamaño
-      const isLargeFile = fileSize > 500 * 1024 * 1024; // 500MB
-      const method = isLargeFile ? 'streaming' : 'memory';
-      
-      progressCallback(`Usando método ${method} para archivo de ${(fileSize / 1024 / 1024).toFixed(2)} MB...`, 10, { 
-        phase: 'method_selection',
-        method: method,
-        fileSize: fileSize
-      });
-      
-      // ✅ Configurar opciones de restauración
-      const restoreOptions = {
-        streaming: isLargeFile,
-        progressCallback: (step, progress) => {
-          progressCallback(step, 20 + progress * 0.6, { phase: 'extraction' });
-        }
-      };
-      
-      progressCallback('Ejecutando restauración...', 20, { phase: 'execution' });
-      
-      // ✅ Ejecutar restauración con opciones mejoradas
-      const result = await backupManager.restoreBackup(filename, outputFolderName, restoreOptions);
-      
-      progressCallback('Restauración completada', 100, { phase: 'completed' });
-      
-      return result;
-      
-    } catch (error) {
-      progressCallback(`Error: ${error.message}`, 0, { phase: 'error' });
       throw error;
     }
   }

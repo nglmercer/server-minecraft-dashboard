@@ -1,4 +1,4 @@
-import { createbackup, restorebackup, getbackupsdata, deletebackup,BackupManager, updatebackupslist } from '../modules/backup.js';
+import { createbackup, restorebackup, getbackupsdata, deletebackup,sanitizeFilename, updatebackupslist } from '../modules/backup.js';
 import { addBackupTask, addRestoreTask, TASK_MANAGER } from '../modules/taskmanager.js';
 import { PathUtils } from '../fileutils.js';
 import { pipeline } from 'node:stream/promises';
@@ -335,7 +335,7 @@ async function backupRoutes(fastify, options) {
       
       for await (const part of parts) {
         if (part.type === 'file' && part.fieldname === 'file') {
-          const sanitizedFilename = BackupManager.sanitizeFilename(part.filename);
+          const sanitizedFilename = sanitizeFilename(part.filename);
           
           if (!sanitizedFilename.endsWith('.zip') && !sanitizedFilename.endsWith('.tar.gz')) {
             // Drenar el stream antes de rechazar

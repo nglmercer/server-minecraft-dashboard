@@ -25,7 +25,7 @@ import {
   getCoresList
 } from "./coredownloader.js";
 
-import { TASK_MANAGER, addDownloadTask, unpackArchive } from "../modules/taskmanager.js";
+import { TASK_MANAGER, addDownloadTask } from "../modules/taskmanager.js";
 
 export const getPlatformInfo = () => {
   const isTermuxAndroid = process.platform === "android" || fs.existsSync("/data/data/com.termux"); // Renamed for clarity
