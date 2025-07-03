@@ -68,7 +68,6 @@ await fastify.register(fastifyWebsocket, {
 const wsManager = new WebSocketManager(fastify, '/ws');
 wsManager.init();
 emitter.on('*', (event, data) => {
-  console.log("Evento recibido:", event, data);
   wsManager.broadcast({
     event,
     data

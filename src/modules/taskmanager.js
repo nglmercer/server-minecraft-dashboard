@@ -413,18 +413,21 @@ async function addDownloadTask(downloadURL, filePath) {
             url: downloadURL,
             method: "GET",
             responseType: "stream",
-            timeout: 10000
+            timeout: 20000, // <<< RECOMENDACIÓN: Aumentar un poco el timeout para descargas grandes/lentas
+            headers: { // <<< RECOMENDACIÓN: Añadir un User-Agent es buena práctica
+                'User-Agent': 'MiAppDeServidores/1.0'
+            }
         });
 
         const contentLength = parseInt(response.headers['content-length'], 10);
-        if (isNaN(contentLength) || contentLength <= 0) {
-            throw new Error("Invalid content length");
-        }
+        // <<< CAMBIO: Comprobamos si el content-length es válido, pero no fallamos si no lo es.
+        const hasValidContentLength = !isNaN(contentLength) && contentLength > 0;
 
         dlTaskID = TASK_MANAGER.addNewTask({
             type: PREDEFINED.TASKS_TYPES.DOWNLOADING,
             progress: 0,
-            size: { total: contentLength, current: 0 },
+            // <<< CAMBIO: Usamos el content-length si es válido, si no, ponemos 0.
+            size: { total: hasValidContentLength ? contentLength : 0, current: 0 },
             url: downloadURL,
             path: filePath,
             filename: path.basename(filePath),
@@ -432,17 +435,24 @@ async function addDownloadTask(downloadURL, filePath) {
         });
 
         const writeStream = fs.createWriteStream(filePath);
+        
+        // Esta parte ya funciona bien incluso sin el tamaño total, gracias a tu lógica en `updateDownloadProgress`
         response.data.on('data', (chunk) => updateDownloadProgress(dlTaskID, chunk.length));
 
         await pipeline(response.data, writeStream);
 
+        // <<< CAMBIO: Al finalizar, obtenemos el tamaño real del archivo y actualizamos la tarea.
+        // Esto asegura que la tarea siempre termine con el tamaño y progreso correctos.
+        const finalStats = fs.statSync(filePath); 
+        const finalSize = finalStats.size;
+
         TASK_MANAGER.updateTask(dlTaskID, {
-            size: { current: contentLength },
+            size: { total: finalSize, current: finalSize },
             progress: 100,
             status: PREDEFINED.TASK_STATUS.COMPLETED
         });
 
-        return true;
+        return { success: true }; 
     } catch (error) {
         console.error(`Download failed: ${error.message}`);
         if (dlTaskID) {
@@ -451,7 +461,11 @@ async function addDownloadTask(downloadURL, filePath) {
                 error: error.message
             });
         }
-        return false;
+        // <<< CAMBIO: Asegúrate de que la función que llama a esta maneje correctamente el error.
+        // El error que recibes en el log ("Falla en startJavaServerGeneration") viene de la función que llama a esta.
+        // Es importante que esa función capture este `return` o el `throw` implícito.
+        // Aquí lanzamos el error para que la función superior sepa que algo falló.
+        throw new Error(`Falló la descarga del core: ${error.message}`);
     }
 }
 
@@ -478,14 +492,14 @@ async function unpackArchive(archivePath, unpackPath, deleteAfterUnpack = false)
             status: PREDEFINED.TASK_STATUS.COMPLETED
         });
 
-        return true;
+        return { success: true, message: "Unpacking completed successfully." };
     } catch (error) {
         console.error("Unpacking error:", error);
         TASK_MANAGER.updateTask(unpackTaskID, {
             status: PREDEFINED.TASK_STATUS.FAILED,
             error: error.message
         });
-        return false;
+        return { success: false, error: error.message}
     }
 }
 

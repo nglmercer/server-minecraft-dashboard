@@ -23,16 +23,41 @@ const isTermux = () => {
     return process.platform === 'android' || fs.existsSync('/data/data/com.termux');
 };
 
-// Convertir versión del juego a versión Java requerida
 const gameVersionToJava = (version) => {
-    if (!version) return 18;
-    const [, sec, ter] = version.split(".").map(Number);
-    if (sec <= 8) return 8;
-    if (sec <= 11) return 11;
-    if (sec <= 15) return 11;
-    if (sec === 16) return ter <= 4 ? 11 : 16;
-    if (sec >= 21) return 21;
-    return 21;
+    // Un valor por defecto más moderno y seguro
+    if (!version) return 17;
+
+    // Usamos nombres de variables más claros: major, minor, patch
+    const [major, minor, patch] = version.split(".").map(Number);
+
+    // Si la versión no es válida, devolvemos un valor seguro
+    if (isNaN(minor)) return 17;
+
+    // Lógica basada en los requisitos oficiales de Minecraft
+    // https://minecraft.wiki/w/Java_version
+    if (minor >= 20) {
+        // Minecraft 1.20.5 en adelante requiere Java 21
+        if (patch >= 5) {
+            return 21;
+        }
+        // Minecraft 1.20 a 1.20.4 requiere Java 17
+        return 17;
+    }
+    if (minor >= 18) { // Versiones 1.18.x y 1.19.x
+        return 17;
+    }
+    if (minor === 17) { // Versión 1.17.x
+        return 17;
+    }
+    if (minor === 16) {
+        // Versión 1.16.5 en adelante requiere Java 16
+        return (patch >= 5) ? 16 : 11;
+    }
+    if (minor >= 12) { // Versiones 1.12 a 1.16.4
+        return 8;
+    }
+    // Para versiones muy antiguas
+    return 8;
 };
 
 // Obtener la arquitectura del sistema
@@ -87,7 +112,7 @@ const getDownloadableJavaVersions = async () => {
                 .map(v => v.replace('openjdk-', ''))
                 .filter(v => {
                     const num = parseInt(v);
-                    return !isNaN(num) && num >= 8 && num <= 21;
+                    return !isNaN(num) && num >= 8; // Java 21+ es común ahora
                 })
                 .sort((a, b) => b - a);
             return [...new Set(versions)];
@@ -147,14 +172,7 @@ const getJavaInfoByVersion = (javaVersion) => {
         'win32': { name: 'windows', ext: '.zip' },
         'linux': { name: 'linux', ext: '.tar.gz' }
     };
-
-    const archMap = {
-        'x64': 'x64',
-        'x32': 'x86',
-        'arm64': 'aarch64',
-        'arm': 'arm'
-    };
-
+    const archMap = { 'x64': 'x64', 'arm64': 'aarch64' };
     const platform = platformMap[process.platform];
     const arch = archMap[process.arch];
 
@@ -162,20 +180,11 @@ const getJavaInfoByVersion = (javaVersion) => {
 
     const resultURL = `https://api.adoptium.net/v3/binary/latest/${javaVersion}/ga/${platform.name}/${arch}/jdk/hotspot/normal/eclipse?project=jdk`;
     const filename = `Java-${javaVersion}-${arch}${platform.ext}`;
-    
     const relativeDownloadPath = path.join('./binaries/java', filename);
     const relativeUnpackPath = path.join('./binaries/java', javaVersion);
-
     const absoluteDownloadPath = path.resolve(relativeDownloadPath);
     const absoluteUnpackPath = path.resolve(relativeUnpackPath);
 
-    // Asegurar que los directorios existan antes de leerlos
-    const javaDir = path.resolve('./binaries/java');
-    if (!fs.existsSync(javaDir)) {
-        fs.mkdirSync(javaDir, { recursive: true });
-    }
-
-    // Verificar la estructura de carpetas después de la descompresión
     let javaBinPath = path.join(absoluteUnpackPath, 'bin');
     if (!fs.existsSync(javaBinPath) && fs.existsSync(absoluteUnpackPath)) {
         const files = fs.readdirSync(absoluteUnpackPath);
@@ -183,15 +192,12 @@ const getJavaInfoByVersion = (javaVersion) => {
         if (jdkFolder) {
             javaBinPath = path.join(absoluteUnpackPath, jdkFolder, 'bin');
         }
-        console.log("javaBinPath", javaBinPath);
     }
 
     return {
         url: resultURL,
         filename,
         version: javaVersion,
-        platformArch: arch,
-        platformName: platform.name,
         downloadPath: relativeDownloadPath,
         unpackPath: relativeUnpackPath,
         absoluteDownloadPath,
@@ -315,76 +321,55 @@ async function prepareJavaForServer(javaVersion) {
             }
         }
 
-        // Non-Termux (Adoptium download logic)
         let javaInfo = getJavaInfoByVersion(javaVersion);
-        if (!javaInfo || !javaInfo.url) { // Check if javaInfo is valid for download
+        if (!javaInfo || !javaInfo.url) {
             return { success: false, error: `Could not get download info for Java ${javaVersion}. Platform/arch unsupported?` };
         }
 
-        // Check if already downloaded and unpacked correctly
-        let existingExecutablePath = getJavaPath(javaVersion); // This uses your existing getJavaPath
+        let existingExecutablePath = getJavaPath(javaVersion);
         if (existingExecutablePath && await verifyJavaInstallation(javaVersion, existingExecutablePath)) {
              logger.info(`Java ${javaVersion} already prepared and verified at ${existingExecutablePath}`);
             return { success: true, path: existingExecutablePath };
         }
         
-        logger.info(`Java ${javaVersion} not found locally or not verified. Proceeding with download from ${javaInfo.url}`);
-
-        // Ensure download and unpack directories exist
+        logger.info(`Java ${javaVersion} not found locally. Proceeding with download from ${javaInfo.url}`);
+        
         const downloadDir = path.dirname(javaInfo.absoluteDownloadPath);
         const unpackDir = javaInfo.absoluteUnpackPath;
         if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
         if (!fs.existsSync(unpackDir)) fs.mkdirSync(unpackDir, { recursive: true });
 
-
         logger.info(`Downloading Java ${javaVersion} to ${javaInfo.absoluteDownloadPath}...`);
         const javaDlResult = await addDownloadTask(javaInfo.url, javaInfo.absoluteDownloadPath, `Downloading Java ${javaVersion}`);
-        // Assuming addDownloadTask throws on error or returns an object with a success flag
-        if (javaDlResult && typeof javaDlResult.success === 'boolean' && !javaDlResult.success) {
-            const errorMsg = `Java ${javaVersion} download failed: ${javaDlResult.error || 'Unknown error'}`;
-            logger.warning(errorMsg);
+        
+        // FIX: Verificación robusta del resultado de la descarga
+        if (!javaDlResult || !javaDlResult.success) {
+            const errorMsg = `Java ${javaVersion} download failed: ${javaDlResult?.error || 'Unknown download error'}`;
+            logger.error(errorMsg);
             return { success: false, error: errorMsg };
-        }
-        if (!fs.existsSync(javaInfo.absoluteDownloadPath)){ // Fallback check if addDownloadTask doesn't throw/return status
-             const errorMsg = `Java ${javaVersion} download failed (file not found after download attempt).`;
-            logger.warning(errorMsg);
-            return { success: false, error: errorMsg };
-        }
-        logger.info(`Java ${javaVersion} downloaded. Unpacking to ${javaInfo.absoluteUnpackPath}...`);
-
-
-        const javaUnpackResult = await unpackArchive(javaInfo.absoluteDownloadPath, javaInfo.absoluteUnpackPath, true); // true to remove archive after
-         // Assuming unpackArchive throws on error or returns an object with a success flag
-        if (javaUnpackResult && typeof javaUnpackResult.success === 'boolean' && !javaUnpackResult.success) {
-            const errorMsg = `Java ${javaVersion} unpack failed: ${javaUnpackResult.error || 'Unknown error'}`;
-            logger.warning(errorMsg);
-            return { success: false, error: errorMsg };
-        }
-        logger.info(`Java ${javaVersion} unpacked.`);
-
-        // Attempt to find the executable path again using getJavaPath, which is more robust
-        let finalJavaExecutablePath = getJavaPath(javaVersion);
-
-        if (!finalJavaExecutablePath) {
-            // Fallback: try constructing from javaInfo.javaBinPath if getJavaPath fails
-            // This is because getJavaInfoByVersion already tries to find the 'bin' dir
-            if (javaInfo.javaBinPath && fs.existsSync(javaInfo.javaBinPath)) {
-                const exeName = process.platform === 'win32' ? 'java.exe' : 'java';
-                const potentialPath = path.join(javaInfo.javaBinPath, exeName);
-                if (fs.existsSync(potentialPath)) {
-                    finalJavaExecutablePath = potentialPath;
-                }
-            }
         }
         
+        logger.info(`Java ${javaVersion} downloaded. Unpacking to ${javaInfo.absoluteUnpackPath}...`);
+        const javaUnpackResult = await unpackArchive(javaInfo.absoluteDownloadPath, javaInfo.absoluteUnpackPath, true);
+        
+        // FIX: Verificación robusta del resultado de la descompresión
+        if (!javaUnpackResult || !javaUnpackResult.success) {
+            const errorMsg = `Java ${javaVersion} unpack failed: ${javaUnpackResult?.error || 'Unknown unpack error'}`;
+            logger.error(errorMsg);
+            // Opcional: limpiar la carpeta de descompresión corrupta
+            // fs.rmSync(javaInfo.absoluteUnpackPath, { recursive: true, force: true });
+            return { success: false, error: errorMsg };
+        }
+        
+        logger.info(`Java ${javaVersion} unpacked successfully.`);
+
+        let finalJavaExecutablePath = getJavaPath(javaVersion);
         if (finalJavaExecutablePath && await verifyJavaInstallation(javaVersion, finalJavaExecutablePath)) {
             logger.info(`Java ${javaVersion} prepared and verified successfully at ${finalJavaExecutablePath}`);
             return { success: true, path: finalJavaExecutablePath };
         } else {
-            const errorMsg = `Java ${javaVersion} prepared, but verification failed or executable not found post-unpack. Checked path: ${finalJavaExecutablePath || 'not found'}. Bin dir: ${javaInfo.javaBinPath}`;
-            logger.warning(errorMsg);
-            // Clean up potentially corrupted unpack directory? Maybe too aggressive.
-            // fs.rmSync(javaInfo.absoluteUnpackPath, { recursive: true, force: true });
+            const errorMsg = `Java ${javaVersion} prepared, but final verification failed. Path: ${finalJavaExecutablePath || 'not found'}.`;
+            logger.error(errorMsg);
             return { success: false, error: errorMsg };
         }
 

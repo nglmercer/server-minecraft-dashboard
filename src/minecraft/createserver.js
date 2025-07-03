@@ -144,39 +144,30 @@ function javaVersionFromResult(obj, defaultVersion) {
  */
 export async function ensureJavaVersionReady(requiredJavaVersion) {
   console.log(`Verificando/Preparando Java ${requiredJavaVersion}...`);
-  let javaInfo = getJavaInfoByVersion(requiredJavaVersion); // From javaManager.js
-  let javaExecutablePath;
-
-  // First, check if a suitable Java is already easily found and verified
-  // For Termux, javaInfo.installed relies on checkJavaVersionTermux, which is a dpkg -l check
-  // For non-Termux, we rely on getJavaPath and verifyJavaInstallation
-  let preExistingPath = getJavaPath(requiredJavaVersion); // From javaManager.js
-  if (preExistingPath && await verifyJavaInstallation(requiredJavaVersion, preExistingPath)) { // From javaManager.js
+  
+  // Primero, verificar si ya existe una instalación válida.
+  let preExistingPath = getJavaPath(requiredJavaVersion);
+  if (preExistingPath && await verifyJavaInstallation(requiredJavaVersion, preExistingPath)) {
       console.log(`Java ${requiredJavaVersion} ya está disponible y verificado en: ${preExistingPath}`);
       return preExistingPath;
   }
 
-  // If not found or not verified, proceed to preparation
-  console.log(`Java ${requiredJavaVersion} no encontrado, no verificado, o no compatible. Intentando preparar...`);
-  // prepareJavaForServer is async and from javaManager.js
+  // Si no, proceder a la preparación (descarga/descompresión).
+  console.log(`Java ${requiredJavaVersion} no encontrado o no verificado. Intentando preparar...`);
   const preparationResult = await prepareJavaForServer(requiredJavaVersion);
 
-  if (!preparationResult.success) {
-    throw new Error(`Falló la preparación de Java ${requiredJavaVersion}: ${preparationResult.error}`);
+  // FIX: Manejo de errores más explícito.
+  if (!preparationResult.success || !preparationResult.path) {
+    throw new Error(`Falló la preparación de Java ${requiredJavaVersion}: ${preparationResult.error || 'Ruta no encontrada después de la preparación.'}`);
   }
 
-  javaExecutablePath = preparationResult.path;
-  if (!javaExecutablePath) { // Should ideally not happen if success is true
-    throw new Error(`No se encontró la ruta del ejecutable de Java ${requiredJavaVersion} después de la preparación exitosa, pero la ruta está vacía.`);
+  // Verificación final del ejecutable obtenido.
+  if (!await verifyJavaInstallation(requiredJavaVersion, preparationResult.path)) {
+      throw new Error(`Java ${requiredJavaVersion} preparado en ${preparationResult.path}, pero falló la verificación final.`);
   }
 
-  // Final verification of the path obtained from preparation
-  if (!await verifyJavaInstallation(requiredJavaVersion, javaExecutablePath)) {
-      throw new Error(`Java ${requiredJavaVersion} preparado en ${javaExecutablePath}, pero falló la verificación final.`);
-  }
-
-  console.log(`Java ${requiredJavaVersion} preparado y verificado exitosamente. Ruta: ${javaExecutablePath}`);
-  return javaExecutablePath;
+  console.log(`Java ${requiredJavaVersion} preparado y verificado exitosamente. Ruta: ${preparationResult.path}`);
+  return preparationResult.path;
 }
 
 
@@ -187,7 +178,7 @@ export async function startJavaServerGeneration({ serverName, coreName, coreVers
 
     const requiredJavaVersion = javaVersionFromResult(javaRequirements, javaVersion);
     if (!requiredJavaVersion) {
-        throw new Error("No se pudo determinar la versión de Java requerida. Proporcione 'javaVersion' o asegúrese que 'generateserverrequirements' la devuelva.");
+        throw new Error("No se pudo determinar la versión de Java requerida.");
     }
     console.log("Versión de Java requerida determinada:", requiredJavaVersion);
 
@@ -214,7 +205,7 @@ export async function startJavaServerGeneration({ serverName, coreName, coreVers
       // Assuming addDownloadTask throws on failure or returns a status
       const downloadStatus = await addDownloadTask(coreDownloadURL, coreFilePath, `Descargando ${coreFileName}`);
       // Check download status if addDownloadTask returns an object with success property
-      if (downloadStatus && typeof downloadStatus.success === 'boolean' && !downloadStatus.success) {
+      if (!downloadStatus || !downloadStatus.success) {
           throw new Error(`Falló la descarga del core: ${downloadStatus.error || 'Error desconocido'}`);
       }
       console.log(`✅ Core descargado exitosamente: ${coreFilePath}`);
