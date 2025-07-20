@@ -41,10 +41,15 @@ npm start
 1. Install termux
 	- https://f-droid.org/en/packages/com.termux/
 	- https://github.com/termux/termux-app
-2. Install Packages
-	- pkg install nodejs
-	- pkg install git
-	- pkg install nodejs-npm
+	- update packages and upgrade
+```bash
+pkg update
+pkg upgrade
+```
+2. Install Packages with pkg or apt
+	- apt install nodejs
+	- apt install git
+	- apt install nodejs-npm
 4. clone repository
 	- git clone https://github.com/nglmercer/kubek-minecraft-dashboard
 	- cd kubek-minecraft-dashboard
@@ -52,15 +57,16 @@ npm start
 	- npm run start
 ### Optional
 5. install code-server
-	- pkg install code-server
+	- apt install code-server
 	- code-server --auth none --port 8080 &
 
-### install termux(pkg)/linux(apt,dnf,etc) shell 
+### install termux(apt)/linux(apt,dnf,etc) shell 
+- termux [pkg], linux [apt,dnf,etc]
 ```
 pkg update 
 pkg upgrade
-pkg install git
-pkg install nodejs
+apt install git
+apt install nodejs
 git clone https://github.com/nglmercer/server-minecraft-dashboard
 cd server-minecraft-dashboard
 npm install --ignore-scripts

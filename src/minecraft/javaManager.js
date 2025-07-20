@@ -78,25 +78,29 @@ const installJavaTermux = async (version) => {
     }
     logger.info(`Attempting to install openjdk-${version} on Termux (arch: ${arch})`);
 
-    // Check if package is available via pkg search first, as it's simpler
+    // Check if package is available via apt search first, as it's simpler
     try {
-        execSync(`pkg install -y openjdk-${version}`, { stdio: 'inherit' });
-        logger.info(`Successfully ran 'pkg install openjdk-${version}'.`);
+        execSync(`apt install -y openjdk-${version}`, { stdio: 'inherit' });
+        logger.info(`Successfully ran 'apt install openjdk-${version}'.`);
         // Verification will be done by prepareJavaForServer after this call
         return true; // Indicates the command was attempted
     } catch (error) {
-        logger.error(`'pkg install openjdk-${version}' failed: ${error.message}. Falling back to manual dpkg method if necessary (or just failing).`);
-        // You could implement the more complex curl/dpkg method here as a fallback if desired
-        // For now, we'll assume 'pkg install' is the primary method.
-        // If 'pkg install' fails, it often means the package doesn't exist for that version in the repos.
-        throw new Error(`Failed to install openjdk-${version} using 'pkg install'. Error: ${error.message}`);
+        logger.error(`'apt install openjdk-${version}' failed: ${error.message}. Falling back to manual dapt method if necessary (or just failing).`);
+        // You could implement the more complex curl/dapt method here as a fallback if desired
+        // For now, we'll assume 'apt install' is the primary method.
+        // If 'apt install' fails, it often means the package doesn't exist for that version in the repos.
+        throw new Error(`Failed to install openjdk-${version} using 'apt install'. Error: ${error.message}`);
     }
 };
 // Verificar si una versión específica de Java está instalada en Termux
 const checkJavaVersionTermux = (version) => {
     try {
         const output = execSync('dpkg -l | grep openjdk').toString();
-        return output.includes(`openjdk-${version}`);
+        const aptoutput = execSync('apt search "^openjdk-[0-9]+"').toString();
+        return [
+            ...output.includes(`openjdk-${version}`),
+            ...aptoutput.includes(`openjdk-${version}`)
+        ]
     } catch (error) {
         return false;
     }
@@ -106,7 +110,7 @@ const checkJavaVersionTermux = (version) => {
 const getDownloadableJavaVersions = async () => {
     if (isTermux()) {
         try {
-            const output = execSync('pkg search "^openjdk-[0-9]+"').toString();
+            const output = execSync('apt search "^openjdk-[0-9]+"').toString();
             const matches = output.match(/openjdk-(\d+)/g) || [];
             const versions = matches
                 .map(v => v.replace('openjdk-', ''))
@@ -130,7 +134,7 @@ const getDownloadableJavaVersions = async () => {
 const getLocalJavaVersions = () => {
     if (isTermux()) {
         try {
-            const output = execSync('dpkg -l | grep openjdk').toString();
+            const output = execSync('dapt -l | grep openjdk').toString();
             return output.match(/openjdk-(\d+)/g)
                 ?.map(v => v.replace('openjdk-', '')) || [];
         } catch (error) {
@@ -161,7 +165,7 @@ const getJavaInfoByVersion = (javaVersion) => {
             isTermux: true,
             version: javaVersion,
             packageName: `openjdk-${javaVersion}`,
-            installCmd: `pkg install openjdk-${javaVersion}`,
+            installCmd: `apt install openjdk-${javaVersion}`,
             javaPath: '/data/data/com.termux/files/usr/bin/',
             installed: checkJavaVersionTermux(javaVersion),
             absoluteJavaPath: '/data/data/com.termux/files/usr/bin/'

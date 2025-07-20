@@ -1,6 +1,6 @@
 {
   "name": "Minecraft-Dashboard",
-  "version": "1.3.0",
+  "version": "1.3.5",
   "description": "A simple dashboard to manage your Minecraft server",
   "type": "module",
   "main": "entry.js",
